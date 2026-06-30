@@ -138,7 +138,7 @@ the Spanish text is shown.
   input, and being one of the project's earliest power users.
 - [@rolox05](https://github.com/rolox05) — first UI, PoC and kickstart partner.
 
-## Community
+## Community Center
 
 Questions, ideas, or feedback? Join our
 [WhatsApp Community](https://chat.whatsapp.com/Ch6AwZizSDt5quzHodcYh5) or open
