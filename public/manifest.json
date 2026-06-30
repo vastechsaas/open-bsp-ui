@@ -1,18 +1,18 @@
 {
-  "short_name": "OpenBSP",
-  "name": "OpenBSP - WhatsApp Web and Instagram interface",
-  "description": "Open-source WhatsApp Web and Instagram interface. Self-hostable, multi-tenant, and AI-agent ready.",
+  "short_name": "Social Connect",
+  "name": "Social Connect - WhatsApp interface",
+  "description": "A self-hostable, multi-tenant WhatsApp interface.",
   "icons": [
     {
-      "src": "/logo-192x192.png",
+      "src": "/SocialConnectSmall.png",
       "type": "image/png",
-      "sizes": "192x192",
+      "sizes": "1024x1024",
       "purpose": "any"
     },
     {
-      "src": "/logo-512x512.png",
+      "src": "/SocialConnectLarge.png",
       "type": "image/png",
-      "sizes": "512x512",
+      "sizes": "1024x1024",
       "purpose": "any"
     }
   ],

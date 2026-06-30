@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'C:\\Hurera New Laptop\\open-bsp-ui\\.codex\\hooks\\check-edited.sh'",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

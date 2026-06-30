@@ -61,7 +61,7 @@ function NewOnboardingToken() {
           <fieldset disabled={!isOwner} className="contents">
             <p className="text-muted-foreground text-[14px]">
               {t(
-                "Generá un enlace para que un tercero conecte su cuenta de Instagram a tu organización. No necesita tener cuenta en Open BSP ni ser miembro de tu organización.",
+                "Generá un enlace para que un tercero conecte su cuenta de Instagram a tu organización. No necesita tener cuenta en Social Connect ni ser miembro de tu organización.",
               )}
             </p>
 

@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
-import { GoogleOutlined, GithubOutlined } from "@ant-design/icons";
+import { GoogleOutlined } from "@ant-design/icons";
+// import { GithubOutlined } from "@ant-design/icons";
 
 type OAuthProvider = "google" | "github";
 
@@ -49,9 +50,11 @@ function Login() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        OpenBSP
-      </div>
+      <img
+        src="/SocialConnectLarge.png"
+        alt="Social Connect"
+        className="h-[180px] w-[180px] object-contain"
+      />
 
       <div className="flex flex-col gap-3 w-[250px]">
         <button
@@ -62,6 +65,7 @@ function Login() {
           <GoogleOutlined /> {t("Continuar con Google")}
         </button>
 
+        {/* GitHub OAuth is intentionally hidden for this deployment.
         <button
           type="button"
           className="primary bg-gray-900 hover:bg-gray-800 text-white w-full border-none"
@@ -69,6 +73,7 @@ function Login() {
         >
           <GithubOutlined /> {t("Continuar con GitHub")}
         </button>
+        */}
 
         <div
           className={`border-b border-border w-full ${showEmail ? "" : "hidden"}`}
