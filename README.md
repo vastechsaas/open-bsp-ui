@@ -143,4 +143,4 @@ the Spanish text is shown.
 Questions, ideas, or feedback? Join our
 [WhatsApp Community](https://chat.whatsapp.com/Ch6AwZizSDt5quzHodcYh5) or open
 an [issue](https://github.com/matiasbattocchia/open-bsp-ui/issues). We'd love to
-hear from you.
+hear from your side.
