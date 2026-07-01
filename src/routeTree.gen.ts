@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
+import { Route as LoginEmailRouteImport } from './routes/login_.email'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
 import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings/index'
@@ -81,6 +82,11 @@ const OauthInstagramRoute = OauthInstagramRouteImport.update({
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
   id: '/oauth/callback',
   path: '/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginEmailRoute = LoginEmailRouteImport.update({
+  id: '/login_/email',
+  path: '/login/email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthStatsRoute = AuthStatsRouteImport.update({
@@ -332,6 +338,7 @@ const AuthIntegrationsWhatsappOrgAddressIdTemplatesTemplateIdRoute =
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/stats': typeof AuthStatsRouteWithChildren
+  '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/': typeof AuthIndexRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/': typeof AuthIndexRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
+  '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/_auth/': typeof AuthIndexRoute
@@ -485,6 +494,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/login'
     | '/stats'
+    | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/'
@@ -534,6 +544,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/'
@@ -585,6 +596,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/login'
     | '/_auth/stats'
+    | '/login_/email'
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/_auth/'
@@ -636,6 +648,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
+  LoginEmailRoute: typeof LoginEmailRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthInstagramRoute: typeof OauthInstagramRoute
   OnboardInstagramTokenRoute: typeof OnboardInstagramTokenRoute
@@ -678,6 +691,13 @@ declare module '@tanstack/react-router' {
       path: '/oauth/callback'
       fullPath: '/oauth/callback'
       preLoaderRoute: typeof OauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login_/email': {
+      id: '/login_/email'
+      path: '/login/email'
+      fullPath: '/login/email'
+      preLoaderRoute: typeof LoginEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/stats': {
@@ -1108,6 +1128,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
+  LoginEmailRoute: LoginEmailRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthInstagramRoute: OauthInstagramRoute,
   OnboardInstagramTokenRoute: OnboardInstagramTokenRoute,
