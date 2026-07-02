@@ -2,8 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/supabase/client";
+import { loadTranslations } from "@/i18n/translations";
 
 export const Route = createFileRoute("/login_/email")({
+  beforeLoad: () => loadTranslations("en"),
   validateSearch: (search): { redirect?: string } => ({
     redirect: (search.redirect as string) || undefined,
   }),
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/login_/email")({
 
 function EmailLogin() {
   const { redirect } = Route.useSearch();
-  const { translate: t } = useTranslation();
+  const { translate: t } = useTranslation("en");
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -3,7 +3,9 @@ const cache = new Map<string, Record<string, string>>();
 export async function loadTranslations(lang: string): Promise<void> {
   if (lang === "es" || cache.has(lang)) return;
 
-  const res = await fetch(`/locales/${lang}.json`);
+  const res = await fetch(`/locales/${lang}.json`, {
+    cache: "no-store",
+  });
   if (res.ok) {
     cache.set(lang, await res.json());
   }

@@ -3,8 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Button from "@/components/Button";
 import type { SignupPayload } from "@/contexts/WhatsAppIntegrationContext";
+import { loadTranslations } from "@/i18n/translations";
 
 export const Route = createFileRoute("/onboard/whatsapp/$token")({
+  beforeLoad: () => loadTranslations("en"),
   component: Onboard,
 });
 
@@ -17,7 +19,7 @@ type TokenValidation =
 
 function Onboard() {
   const { token } = Route.useParams();
-  const { translate: t } = useTranslation();
+  const { translate: t } = useTranslation("en");
   const [state, setState] = useState<TokenValidation>({ status: "loading" });
   const [loading, setLoading] = useState(false);
   // The Facebook SDK loads asynchronously from connect.facebook.net, which is

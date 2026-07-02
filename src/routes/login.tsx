@@ -2,11 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { GoogleOutlined } from "@ant-design/icons";
+import { loadTranslations } from "@/i18n/translations";
 // import { GithubOutlined } from "@ant-design/icons";
 
 type OAuthProvider = "google" | "github";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: () => loadTranslations("en"),
   validateSearch: (search): { redirect?: string } => ({
     redirect: (search.redirect as string) || undefined,
   }),
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { redirect } = Route.useSearch();
-  const { translate: t } = useTranslation();
+  const { translate: t } = useTranslation("en");
   const navigate = useNavigate();
 
   async function handleLogInWithOauth(provider: OAuthProvider) {

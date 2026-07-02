@@ -4,14 +4,19 @@ import SectionHeader from "@/components/SectionHeader";
 import SectionBody from "@/components/SectionBody";
 import SectionFooter from "@/components/SectionFooter";
 import WhatsAppIntegration from "@/components/WhatsAppIntegration";
-import { useTranslation } from "@/hooks/useTranslation";
+import {
+  TranslationLanguageProvider,
+  useTranslation,
+} from "@/hooks/useTranslation";
+import { loadTranslations } from "@/i18n/translations";
 
 export const Route = createFileRoute("/_auth/integrations/whatsapp/new")({
+  beforeLoad: () => loadTranslations("en"),
   component: WhatsAppNew,
 });
 
 function WhatsAppNew() {
-  const { translate: t } = useTranslation();
+  const { translate: t } = useTranslation("en");
   const navigate = useNavigate();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -26,7 +31,7 @@ function WhatsAppNew() {
   };
 
   return (
-    <>
+    <TranslationLanguageProvider language="en">
       <SectionHeader title={t("Conectar WhatsApp")} />
 
       <SectionBody>
@@ -113,6 +118,6 @@ function WhatsAppNew() {
           }}
         />
       </SectionFooter>
-    </>
+    </TranslationLanguageProvider>
   );
 }
