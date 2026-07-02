@@ -10,9 +10,14 @@ import FilePicker from "@/components/FileUploader/FilePicker";
 import FilePreviewer from "@/components/FilePreviewer";
 import ActionCard from "@/components/ActionCard";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Bot, Building2, MessageSquarePlus, Settings } from "lucide-react";
+import {
+  // Bot,
+  Building2,
+  MessageSquarePlus,
+  Settings,
+} from "lucide-react";
 import { useResizable } from "@/hooks/useResizable";
-import { useCurrentAgents } from "@/queries/useAgents";
+// import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
 
 export const Route = createFileRoute("/_auth")({
@@ -34,8 +39,9 @@ function getMaxPanelWidth() {
 function AppLayout() {
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
-  const { data: agents } = useCurrentAgents();
-  const hasAiAgents = agents?.some((a) => a.ai);
+  // AI-agent onboarding is intentionally hidden for the Meta review.
+  // const { data: agents } = useCurrentAgents();
+  // const hasAiAgents = agents?.some((a) => a.ai);
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
@@ -128,6 +134,7 @@ function AppLayout() {
             )}
             {activeOrgId && (
               <>
+                {/* AI-agent onboarding is intentionally hidden for the Meta review.
                 {!hasAiAgents && (
                   <ActionCard
                     icon={<Bot className="w-[24px] h-[24px]" />}
@@ -135,13 +142,12 @@ function AppLayout() {
                     to="/agents/new"
                   />
                 )}
-                {hasAiAgents && (
-                  <ActionCard
-                    icon={<MessageSquarePlus className="w-[24px] h-[24px]" />}
-                    title={t("Iniciar conversación")}
-                    to="/conversations/new"
-                  />
-                )}
+                */}
+                <ActionCard
+                  icon={<MessageSquarePlus className="w-[24px] h-[24px]" />}
+                  title={t("Iniciar conversación")}
+                  to="/conversations/new"
+                />
                 <ActionCard
                   icon={<Settings className="w-[24px] h-[24px]" />}
                   title={t("Configurar WhatsApp")}

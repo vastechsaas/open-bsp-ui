@@ -7,7 +7,7 @@ import {
   Settings,
   MessageSquareText,
   Unplug,
-  Bot,
+  // Bot,
   BarChart3,
   Languages,
   Plus,
@@ -59,7 +59,7 @@ export default function Menu() {
           <MessageSquareText className="w-[24px] h-[24px] stroke-[2]" />
         </LinkButton>
 
-        {/* Agents button */}
+        {/* AI agents are intentionally hidden for the Meta review.
         <LinkButton
           to="/agents"
           title={t("Agentes")}
@@ -68,6 +68,7 @@ export default function Menu() {
         >
           <Bot className="w-[24px] h-[24px] stroke-[2]" />
         </LinkButton>
+        */}
 
         {/* Contacts button */}
         <LinkButton
