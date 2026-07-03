@@ -53,7 +53,13 @@ function detectLanguage(): Language {
 }
 
 const initialLang = detectLanguage();
-await loadTranslations(initialLang);
+const isLegalPage = ["/privacy", "/terms", "/data-deletion"].includes(
+  window.location.pathname,
+);
+
+if (!isLegalPage) {
+  await loadTranslations(initialLang);
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

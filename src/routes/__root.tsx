@@ -16,11 +16,24 @@ function RootLayout() {
   return <Outlet />;
 }
 
+const ALWAYS_PUBLIC_PATH_PREFIXES = [
+  "/onboard",
+  "/privacy",
+  "/terms",
+  "/data-deletion",
+];
+
 export const Route = createRootRoute({
   validateSearch: (search): { redirect?: string } => ({
     redirect: (search.redirect as string) || undefined,
   }),
   beforeLoad: async ({ search, location }) => {
+    const isAlwaysPublicPath = ALWAYS_PUBLIC_PATH_PREFIXES.some((path) =>
+      location.pathname.startsWith(path)
+    );
+
+    if (isAlwaysPublicPath) return;
+
     let user = useBoundStore.getState().ui.user;
 
     if (!user) {
@@ -34,11 +47,7 @@ export const Route = createRootRoute({
       });
     }
 
-    if (
-      !user &&
-      !location.pathname.startsWith("/login") &&
-      !location.pathname.startsWith("/onboard")
-    ) {
+    if (!user && !location.pathname.startsWith("/login")) {
       throw redirect({
         to: "/login",
         search: {

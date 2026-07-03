@@ -3,6 +3,7 @@ import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { GoogleOutlined } from "@ant-design/icons";
 import { loadTranslations } from "@/i18n/translations";
+import LegalLinks from "@/components/LegalLinks";
 // import { GithubOutlined } from "@ant-design/icons";
 
 type OAuthProvider = "google" | "github";
@@ -69,6 +70,8 @@ function Login() {
         </button>
         */}
       </div>
+
+      <LegalLinks className="absolute bottom-5 px-4" />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/supabase/client";
 import { loadTranslations } from "@/i18n/translations";
+import LegalLinks from "@/components/LegalLinks";
 
 export const Route = createFileRoute("/login_/email")({
   beforeLoad: () => loadTranslations("en"),
@@ -85,6 +86,8 @@ function EmailLogin() {
           {loading ? t("Cargando...") : t("Entrar")}
         </button>
       </form>
+
+      <LegalLinks className="absolute bottom-5 px-4" />
     </div>
   );
 }
