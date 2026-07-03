@@ -59,7 +59,7 @@ function DataDeletion() {
             info@vastech.biz
           </a>{" "}
           with the subject <strong>Social Connect Data Deletion Request</strong>
-          and include:
+          {" "}and include:
         </p>
         <ul>
           <li>the email address used to sign in;</li>
