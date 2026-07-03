@@ -2,7 +2,7 @@ import SectionBody from "@/components/SectionBody";
 import SectionHeader from "@/components/SectionHeader";
 import SectionItem from "@/components/SectionItem";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
+// import { FileText } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { WhatsAppOutlined } from "@ant-design/icons";
 // import { InstagramOutlined } from "@ant-design/icons";
@@ -54,6 +54,7 @@ function IntegrationsIndex() {
             }
           />
           */}
+          {/* Media pre-processing is intentionally hidden for this deployment.
           <SectionItem
             aside={
               <div className="p-[8px]">
@@ -69,6 +70,7 @@ function IntegrationsIndex() {
               })
             }
           />
+          */}
         </div>
       </SectionBody>
     </>
