@@ -14,7 +14,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as AuthIndexRouteImport } from './routes/_auth/index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
@@ -88,10 +88,10 @@ const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OauthInstagramRoute = OauthInstagramRouteImport.update({
   id: '/oauth/instagram',
@@ -361,6 +361,7 @@ const AuthIntegrationsWhatsappOrgAddressIdTemplatesTemplateIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -369,7 +370,6 @@ export interface FileRoutesByFullPath {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/': typeof AuthIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
@@ -416,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/integrations/whatsapp/$orgAddressId/templates': typeof AuthIntegrationsWhatsappOrgAddressIdTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -423,7 +424,6 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/': typeof AuthIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
@@ -471,6 +471,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
@@ -480,7 +481,6 @@ export interface FileRoutesById {
   '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/_auth/': typeof AuthIndexRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
   '/_auth/contacts/$contactId': typeof AuthContactsContactIdRoute
@@ -529,6 +529,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/data-deletion'
     | '/login'
     | '/privacy'
@@ -537,7 +538,6 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
-    | '/'
     | '/agents/$agentId'
     | '/agents/new'
     | '/contacts/$contactId'
@@ -584,6 +584,7 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp/$orgAddressId/templates'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/data-deletion'
     | '/login'
     | '/privacy'
@@ -591,7 +592,6 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
-    | '/'
     | '/agents/$agentId'
     | '/agents/new'
     | '/contacts/$contactId'
@@ -638,6 +638,7 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp/$orgAddressId/templates'
   id:
     | '__root__'
+    | '/'
     | '/_auth'
     | '/data-deletion'
     | '/login'
@@ -647,7 +648,6 @@ export interface FileRouteTypes {
     | '/login_/email'
     | '/oauth/callback'
     | '/oauth/instagram'
-    | '/_auth/'
     | '/_auth/agents/$agentId'
     | '/_auth/agents/new'
     | '/_auth/contacts/$contactId'
@@ -695,6 +695,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   DataDeletionRoute: typeof DataDeletionRoute
   LoginRoute: typeof LoginRoute
@@ -745,12 +746,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/': {
-      id: '/_auth/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof AuthRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/oauth/instagram': {
       id: '/oauth/instagram'
@@ -1109,7 +1110,6 @@ const AuthStatsRouteWithChildren = AuthStatsRoute._addFileChildren(
 
 interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
-  AuthIndexRoute: typeof AuthIndexRoute
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
   AuthContactsContactIdRoute: typeof AuthContactsContactIdRoute
@@ -1152,7 +1152,6 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthStatsRoute: AuthStatsRouteWithChildren,
-  AuthIndexRoute: AuthIndexRoute,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
   AuthAgentsNewRoute: AuthAgentsNewRoute,
   AuthContactsContactIdRoute: AuthContactsContactIdRoute,
@@ -1209,6 +1208,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   DataDeletionRoute: DataDeletionRoute,
   LoginRoute: LoginRoute,

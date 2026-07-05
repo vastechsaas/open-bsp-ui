@@ -32,11 +32,17 @@ function Login() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <img
-        src="/SocialConnectLarge.png"
-        alt="Social Connect"
-        className="h-[180px] w-[180px] object-contain"
-      />
+      <a
+        href="/"
+        aria-label="Back to Social Connect home"
+        className="rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <img
+          src="/SocialConnectLarge.png"
+          alt="Social Connect"
+          className="h-[180px] w-[180px] object-contain"
+        />
+      </a>
 
       <div className="flex flex-col gap-3 w-[250px]">
         <button

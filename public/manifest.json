@@ -1,7 +1,7 @@
 {
   "short_name": "Social Connect",
-  "name": "Social Connect - WhatsApp interface",
-  "description": "A self-hostable, multi-tenant WhatsApp interface.",
+  "name": "Social Connect - WhatsApp business conversations in one place",
+  "description": "Manage WhatsApp Business conversations and collaborate with your team from one workspace.",
   "icons": [
     {
       "src": "/SocialConnectSmall.png",

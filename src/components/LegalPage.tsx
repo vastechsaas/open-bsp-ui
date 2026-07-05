@@ -23,7 +23,7 @@ export default function LegalPage({
     <div className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-[900px] items-center justify-between gap-4 px-5 py-4">
-          <a href="/login" className="flex items-center gap-3">
+          <a href="/" className="flex items-center gap-3">
             <img
               src="/SocialConnectSmall.png"
               alt="Social Connect"
@@ -32,10 +32,10 @@ export default function LegalPage({
             <span className="text-[18px] font-semibold">Social Connect</span>
           </a>
           <a
-            href="/login"
+            href="/"
             className="text-[14px] text-muted-foreground hover:text-foreground"
           >
-            Return to login
+            Back to home
           </a>
         </div>
       </header>

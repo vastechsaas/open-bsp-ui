@@ -31,6 +31,7 @@ export const Route = createRootRoute({
     const isAlwaysPublicPath = ALWAYS_PUBLIC_PATH_PREFIXES.some((path) =>
       location.pathname.startsWith(path)
     );
+    const isLandingPage = location.pathname === "/";
 
     if (isAlwaysPublicPath) return;
 
@@ -43,9 +44,17 @@ export const Route = createRootRoute({
 
     if (user && location.pathname.startsWith("/login")) {
       throw redirect({
-        to: search.redirect || "/",
+        to: search.redirect || "/conversations",
       });
     }
+
+    if (user && isLandingPage) {
+      throw redirect({
+        to: "/conversations",
+      });
+    }
+
+    if (!user && isLandingPage) return;
 
     if (!user && !location.pathname.startsWith("/login")) {
       throw redirect({
