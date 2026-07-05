@@ -10,7 +10,7 @@ import type { WhatsAppOrganizationAddressExtra } from "@/supabase/client";
 import { useState } from "react";
 import Button from "@/components/Button";
 import SectionItem from "@/components/SectionItem";
-import { LayoutTemplate } from "lucide-react";
+import { Building2, LayoutTemplate } from "lucide-react";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/",
@@ -64,6 +64,21 @@ function WhatsAppDetails() {
       <SectionHeader title={extra?.verified_name || t("Cuenta de WhatsApp")} />
 
       <SectionBody className="pb-[40px]">
+        <SectionItem
+          title={t("Perfil comercial")}
+          aside={
+            <div className="p-[8px]">
+              <Building2 className="w-[24px] h-[24px] text-muted-foreground" />
+            </div>
+          }
+          onClick={() =>
+            navigate({
+              to: "/integrations/whatsapp/$orgAddressId/profile",
+              params: { orgAddressId },
+              hash: (prevHash) => prevHash!,
+            })
+          }
+        />
         <SectionItem
           title={t("Plantillas de mensajes")}
           aside={
