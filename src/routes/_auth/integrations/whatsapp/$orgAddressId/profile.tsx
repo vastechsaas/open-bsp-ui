@@ -17,10 +17,12 @@ import {
   AlertTriangle,
   Check,
   Clipboard,
+  Eye,
   ImagePlus,
   Plus,
   RefreshCw,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -84,6 +86,7 @@ function WhatsAppBusinessProfile() {
   const [websites, setWebsites] = useState<string[]>([]);
   const [photoFile, setPhotoFile] = useState<File>();
   const [photoPreview, setPhotoPreview] = useState<string>();
+  const [showPreview, setShowPreview] = useState(false);
   const [notice, setNotice] = useState<{
     type: "error" | "success";
     text: string;
@@ -138,6 +141,16 @@ function WhatsAppBusinessProfile() {
     },
     [photoPreview],
   );
+
+  useEffect(() => {
+    if (!showPreview) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowPreview(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showPreview]);
 
   const displayedPhoto =
     photoPreview || cachedProfile?.profile_picture_url || undefined;
@@ -260,17 +273,27 @@ function WhatsAppBusinessProfile() {
               </div>
             </div>
 
-            <Button
-              type="button"
-              className="primary min-w-44 px-3"
-              onClick={handleSync}
-              loading={syncProfile.isPending}
-              disabled={!canManage}
-              disabledReason={t("Requiere permisos de administrador")}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("Sincronizar perfil")}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2 text-sm hover:bg-muted"
+                onClick={() => setShowPreview(true)}
+              >
+                <Eye className="h-4 w-4" />
+                {t("Vista previa")}
+              </button>
+              <Button
+                type="button"
+                className="primary min-w-44 px-3"
+                onClick={handleSync}
+                loading={syncProfile.isPending}
+                disabled={!canManage}
+                disabledReason={t("Requiere permisos de administrador")}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("Sincronizar perfil")}
+              </Button>
+            </div>
           </div>
 
           {!isConnected && (
@@ -281,7 +304,9 @@ function WhatsAppBusinessProfile() {
                   {t("WhatsApp desconectado")}
                 </div>
                 <div className="text-muted-foreground">
-                  {t("No se pueden sincronizar ni actualizar los datos hasta volver a conectar la cuenta.")}
+                  {t(
+                    "No se pueden sincronizar ni actualizar los datos hasta volver a conectar la cuenta.",
+                  )}
                 </div>
               </div>
             </div>
@@ -291,7 +316,9 @@ function WhatsAppBusinessProfile() {
             <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
               {canManage
                 ? t("El perfil todavía no fue sincronizado con Meta.")
-                : t("El perfil todavía no fue sincronizado. Un administrador debe sincronizarlo.")}
+                : t(
+                    "El perfil todavía no fue sincronizado. Un administrador debe sincronizarlo.",
+                  )}
             </div>
           )}
 
@@ -312,17 +339,19 @@ function WhatsAppBusinessProfile() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="w-full">
             <form
               onSubmit={handleSubmit}
-              className="rounded-2xl border border-border bg-card p-5 pl-5"
+              className="w-full rounded-2xl border border-border bg-card p-5 pl-5"
             >
               <section>
                 <div className="text-base font-semibold">
                   {t("Foto del perfil")}
                 </div>
                 <p className="mt-1">
-                  {t("Usá una imagen cuadrada JPEG o PNG de hasta 1 MB. El tamaño recomendado es 640 × 640.")}
+                  {t(
+                    "Usá una imagen cuadrada JPEG o PNG de hasta 1 MB. El tamaño recomendado es 640 × 640.",
+                  )}
                 </p>
                 <div className="mt-4 flex items-center gap-4">
                   {displayedPhoto ? (
@@ -380,7 +409,9 @@ function WhatsAppBusinessProfile() {
                   {t("Enlace del perfil comercial")}
                 </div>
                 <p className="mt-1">
-                  {t("Compartí este enlace para que tus clientes inicien una conversación.")}
+                  {t(
+                    "Compartí este enlace para que tus clientes inicien una conversación.",
+                  )}
                 </p>
                 <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/40 p-3">
                   <a
@@ -544,21 +575,49 @@ function WhatsAppBusinessProfile() {
                 {t("Guardar cambios")}
               </Button>
             </form>
-
-            <WhatsAppBusinessProfilePreview
-              pictureUrl={displayedPhoto}
-              verifiedName={extra?.verified_name}
-              phoneNumber={phoneNumber}
-              vertical={categoryLabel}
-              description={description}
-              address={address}
-              about={about}
-              email={email}
-              websites={websites.filter(Boolean)}
-            />
           </div>
         </div>
       </SectionBody>
+
+      {showPreview && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("Vista previa")}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowPreview(false);
+          }}
+        >
+          <div className="flex max-h-[calc(100dvh-24px)] w-full max-w-[440px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+              <div className="font-semibold">{t("Vista previa")}</div>
+              <button
+                type="button"
+                className="rounded-full p-2 hover:bg-muted"
+                title={t("Cerrar")}
+                aria-label={t("Cerrar")}
+                onClick={() => setShowPreview(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4">
+              <WhatsAppBusinessProfilePreview
+                pictureUrl={displayedPhoto}
+                verifiedName={extra?.verified_name}
+                phoneNumber={phoneNumber}
+                vertical={categoryLabel}
+                description={description}
+                address={address}
+                about={about}
+                email={email}
+                websites={websites.filter(Boolean)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

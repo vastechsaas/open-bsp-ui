@@ -60,7 +60,7 @@ export default function WhatsAppBusinessProfilePreview({
   ];
 
   return (
-    <aside className="w-full max-w-[390px] lg:sticky lg:top-4">
+    <aside className="mx-auto w-full max-w-[390px]">
       <div className="rounded-[30px] border-4 border-border bg-muted p-3 shadow-xl">
         <div className="overflow-hidden rounded-[22px] bg-card text-card-foreground">
           <div className="flex items-center justify-between p-4 text-muted-foreground">
