@@ -282,17 +282,24 @@ function WhatsAppBusinessProfile() {
                 <Eye className="h-4 w-4" />
                 {t("Vista previa")}
               </button>
-              <Button
+              <button
                 type="button"
-                className="primary min-w-44 px-3"
+                className="flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-default disabled:opacity-50"
                 onClick={handleSync}
-                loading={syncProfile.isPending}
-                disabled={!canManage}
-                disabledReason={t("Requiere permisos de administrador")}
+                disabled={!canManage || syncProfile.isPending}
+                title={
+                  !canManage
+                    ? t("Requiere permisos de administrador")
+                    : undefined
+                }
               >
-                <RefreshCw className="h-4 w-4" />
+                {syncProfile.isPending ? (
+                  <Spinner size={16} />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
                 {t("Sincronizar perfil")}
-              </Button>
+              </button>
             </div>
           </div>
 
