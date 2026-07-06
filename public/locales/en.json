@@ -64,6 +64,7 @@
   "Conectado": "Connected",
   "Conectar WhatsApp": "Connect WhatsApp",
   "Conectar número": "Connect number",
+  "Solo se puede conectar un número de WhatsApp por organización.": "Only one WhatsApp number can be connected per organization.",
   "Conectar servidor MCP externo": "Connect external MCP server",
   "Conectá tu número de WhatsApp a": "Connect your WhatsApp number to",
   "Configura los siguientes encabezados HTTP para autenticarte:": "Configure the following HTTP headers for authentication:",

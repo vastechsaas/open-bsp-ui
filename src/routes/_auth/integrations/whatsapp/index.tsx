@@ -5,7 +5,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import { useTranslation } from "@/hooks/useTranslation";
 import { WhatsAppOutlined } from "@ant-design/icons";
-import { Link, Plus } from "lucide-react";
+import {
+  // Link,
+  Plus,
+} from "lucide-react";
 import type { JSX } from "react";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
@@ -20,6 +23,9 @@ function WhatsAppIndex() {
 
   const whatsappIntegrations = integrations?.filter(
     (integration) => integration.service === "whatsapp",
+  );
+  const hasConnectedNumber = whatsappIntegrations?.some(
+    (integration) => integration.status === "connected",
   );
 
   const statusLabels: Record<string, string | JSX.Element> = {
@@ -46,7 +52,12 @@ function WhatsAppIndex() {
                 hash: (prevHash) => prevHash!,
               })
             }
+            disabled={hasConnectedNumber}
+            disabledReason={t(
+              "Solo se puede conectar un número de WhatsApp por organización.",
+            )}
           />
+          {/* Third-party invitations are temporarily hidden.
           <SectionItem
             title={t("Invitaciones a terceros")}
             aside={
@@ -61,6 +72,7 @@ function WhatsAppIndex() {
               })
             }
           />
+          */}
           {whatsappIntegrations?.map((integration) => (
             <SectionItem
               key={integration.address}
