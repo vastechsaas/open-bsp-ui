@@ -32,6 +32,27 @@ export const Route = createFileRoute(
   component: WhatsAppBusinessProfile,
 });
 
+const PROFILE_CATEGORY_VALUES = new Set([
+  "MATRIMONY_SERVICE",
+  "AUTO",
+  "BEAUTY",
+  "APPAREL",
+  "EDU",
+  "ENTERTAIN",
+  "EVENT_PLAN",
+  "FINANCE",
+  "GROCERY",
+  "GOVT",
+  "HOTEL",
+  "HEALTH",
+  "NONPROFIT",
+  "PROF_SERVICES",
+  "RETAIL",
+  "TRAVEL",
+  "RESTAURANT",
+  "OTHER",
+]);
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
@@ -93,7 +114,10 @@ function WhatsAppBusinessProfile() {
   }>();
 
   useEffect(() => {
-    setVertical(cachedProfile?.vertical || "");
+    const syncedVertical = cachedProfile?.vertical || "";
+    setVertical(
+      PROFILE_CATEGORY_VALUES.has(syncedVertical) ? syncedVertical : "",
+    );
     setDescription(cachedProfile?.description || "");
     setAddress(cachedProfile?.address || "");
     setAbout(cachedProfile?.about || "");
