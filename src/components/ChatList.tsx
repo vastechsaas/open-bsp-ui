@@ -5,6 +5,7 @@ import { timestampDescending } from "@/stores/chatSlice";
 import { filters, Filters } from "@/stores/uiSlice";
 import Fuse from "fuse.js";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrentAgent } from "@/queries/useAgents";
 
 export type ConvMetadata = {
   convId: string;
@@ -36,6 +37,7 @@ const ChatList = () => {
   const setFilterName = useBoundStore((state) => state.ui.setFilter);
   const searchPattern = useBoundStore((state) => state.ui.searchPattern);
   const setSearchPattern = useBoundStore((state) => state.ui.setSearchPattern);
+  const currentAgent = useCurrentAgent();
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
     return messages.get(convId)?.values().next().value;
@@ -54,7 +56,9 @@ const ChatList = () => {
     .filter(
       (a) =>
         a.conv.organization_id === activeOrgId &&
-        filters[filterName](a.conv, a.mostRecentMsg) &&
+        filters[filterName](a.conv, a.mostRecentMsg, {
+          currentAgentId: currentAgent.data?.id,
+        }) &&
         !!a.mostRecentMsg,
     );
 
@@ -74,6 +78,26 @@ const ChatList = () => {
 
   const itemIds = items.map((a) => a.convId);
 
+  const emptyLabel = (() => {
+    if (filterName === Filters.MINE && currentAgent.isLoading) {
+      return t("Cargando asignaciones...");
+    }
+
+    if (searchPattern) {
+      return t("Sin resultados");
+    }
+
+    if (filterName === Filters.MINE) {
+      return t("No tienes conversaciones asignadas");
+    }
+
+    if (filterName === Filters.UNASSIGNED) {
+      return t("No hay conversaciones sin asignar");
+    }
+
+    return t("Nada por aquí");
+  })();
+
   return (
     <div className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]">
       {itemIds.length ? (
@@ -84,7 +108,7 @@ const ChatList = () => {
         </div>
       ) : (
         <div className="h-full flex items-center justify-center flex-col text-foreground text-[15px] mt-[-24px]">
-          {t("Nada por aquí")}
+          {emptyLabel}
           {(searchPattern || filterName !== Filters.ALL) && (
             <button
               className="text-[13px] text-primary"

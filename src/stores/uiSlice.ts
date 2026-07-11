@@ -16,6 +16,8 @@ export function isArchived(conv: ConversationRow, msg?: MessageRow) {
 
 export const Filters = {
   ALL: "todas",
+  MINE: "mías",
+  UNASSIGNED: "sin asignar",
   UNREAD: "pendientes",
   H24: "24h",
   ARCHIVED: "archivadas",
@@ -23,10 +25,24 @@ export const Filters = {
 
 export type Filters = (typeof Filters)[keyof typeof Filters];
 
+export type FilterContext = {
+  currentAgentId?: string | null;
+};
+
 export const filters: {
-  [key in Filters]: (conv: ConversationRow, msg?: MessageRow) => boolean;
+  [key in Filters]: (
+    conv: ConversationRow,
+    msg?: MessageRow,
+    context?: FilterContext,
+  ) => boolean;
 } = {
   todas: (conv, msg) => !isArchived(conv, msg),
+  mías: (conv, msg, context) =>
+    !isArchived(conv, msg) &&
+    !!context?.currentAgentId &&
+    conv.assigned_agent_id === context.currentAgentId,
+  "sin asignar": (conv, msg) =>
+    !isArchived(conv, msg) && conv.assigned_agent_id === null,
   pendientes: (conv, msg) =>
     !isArchived(conv, msg) && msg?.direction === "incoming",
   "24h": (conv, msg) =>
