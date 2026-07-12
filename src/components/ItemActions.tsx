@@ -9,6 +9,7 @@ import {
   updateConvExtra,
 } from "@/utils/ConversationUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { getConversationAssignmentAction } from "@/utils/AssignmentUtils";
 
 export default function ItemActions({
   children,
@@ -40,8 +41,10 @@ export default function ItemActions({
   }
 
   const isPinned = conversation.extra?.pinned;
-  const isUnassigned = conversation.assigned_agent_id === null;
-  const isAssignedToMe = conversation.assigned_agent_id === currentAgent.data?.id;
+  const assignmentAction = getConversationAssignmentAction(
+    conversation,
+    currentAgent.data?.id,
+  );
 
   const isPaused =
     +new Date(conversation.extra?.paused || 0) >
@@ -66,7 +69,7 @@ export default function ItemActions({
   };
 
   const assignmentItems: MenuProps["items"] = [
-    ...(isUnassigned && currentAgent.data
+    ...(assignmentAction === "assign-to-me"
       ? [
           {
             label: t("Asignarme"),
@@ -77,7 +80,7 @@ export default function ItemActions({
           },
         ]
       : []),
-    ...(isAssignedToMe
+    ...(assignmentAction === "unassign-from-me"
       ? [
           {
             label: t("Desasignar"),

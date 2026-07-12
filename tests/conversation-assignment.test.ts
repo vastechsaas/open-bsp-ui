@@ -1,0 +1,182 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  getConversationAssigneeName,
+  getConversationAssignmentAction,
+} from "../src/utils/AssignmentUtils.ts";
+import { filters, Filters, isArchived } from "../src/stores/uiSlice.ts";
+import type {
+  AgentRow,
+  ConversationRow,
+  MessageRow,
+} from "../src/supabase/client.ts";
+
+const ORG_ID = "00000000-0000-4000-8000-000000000001";
+const CURRENT_AGENT_ID = "00000000-0000-4000-8000-000000000002";
+const OTHER_AGENT_ID = "00000000-0000-4000-8000-000000000003";
+
+function conversation(
+  overrides: Partial<ConversationRow> = {},
+): ConversationRow {
+  return {
+    assigned_agent_id: null,
+    contact_address: "15551234567",
+    created_at: "2026-07-12T00:00:00.000Z",
+    extra: null,
+    group_address: null,
+    id: "00000000-0000-4000-8000-000000000010",
+    name: "Test Customer",
+    organization_address: "15557654321",
+    organization_id: ORG_ID,
+    service: "whatsapp",
+    status: "active",
+    updated_at: "2026-07-12T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function agent(id: string, name: string): AgentRow {
+  return {
+    ai: false,
+    created_at: "2026-07-12T00:00:00.000Z",
+    extra: { role: "member" },
+    id,
+    name,
+    organization_id: ORG_ID,
+    picture: null,
+    updated_at: "2026-07-12T00:00:00.000Z",
+    user_id: `10000000-0000-4000-8000-${id.slice(-12)}`,
+  };
+}
+
+function message(overrides: Partial<MessageRow> = {}): MessageRow {
+  return {
+    agent_id: null,
+    contact_address: "15551234567",
+    content: {
+      kind: "text",
+      text: "hello",
+      type: "text",
+      version: "1",
+    },
+    conversation_id: "00000000-0000-4000-8000-000000000010",
+    created_at: "2026-07-12T00:00:00.000Z",
+    direction: "incoming",
+    external_id: null,
+    group_address: null,
+    id: "00000000-0000-4000-8000-000000000020",
+    organization_address: "15557654321",
+    organization_id: ORG_ID,
+    service: "whatsapp",
+    status: { pending: "2026-07-12T00:00:00.000Z" },
+    thread_id: null,
+    timestamp: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  } as MessageRow;
+}
+
+void test("assignment actions expose only the delivered base controls", () => {
+  assert.equal(
+    getConversationAssignmentAction(conversation(), CURRENT_AGENT_ID),
+    "assign-to-me",
+  );
+  assert.equal(
+    getConversationAssignmentAction(
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      CURRENT_AGENT_ID,
+    ),
+    "unassign-from-me",
+  );
+  assert.equal(
+    getConversationAssignmentAction(
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      CURRENT_AGENT_ID,
+    ),
+    null,
+  );
+  assert.equal(getConversationAssignmentAction(conversation(), null), null);
+});
+
+void test("assignee display resolves the current assignee name from loaded agents", () => {
+  assert.equal(
+    getConversationAssigneeName(
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      [agent(CURRENT_AGENT_ID, "Goat"), agent(OTHER_AGENT_ID, "Spider")],
+    ),
+    "Goat",
+  );
+  assert.equal(
+    getConversationAssigneeName(conversation({ assigned_agent_id: null }), [
+      agent(CURRENT_AGENT_ID, "Goat"),
+    ]),
+    undefined,
+  );
+  assert.equal(
+    getConversationAssigneeName(
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      [agent(CURRENT_AGENT_ID, "Goat")],
+    ),
+    undefined,
+  );
+});
+
+void test("mine and unassigned filters derive from conversation assignment state", () => {
+  const incoming = message();
+
+  assert.equal(
+    filters[Filters.MINE](
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      incoming,
+      { currentAgentId: CURRENT_AGENT_ID },
+    ),
+    true,
+  );
+  assert.equal(
+    filters[Filters.MINE](
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      incoming,
+      { currentAgentId: CURRENT_AGENT_ID },
+    ),
+    false,
+  );
+  assert.equal(
+    filters[Filters.MINE](
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      incoming,
+      { currentAgentId: null },
+    ),
+    false,
+  );
+  assert.equal(filters[Filters.UNASSIGNED](conversation(), incoming), true);
+  assert.equal(
+    filters[Filters.UNASSIGNED](
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      incoming,
+    ),
+    false,
+  );
+});
+
+void test("existing conversation filters keep their current behavior", () => {
+  const incoming = message();
+  const outgoing = message({
+    direction: "outgoing",
+    status: { sent: "2026-07-12T00:00:00.000Z" },
+  });
+  const oldIncoming = message({
+    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+  });
+  const archived = conversation({
+    extra: { archived: new Date(Date.now() + 1000).toISOString() },
+  });
+
+  assert.equal(filters[Filters.ALL](conversation(), incoming), true);
+  assert.equal(filters[Filters.UNREAD](conversation(), incoming), true);
+  assert.equal(filters[Filters.UNREAD](conversation(), outgoing), false);
+  assert.equal(filters[Filters.H24](conversation(), incoming), true);
+  assert.equal(filters[Filters.H24](conversation(), oldIncoming), false);
+  assert.equal(isArchived(archived, incoming), true);
+  assert.equal(filters[Filters.ARCHIVED](archived, incoming), true);
+  assert.equal(filters[Filters.ALL](archived, incoming), false);
+});

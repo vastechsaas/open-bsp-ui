@@ -8,6 +8,7 @@ import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
 import { useCurrentAgents } from "@/queries/useAgents";
+import { getConversationAssigneeName } from "@/utils/AssignmentUtils";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -54,15 +55,13 @@ export default function Header() {
   const convInitials = nameInitials(convName || "?");
   const { translate: t } = useTranslation();
 
-  const assignee = agents?.find(
-    (agent) => agent.id === conversation?.assigned_agent_id,
-  );
+  const assigneeName = getConversationAssigneeName(conversation, agents);
 
   const subtitleParts = [
     service === "local" && t("Contacto de prueba"),
     service === "whatsapp" && address && formatPhoneNumber(address),
     service === "instagram" && igExtra?.username && `@${igExtra.username}`,
-    assignee?.name && `${t("Asignado a")} ${assignee.name}`,
+    assigneeName && `${t("Asignado a")} ${assigneeName}`,
   ].filter(Boolean);
 
   if (!activeConvId) {
