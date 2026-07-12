@@ -4,6 +4,7 @@ import {
   getConversationAssigneeName,
   getConversationAssignmentAction,
 } from "../src/utils/AssignmentUtils.ts";
+import { toConversationQueueConfig } from "../src/utils/ConversationQueueUtils.ts";
 import {
   conversationQueueFilters,
   filters,
@@ -233,5 +234,49 @@ void test("backend conversation queue keys derive from base conversation state",
   assert.equal(
     conversationQueueFilters.expired(conversation(), [freshIncoming, outgoing]),
     false,
+  );
+});
+
+void test("backend conversation queue config controls visible tab labels and order", () => {
+  const queues = toConversationQueueConfig([
+    {
+      key: "pending",
+      label: "Pending",
+      order: 3,
+      enabled: true,
+    },
+    {
+      key: "mentioned",
+      label: "Mentioned",
+      order: 7,
+      enabled: true,
+    },
+    {
+      key: "all_active",
+      label: "All (active)",
+      order: 1,
+      enabled: true,
+    },
+    {
+      key: "assigned",
+      label: "Assigned",
+      order: 2,
+      enabled: false,
+    },
+    {
+      key: "spam",
+      label: "Spam",
+      order: 4,
+      enabled: true,
+    },
+  ]);
+
+  assert.deepEqual(
+    queues.map((queue) => queue.key),
+    ["all_active", "pending", "spam"],
+  );
+  assert.deepEqual(
+    queues.map((queue) => queue.label),
+    ["All (active)", "Pending", "Spam"],
   );
 });

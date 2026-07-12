@@ -2,10 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { queryKeys } from "./queryKeys";
-import {
-  type ConversationQueueConfig,
-  isConversationQueueKey,
-} from "@/types/conversationQueues";
+import { toConversationQueueConfig } from "@/utils/ConversationQueueUtils";
 
 type RpcError = {
   message: string;
@@ -25,26 +22,6 @@ function getConversationQueuesRpc(args: {
       args: { p_organization_id: string },
     ) => Promise<RpcResult>
   )("get_conversation_queues", args);
-}
-
-function toConversationQueueConfig(value: unknown): ConversationQueueConfig[] {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter((queue): queue is ConversationQueueConfig => {
-      if (!queue || typeof queue !== "object") return false;
-
-      const candidate = queue as Partial<ConversationQueueConfig>;
-
-      return (
-        isConversationQueueKey(candidate.key) &&
-        typeof candidate.label === "string" &&
-        typeof candidate.order === "number" &&
-        typeof candidate.enabled === "boolean"
-      );
-    })
-    .filter((queue) => queue.enabled)
-    .sort((a, b) => a.order - b.order);
 }
 
 export function useConversationQueues() {
