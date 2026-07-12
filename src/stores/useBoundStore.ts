@@ -51,6 +51,7 @@ const useBoundStore = create<AppState>()(
         ui: {
           searchPattern: state.ui.searchPattern,
           filter: state.ui.filter,
+          conversationQueueKey: state.ui.conversationQueueKey,
           activeOrgId: state.ui.activeOrgId,
           language: state.ui.language,
         },
