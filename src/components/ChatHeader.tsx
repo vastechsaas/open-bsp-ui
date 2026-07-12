@@ -7,6 +7,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
+import { useCurrentAgents } from "@/queries/useAgents";
+import { getConversationAssigneeName } from "@/utils/AssignmentUtils";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ export default function Header() {
   const { data: contactAddress } = useContactAddress(
     conversation?.contact_address,
   );
+  const { data: agents } = useCurrentAgents();
 
   const service = conversation?.service;
 
@@ -50,8 +53,16 @@ export default function Header() {
       : "?");
 
   const convInitials = nameInitials(convName || "?");
-
   const { translate: t } = useTranslation();
+
+  const assigneeName = getConversationAssigneeName(conversation, agents);
+
+  const subtitleParts = [
+    service === "local" && t("Contacto de prueba"),
+    service === "whatsapp" && address && formatPhoneNumber(address),
+    service === "instagram" && igExtra?.username && `@${igExtra.username}`,
+    assigneeName && `${t("Asignado a")} ${assigneeName}`,
+  ].filter(Boolean);
 
   if (!activeConvId) {
     return null;
@@ -82,11 +93,7 @@ export default function Header() {
           {displayName}
         </div>
         <div className="text-[13px] text-muted-foreground truncate">
-          {service === "local" && t("Contacto de prueba")}
-          {service === "whatsapp" && address && formatPhoneNumber(address)}
-          {service === "instagram" &&
-            igExtra?.username &&
-            `@${igExtra.username}`}
+          {subtitleParts.join(" · ")}
         </div>
       </div>
 

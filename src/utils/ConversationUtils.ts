@@ -48,6 +48,32 @@ export const updateConvExtra = async (
   }
 };
 
+export async function assignConversationToMe(conversationId: string) {
+  const { data, error } = await supabase.rpc("assign_conversation_to_me", {
+    p_conversation_id: conversationId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  useBoundStore.getState().chat.pushConversations([data as ConversationRow]);
+  return data as ConversationRow;
+}
+
+export async function unassignConversationFromMe(conversationId: string) {
+  const { data, error } = await supabase.rpc("unassign_conversation_from_me", {
+    p_conversation_id: conversationId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  useBoundStore.getState().chat.pushConversations([data as ConversationRow]);
+  return data as ConversationRow;
+}
+
 export async function saveDraft(
   conv: ConversationRow,
   text: string | null,

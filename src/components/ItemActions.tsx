@@ -1,9 +1,15 @@
-import { Dropdown, type MenuProps } from "antd";
+import { Dropdown, message, type MenuProps } from "antd";
 import useBoundStore from "@/stores/useBoundStore";
 import { type MessageRow } from "@/supabase/client";
 import { isArchived } from "@/stores/uiSlice";
 import { useTranslation } from "@/hooks/useTranslation";
-import { updateConvExtra } from "@/utils/ConversationUtils";
+import {
+  assignConversationToMe,
+  unassignConversationFromMe,
+  updateConvExtra,
+} from "@/utils/ConversationUtils";
+import { useCurrentAgent } from "@/queries/useAgents";
+import { getConversationAssignmentAction } from "@/utils/AssignmentUtils";
 
 export default function ItemActions({
   children,
@@ -28,18 +34,68 @@ export default function ItemActions({
   );
 
   const { translate: t } = useTranslation();
+  const currentAgent = useCurrentAgent();
 
   if (!conversation) {
     return children;
   }
 
   const isPinned = conversation.extra?.pinned;
+  const assignmentAction = getConversationAssignmentAction(
+    conversation,
+    currentAgent.data?.id,
+  );
 
   const isPaused =
     +new Date(conversation.extra?.paused || 0) >
     +new Date() - 12 * 60 * 60 * 1000; // Less than 12 hours ago.
 
+  const handleAssignToMe = async () => {
+    try {
+      await assignConversationToMe(conversation.id);
+      void message.success(t("Conversación asignada"));
+    } catch {
+      void message.error(t("No se pudo actualizar la asignación"));
+    }
+  };
+
+  const handleUnassignFromMe = async () => {
+    try {
+      await unassignConversationFromMe(conversation.id);
+      void message.success(t("Conversación desasignada"));
+    } catch {
+      void message.error(t("No se pudo actualizar la asignación"));
+    }
+  };
+
+  const assignmentItems: MenuProps["items"] = [
+    ...(assignmentAction === "assign-to-me"
+      ? [
+          {
+            label: t("Asignarme"),
+            key: "assign-to-me",
+            onClick: () => {
+              void handleAssignToMe();
+            },
+          },
+        ]
+      : []),
+    ...(assignmentAction === "unassign-from-me"
+      ? [
+          {
+            label: t("Desasignar"),
+            key: "unassign-from-me",
+            onClick: () => {
+              void handleUnassignFromMe();
+            },
+          },
+        ]
+      : []),
+  ];
+
   const items: MenuProps["items"] = [
+    ...assignmentItems,
+    ...(assignmentItems.length ? [{ type: "divider" as const }] : []),
     {
       label: isPaused ? t("Reanudar asistente") : t("Pausar asistente"),
       key: "0",
