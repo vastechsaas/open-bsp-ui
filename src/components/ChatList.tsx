@@ -2,10 +2,11 @@ import useBoundStore from "@/stores/useBoundStore";
 import ChatListItem from "./ChatListItem";
 import { type ConversationRow, type MessageRow } from "@/supabase/client";
 import { timestampDescending } from "@/stores/chatSlice";
-import { filters, Filters } from "@/stores/uiSlice";
+import { conversationQueueFilters } from "@/stores/uiSlice";
 import Fuse from "fuse.js";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useConversationQueues } from "@/queries/useConversationQueues";
+import { DEFAULT_CONVERSATION_QUEUE_KEY } from "@/types/conversationQueues";
 
 export type ConvMetadata = {
   convId: string;
@@ -33,15 +34,26 @@ const ChatList = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
-  const filterName = useBoundStore((state) => state.ui.filter);
-  const setFilterName = useBoundStore((state) => state.ui.setFilter);
+  const queueKey = useBoundStore((state) => state.ui.conversationQueueKey);
+  const setConversationQueueKey = useBoundStore(
+    (state) => state.ui.setConversationQueueKey,
+  );
   const searchPattern = useBoundStore((state) => state.ui.searchPattern);
   const setSearchPattern = useBoundStore((state) => state.ui.setSearchPattern);
-  const currentAgent = useCurrentAgent();
+  const { data: queues = [] } = useConversationQueues();
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
     return messages.get(convId)?.values().next().value;
   }
+
+  function getConversationMessages(convId: string): MessageRow[] {
+    return Array.from(messages.get(convId)?.values() || []);
+  }
+
+  const activeQueueKey = conversationQueueFilters[queueKey]
+    ? queueKey
+    : DEFAULT_CONVERSATION_QUEUE_KEY;
+  const activeQueue = queues.find((queue) => queue.key === activeQueueKey);
 
   let items: ConvMetadata[] = [...conversations]
     /*.filter(
@@ -56,9 +68,10 @@ const ChatList = () => {
     .filter(
       (a) =>
         a.conv.organization_id === activeOrgId &&
-        filters[filterName](a.conv, a.mostRecentMsg, {
-          currentAgentId: currentAgent.data?.id,
-        }) &&
+        conversationQueueFilters[activeQueueKey](
+          a.conv,
+          getConversationMessages(a.convId),
+        ) &&
         !!a.mostRecentMsg,
     );
 
@@ -79,20 +92,12 @@ const ChatList = () => {
   const itemIds = items.map((a) => a.convId);
 
   const emptyLabel = (() => {
-    if (filterName === Filters.MINE && currentAgent.isLoading) {
-      return t("Cargando asignaciones...");
-    }
-
     if (searchPattern) {
       return t("Sin resultados");
     }
 
-    if (filterName === Filters.MINE) {
-      return t("No tienes conversaciones asignadas");
-    }
-
-    if (filterName === Filters.UNASSIGNED) {
-      return t("No hay conversaciones sin asignar");
+    if (activeQueue) {
+      return `${t("No hay conversaciones en")} ${activeQueue.label}`;
     }
 
     return t("Nada por aquí");
@@ -109,12 +114,13 @@ const ChatList = () => {
       ) : (
         <div className="h-full flex items-center justify-center flex-col text-foreground text-[15px] mt-[-24px]">
           {emptyLabel}
-          {(searchPattern || filterName !== Filters.ALL) && (
+          {(searchPattern ||
+            activeQueueKey !== DEFAULT_CONVERSATION_QUEUE_KEY) && (
             <button
               className="text-[13px] text-primary"
               onClick={() => {
                 setSearchPattern("");
-                setFilterName(Filters.ALL);
+                setConversationQueueKey(DEFAULT_CONVERSATION_QUEUE_KEY);
               }}
             >
               {t("remover filtros...")}

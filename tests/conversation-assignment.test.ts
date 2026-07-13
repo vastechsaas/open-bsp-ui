@@ -4,7 +4,13 @@ import {
   getConversationAssigneeName,
   getConversationAssignmentAction,
 } from "../src/utils/AssignmentUtils.ts";
-import { filters, Filters, isArchived } from "../src/stores/uiSlice.ts";
+import { toConversationQueueConfig } from "../src/utils/ConversationQueueUtils.ts";
+import {
+  conversationQueueFilters,
+  filters,
+  Filters,
+  isArchived,
+} from "../src/stores/uiSlice.ts";
 import type {
   AgentRow,
   ConversationRow,
@@ -179,4 +185,98 @@ void test("existing conversation filters keep their current behavior", () => {
   assert.equal(isArchived(archived, incoming), true);
   assert.equal(filters[Filters.ARCHIVED](archived, incoming), true);
   assert.equal(filters[Filters.ALL](archived, incoming), false);
+});
+
+void test("backend conversation queue keys derive from base conversation state", () => {
+  const freshIncoming = message({
+    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  });
+  const oldIncoming = message({
+    timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+  });
+  const outgoing = message({
+    direction: "outgoing",
+    status: { sent: "2026-07-12T00:00:00.000Z" },
+    timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+  });
+
+  assert.equal(
+    conversationQueueFilters.all_active(conversation(), [freshIncoming]),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.assigned(
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      [freshIncoming],
+    ),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.pending(conversation(), [freshIncoming]),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.spam(conversation({ status: "spam" }), [
+      freshIncoming,
+    ]),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.closed(conversation({ status: "closed" }), [
+      freshIncoming,
+    ]),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.expired(conversation(), [oldIncoming, outgoing]),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.expired(conversation(), [freshIncoming, outgoing]),
+    false,
+  );
+});
+
+void test("backend conversation queue config controls visible tab labels and order", () => {
+  const queues = toConversationQueueConfig([
+    {
+      key: "pending",
+      label: "Pending",
+      order: 3,
+      enabled: true,
+    },
+    {
+      key: "mentioned",
+      label: "Mentioned",
+      order: 7,
+      enabled: true,
+    },
+    {
+      key: "all_active",
+      label: "All (active)",
+      order: 1,
+      enabled: true,
+    },
+    {
+      key: "assigned",
+      label: "Assigned",
+      order: 2,
+      enabled: false,
+    },
+    {
+      key: "spam",
+      label: "Spam",
+      order: 4,
+      enabled: true,
+    },
+  ]);
+
+  assert.deepEqual(
+    queues.map((queue) => queue.key),
+    ["all_active", "pending", "spam"],
+  );
+  assert.deepEqual(
+    queues.map((queue) => queue.label),
+    ["All (active)", "Pending", "Spam"],
+  );
 });

@@ -52,4 +52,7 @@ export const queryKeys = {
     planProducts: (orgId: NullableId) =>
       [orgId, "billing", "plan_products"] as const,
   },
+  conversationQueues: {
+    config: (orgId: NullableId) => [orgId, "conversation_queues"] as const,
+  },
 };

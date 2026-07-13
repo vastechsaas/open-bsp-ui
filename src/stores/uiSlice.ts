@@ -7,6 +7,10 @@ import type {
   MessageRow,
   TemplateData,
 } from "@/supabase/client";
+import {
+  DEFAULT_CONVERSATION_QUEUE_KEY,
+  type ConversationQueueKey,
+} from "@/types/conversationQueues";
 
 export function isArchived(conv: ConversationRow, msg?: MessageRow) {
   const archivedTimestamp: string | null | undefined = conv.extra?.archived;
@@ -51,6 +55,42 @@ export const filters: {
   archivadas: (conv, msg) => isArchived(conv, msg),
 } as const;
 
+function getLatestIncomingMessage(
+  messages: MessageRow[] | undefined,
+): MessageRow | undefined {
+  return messages
+    ?.filter((message) => message.direction === "incoming")
+    .sort(
+      (a, b) =>
+        +new Date(b.timestamp || 0) - +new Date(a.timestamp || 0) ||
+        (b.id || "").localeCompare(a.id || ""),
+    )[0];
+}
+
+export const conversationQueueFilters: {
+  [key in ConversationQueueKey]: (
+    conv: ConversationRow,
+    messages?: MessageRow[],
+  ) => boolean;
+} = {
+  all_active: (conv) => conv.status === "active",
+  assigned: (conv) =>
+    conv.status === "active" && conv.assigned_agent_id !== null,
+  pending: (conv) =>
+    conv.status === "active" && conv.assigned_agent_id === null,
+  spam: (conv) => conv.status === "spam",
+  closed: (conv) => conv.status === "closed",
+  expired: (conv, messages) => {
+    const latestIncoming = getLatestIncomingMessage(messages);
+
+    return (
+      conv.status === "active" &&
+      !!latestIncoming &&
+      !dayjs(latestIncoming.timestamp).isAfter(dayjs().subtract(24, "hour"))
+    );
+  },
+} as const;
+
 export type TemplateDraft = {
   template: TemplateData;
   bodyVarValues: string[];
@@ -83,6 +123,7 @@ export type UIState = {
   user: User | null;
   sendAsContact: boolean;
   filter: keyof typeof filters;
+  conversationQueueKey: ConversationQueueKey;
   searchPattern: string;
   isLoading: boolean;
   language: Language;
@@ -95,6 +136,7 @@ export type UIActions = {
   setUser: (user: User | null) => void;
   setSendAsContact: (sendAsContact: boolean) => void;
   setFilter: (filter: keyof typeof filters) => void;
+  setConversationQueueKey: (queueKey: ConversationQueueKey) => void;
   setSearchPattern: (searchPattern: string) => void;
   setTemplateDraft: (convId: string, draft: TemplateDraft | null) => void;
   setLanguage: (lang: Language) => void;
@@ -119,6 +161,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   user: null,
   sendAsContact: false,
   filter: "todas" as keyof typeof filters,
+  conversationQueueKey: DEFAULT_CONVERSATION_QUEUE_KEY,
   searchPattern: "",
   isLoading: false,
   language: detectDefaultLanguage(),
@@ -162,6 +205,13 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       ui: {
         ...state.ui,
         filter,
+      },
+    })),
+  setConversationQueueKey: (conversationQueueKey: ConversationQueueKey) =>
+    set((state) => ({
+      ui: {
+        ...state.ui,
+        conversationQueueKey,
       },
     })),
   setSearchPattern: (searchPattern: string) =>
