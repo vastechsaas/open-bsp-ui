@@ -19,6 +19,7 @@ import {
 import { useResizable } from "@/hooks/useResizable";
 // import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
+import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -47,6 +48,7 @@ function AppLayout() {
   const location = useLocation();
   const pathname = location.pathname;
   const isStatsRoute = pathname.startsWith("/stats");
+  const isCampaignWorkspaceRoute = isCampaignWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
 
@@ -70,15 +72,18 @@ function AppLayout() {
   console.log("active org ", activeOrgId);
   console.log("active conv", activeConvId);
 
-  const showCenterPanel = activeConvId || isStatsRoute;
+  const showCenterPanel =
+    activeConvId || isStatsRoute || isCampaignWorkspaceRoute;
 
   return (
     <div
       className="app-grid"
       style={
-        panelWidth !== null
-          ? { gridTemplateColumns: `${getMenuWidth()}px ${panelWidth}px 1fr` }
-          : undefined
+        isCampaignWorkspaceRoute
+          ? { gridTemplateColumns: `${getMenuWidth()}px 1fr` }
+          : panelWidth !== null
+            ? { gridTemplateColumns: `${getMenuWidth()}px ${panelWidth}px 1fr` }
+            : undefined
       }
     >
       {/* Menu - Fixed width */}
@@ -90,10 +95,14 @@ function AppLayout() {
         ref={panelRef}
         className={
           "flex-col overflow-hidden md:border-r border-border bg-background text-foreground col-span-2 md:col-span-1 relative " +
-          (showCenterPanel ? "hidden md:flex" : "flex")
+          (isCampaignWorkspaceRoute
+            ? "hidden"
+            : showCenterPanel
+              ? "hidden md:flex"
+              : "flex")
         }
       >
-        <Outlet />
+        {!isCampaignWorkspaceRoute && <Outlet />}
         {/* Resize Handle */}
         <div className="resize-handle z-[60]" onMouseDown={handleMouseDown} />
       </div>
@@ -102,16 +111,20 @@ function AppLayout() {
       <div
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
-          (isStatsRoute
-            ? " flex bg-muted"
-            : activeConvId
-              ? " flex bg-chat"
-              : " hidden md:flex bg-muted")
+          (isCampaignWorkspaceRoute
+            ? " flex bg-background"
+            : isStatsRoute
+              ? " flex bg-muted"
+              : activeConvId
+                ? " flex bg-chat"
+                : " hidden md:flex bg-muted")
         }
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
       >
-        {isStatsRoute ? (
+        {isCampaignWorkspaceRoute ? (
+          <Outlet />
+        ) : isStatsRoute ? (
           <div className="overflow-y-auto h-full">
             <StatsCenter />
           </div>

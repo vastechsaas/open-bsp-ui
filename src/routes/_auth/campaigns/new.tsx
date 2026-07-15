@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
 import CampaignForm from "@/components/campaigns/CampaignForm";
-import SectionHeader from "@/components/SectionHeader";
+import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useCreateCampaign } from "@/queries/useCampaigns";
@@ -17,27 +17,32 @@ function NewCampaign() {
   const createCampaign = useCreateCampaign();
 
   return (
-    <>
-      <SectionHeader title={t("Nueva campaña")} />
+    <div className="h-full min-h-0 flex flex-col bg-background">
+      <CampaignWorkspaceHeader title={t("Crear campaña")} activeStep={1} />
       <CampaignForm
         createdBy={currentAgent?.id}
+        layout="workspace"
         loading={createCampaign.isPending}
-        submitLabel={t("Guardar borrador")}
-        onSubmit={(input) =>
+        secondarySubmitLabel={t("Guardar borrador")}
+        submitLabel={t("Revisar y continuar")}
+        onSubmit={(input, intent) =>
           createCampaign.mutate(input, {
             onSuccess: (campaign) => {
               void message.success(t("Borrador guardado"));
-              void navigate({
-                to: "/campaigns/$campaignId",
-                params: { campaignId: campaign.id },
-                hash: (previous) => previous!,
-              });
+              if (intent === "review") {
+                void navigate({
+                  to: "/campaigns/$campaignId/review",
+                  params: { campaignId: campaign.id },
+                });
+              } else {
+                void navigate({ to: "/campaigns" });
+              }
             },
             onError: () =>
               void message.error(t("No se pudo guardar el borrador")),
           })
         }
       />
-    </>
+    </div>
   );
 }

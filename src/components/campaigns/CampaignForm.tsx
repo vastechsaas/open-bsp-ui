@@ -26,6 +26,7 @@ import type {
 } from "@/supabase/client";
 import {
   type CampaignCsvRecipient,
+  type CampaignSubmitIntent,
   getTemplateVariables,
   parseCampaignCsv,
 } from "@/utils/CampaignUtils";
@@ -41,9 +42,11 @@ type CampaignFormValues = {
 type CampaignFormProps = {
   campaign?: CampaignRow;
   createdBy?: string;
+  layout?: "panel" | "workspace";
   loading: boolean;
   submitLabel: string;
-  onSubmit: (input: CampaignDraftInput) => void;
+  secondarySubmitLabel?: string;
+  onSubmit: (input: CampaignDraftInput, intent: CampaignSubmitIntent) => void;
 };
 
 const AUDIENCE_OPTIONS: CampaignAudienceType[] = [
@@ -64,11 +67,14 @@ function asRecord(value: Json): Record<string, string> {
 export default function CampaignForm({
   campaign,
   createdBy,
+  layout = "panel",
   loading,
   submitLabel,
+  secondarySubmitLabel,
   onSubmit,
 }: CampaignFormProps) {
   const { translate: t } = useTranslation();
+  const isWorkspace = layout === "workspace";
   const storedTemplate = campaign?.template as TemplateData | undefined;
   const [mapping, setMapping] = useState<Record<string, string>>(() =>
     campaign ? asRecord(campaign.template_variable_mapping) : {},
@@ -80,6 +86,8 @@ export default function CampaignForm({
   const [csvError, setCsvError] = useState<string>();
   const [replaceCsvRecipients, setReplaceCsvRecipients] = useState(false);
   const [externalDirty, setExternalDirty] = useState(false);
+  const [submitIntent, setSubmitIntent] =
+    useState<CampaignSubmitIntent>("save");
 
   const {
     register,
@@ -151,7 +159,6 @@ export default function CampaignForm({
     audienceType === campaign.audience_type &&
     organizationAddress === campaign.organization_address &&
     !replaceCsvRecipients;
-
   const preview = replaceCsvRecipients
     ? csvRecipients.slice(0, 20)
     : audienceMatchesStored
@@ -193,6 +200,12 @@ export default function CampaignForm({
   const csvIsRequired =
     audienceType === "csv_upload" &&
     (!campaign || campaign.audience_type !== "csv_upload");
+  const submitDisabled =
+    (!isDirty && !externalDirty && !!campaign) ||
+    !organizationAddress ||
+    !templateId ||
+    !mappingIsComplete ||
+    (csvIsRequired && !csvRecipients.length);
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
     all_contacts: t("Todos los contactos"),
@@ -231,23 +244,46 @@ export default function CampaignForm({
       return;
     }
 
-    onSubmit({
-      name: values.name.trim(),
-      organization_address: values.organization_address,
-      service: "whatsapp",
-      created_by: campaign?.created_by || createdBy || null,
-      template: selectedTemplate as unknown as Json,
-      template_variable_mapping: mapping,
-      audience_type: values.audience_type,
-      csvRecipients,
-      replaceCsvRecipients,
-    });
+    onSubmit(
+      {
+        name: values.name.trim(),
+        organization_address: values.organization_address,
+        service: "whatsapp",
+        created_by: campaign?.created_by || createdBy || null,
+        template: selectedTemplate as unknown as Json,
+        template_variable_mapping: mapping,
+        audience_type: values.audience_type,
+        csvRecipients,
+        replaceCsvRecipients,
+      },
+      submitIntent,
+    );
   }
 
-  return (
-    <>
-      <SectionBody>
-        <form id="campaign-form" onSubmit={handleSubmit(submit)}>
+  const cardClass = isWorkspace
+    ? "rounded-xl border border-border bg-background p-[16px] md:p-[20px] flex flex-col gap-[16px]"
+    : "flex flex-col gap-[16px]";
+
+  const form = (
+    <form
+      id="campaign-form"
+      onSubmit={handleSubmit(submit)}
+      className={
+        isWorkspace
+          ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-[16px]"
+          : "flex flex-col gap-[16px]"
+      }
+    >
+      <div className="flex flex-col gap-[16px] min-w-0">
+        <section className={cardClass}>
+          {isWorkspace && (
+            <div>
+              <h2 className="font-medium">{t("Detalles de la campaña")}</h2>
+              <p className="text-[12px] text-muted-foreground mt-[3px]">
+                {t("Elegí la cuenta y la plantilla aprobada.")}
+              </p>
+            </div>
+          )}
           <label>
             <div className="label">{t("Nombre de la campaña")}</div>
             <input
@@ -257,61 +293,83 @@ export default function CampaignForm({
             />
             <FieldError error={errors.name} />
           </label>
-
-          <SelectField
-            name="organization_address"
-            control={control}
-            label={t("Cuenta de WhatsApp")}
-            placeholder={t("Seleccionar cuenta")}
-            required
-            options={(addresses || [])
-              .filter(
-                (address) =>
-                  address.service === "whatsapp" &&
-                  address.status === "connected",
-              )
-              .map((address) => ({
-                value: address.address,
-                label: formatPhoneNumber(
-                  (address.extra as WhatsAppOrganizationAddressExtra | null)
-                    ?.phone_number || address.address,
-                ),
+          <div className={isWorkspace ? "grid md:grid-cols-2 gap-[14px]" : ""}>
+            <SelectField
+              name="organization_address"
+              control={control}
+              label={t("Cuenta de WhatsApp")}
+              placeholder={t("Seleccionar cuenta")}
+              required
+              options={(addresses || [])
+                .filter(
+                  (address) =>
+                    address.service === "whatsapp" &&
+                    address.status === "connected",
+                )
+                .map((address) => ({
+                  value: address.address,
+                  label: formatPhoneNumber(
+                    (address.extra as WhatsAppOrganizationAddressExtra | null)
+                      ?.phone_number || address.address,
+                  ),
+                }))}
+              onValueChange={() => {
+                setValue("template_id", "", { shouldDirty: true });
+                setMapping({});
+              }}
+            />
+            <SelectField
+              name="template_id"
+              control={control}
+              label={t("Plantilla aprobada")}
+              placeholder={
+                templatesLoading ? t("Cargando...") : t("Seleccionar plantilla")
+              }
+              required
+              disabled={!organizationAddress || templatesLoading}
+              options={approvedTemplates.map((template) => ({
+                value: template.id,
+                label: `${template.name} · ${template.language}`,
               }))}
-            onValueChange={() => {
-              setValue("template_id", "", { shouldDirty: true });
-              setMapping({});
-            }}
-          />
+              onValueChange={() => setMapping({})}
+            />
+          </div>
+        </section>
 
-          <SelectField
-            name="template_id"
-            control={control}
-            label={t("Plantilla aprobada")}
-            placeholder={
-              templatesLoading ? t("Cargando...") : t("Seleccionar plantilla")
+        <section className={cardClass}>
+          {isWorkspace && (
+            <div>
+              <h2 className="font-medium">{t("Audiencia")}</h2>
+              <p className="text-[12px] text-muted-foreground mt-[3px]">
+                {t("Seleccioná quiénes recibirán esta campaña.")}
+              </p>
+            </div>
+          )}
+          <fieldset
+            className={
+              isWorkspace
+                ? "grid sm:grid-cols-3 gap-[10px]"
+                : "flex flex-col gap-[8px]"
             }
-            required
-            disabled={!organizationAddress || templatesLoading}
-            options={approvedTemplates.map((template) => ({
-              value: template.id,
-              label: `${template.name} · ${template.language}`,
-            }))}
-            onValueChange={() => setMapping({})}
-          />
-
-          <fieldset className="flex flex-col gap-[8px]">
-            <legend className="label">{t("Audiencia")}</legend>
+          >
+            {!isWorkspace && (
+              <legend className="label">{t("Audiencia")}</legend>
+            )}
             {AUDIENCE_OPTIONS.map((option) => (
               <label
                 key={option}
-                className="flex items-center gap-[10px] rounded-xl border border-border p-[12px] cursor-pointer"
+                className={`flex items-center gap-[10px] rounded-xl border p-[12px] cursor-pointer ${
+                  audienceType === option
+                    ? "border-primary bg-primary/5"
+                    : "border-border"
+                }`}
               >
                 <input
                   type="radio"
                   value={option}
                   {...register("audience_type", { required: true })}
                 />
-                <span className="text-[14px]">{audienceLabels[option]}</span>
+                <span className="text-[13px]">{audienceLabels[option]}</span>
               </label>
             ))}
           </fieldset>
@@ -347,19 +405,19 @@ export default function CampaignForm({
               )}
             </label>
           )}
+        </section>
 
-          {templateVariables.length > 0 && (
-            <div className="flex flex-col gap-[12px]">
-              <div>
-                <div className="text-[14px] font-medium">
-                  {t("Mapeo de variables")}
-                </div>
-                <p>
-                  {t(
-                    "Elegí el dato que completa cada variable de la plantilla.",
-                  )}
-                </p>
-              </div>
+        {templateVariables.length > 0 && (
+          <section className={cardClass}>
+            <div>
+              <h2 className="font-medium">{t("Mapeo de variables")}</h2>
+              <p className="text-[12px] text-muted-foreground mt-[3px]">
+                {t("Elegí el dato que completa cada variable de la plantilla.")}
+              </p>
+            </div>
+            <div
+              className={isWorkspace ? "grid md:grid-cols-2 gap-[12px]" : ""}
+            >
               {templateVariables.map((variable) => (
                 <label key={variable.key}>
                   <div className="label">
@@ -388,67 +446,98 @@ export default function CampaignForm({
                 </label>
               ))}
             </div>
-          )}
+          </section>
+        )}
+      </div>
 
-          <div className="rounded-xl bg-muted p-[14px]">
-            <div className="flex items-center gap-[8px] font-medium text-[14px]">
-              <Users className="w-[18px] h-[18px]" />
-              {t("Resumen de audiencia")}
-            </div>
-            <div className="text-[24px] mt-[8px]">{audienceCount ?? "—"}</div>
-            <div className="text-[12px] text-muted-foreground">
-              {audienceCount === undefined
-                ? t("Guardá el borrador para calcular esta audiencia")
-                : t("destinatarios")}
-            </div>
-            {preview.length > 0 && (
-              <div className="mt-[12px] border-t border-border pt-[8px]">
-                {preview.slice(0, 5).map((recipient) => (
-                  <div
-                    key={recipient.contact_address}
-                    className="flex justify-between gap-[8px] py-[4px] text-[12px]"
-                  >
-                    <span className="truncate">
-                      {recipient.name || t("Sin nombre")}
-                    </span>
-                    <span className="text-muted-foreground shrink-0">
-                      {recipient.contact_address}
-                    </span>
-                  </div>
-                ))}
-                {preview.length > 5 && (
-                  <div className="text-[12px] text-muted-foreground mt-[4px]">
-                    +{preview.length - 5} {t("más en la vista previa")}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {selectedTemplate && (
-            <div className="rounded-xl border border-border py-[12px] overflow-hidden">
-              <div className="px-[14px] text-[14px] font-medium mb-[8px]">
-                {t("Vista previa de la plantilla")}
-              </div>
+      <aside className="flex flex-col gap-[16px] min-w-0">
+        {selectedTemplate && (
+          <section className={`${cardClass} overflow-hidden`}>
+            <h2 className="font-medium">{t("Vista previa de la plantilla")}</h2>
+            <div className="rounded-xl bg-chat py-[16px] min-h-[220px]">
               <TemplatePreview template={selectedTemplate} editMode />
             </div>
-          )}
-        </form>
-      </SectionBody>
+          </section>
+        )}
 
-      <SectionFooter>
+        <section
+          className={isWorkspace ? cardClass : "rounded-xl bg-muted p-[14px]"}
+        >
+          <div className="flex items-center gap-[8px] font-medium text-[14px]">
+            <Users className="w-[18px] h-[18px]" />
+            {t("Resumen de audiencia")}
+          </div>
+          <div className="text-[28px] mt-[4px]">
+            {audienceCount === undefined ? "—" : audienceCount.toLocaleString()}
+          </div>
+          <div className="text-[12px] text-muted-foreground">
+            {audienceCount === undefined
+              ? t("Guardá el borrador para calcular esta audiencia")
+              : t("destinatarios")}
+          </div>
+          {preview.length > 0 && (
+            <div className="mt-[12px] border-t border-border pt-[8px]">
+              {preview.slice(0, 5).map((recipient) => (
+                <div
+                  key={recipient.contact_address}
+                  className="flex justify-between gap-[8px] py-[4px] text-[12px]"
+                >
+                  <span className="truncate">
+                    {recipient.name || t("Sin nombre")}
+                  </span>
+                  <span className="text-muted-foreground shrink-0">
+                    {recipient.contact_address}
+                  </span>
+                </div>
+              ))}
+              {preview.length > 5 && (
+                <div className="text-[12px] text-muted-foreground mt-[4px]">
+                  +{preview.length - 5} {t("más en la vista previa")}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </aside>
+    </form>
+  );
+
+  return (
+    <>
+      {isWorkspace ? (
+        <div className="flex-1 min-h-0 overflow-y-auto p-[16px] md:p-[24px] bg-muted/30">
+          <div className="max-w-[1400px] mx-auto">{form}</div>
+        </div>
+      ) : (
+        <SectionBody>{form}</SectionBody>
+      )}
+
+      <SectionFooter
+        className={
+          isWorkspace
+            ? "border-t border-border bg-background md:flex-row md:justify-end md:gap-[10px] px-[16px] md:px-[32px] py-[14px]"
+            : undefined
+        }
+      >
+        {isWorkspace && secondarySubmitLabel && (
+          <Button
+            form="campaign-form"
+            type="submit"
+            className="px-[24px] py-[10px] border border-border rounded-lg"
+            loading={loading && submitIntent === "save"}
+            invalid={submitDisabled}
+            onClick={() => setSubmitIntent("save")}
+          >
+            {secondarySubmitLabel}
+          </Button>
+        )}
         <Button
           form="campaign-form"
           type="submit"
-          className="primary"
-          loading={loading}
-          invalid={
-            (!isDirty && !externalDirty && !!campaign) ||
-            !organizationAddress ||
-            !templateId ||
-            !mappingIsComplete ||
-            (csvIsRequired && !csvRecipients.length)
-          }
+          className={isWorkspace ? "primary px-[28px] py-[10px]" : "primary"}
+          loading={loading && (!isWorkspace || submitIntent === "review")}
+          invalid={submitDisabled}
+          onClick={() => setSubmitIntent(isWorkspace ? "review" : "save")}
         >
           {submitLabel}
         </Button>
