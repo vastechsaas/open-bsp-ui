@@ -17,7 +17,7 @@ function NewCampaign() {
   const createCampaign = useCreateCampaign();
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-background">
+    <div className="h-full min-h-0 flex flex-col bg-background text-foreground">
       <CampaignWorkspaceHeader title={t("Crear campaña")} activeStep={1} />
       <CampaignForm
         createdBy={currentAgent?.id}

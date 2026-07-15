@@ -13,7 +13,7 @@ export default function CampaignWorkspaceHeader({
   const navigate = useNavigate();
 
   return (
-    <header className="border-b border-border px-[20px] md:px-[32px] py-[18px] bg-background shrink-0">
+    <header className="border-b border-border px-[20px] md:px-[32px] py-[18px] bg-background text-foreground shrink-0">
       <div className="flex items-center gap-[12px]">
         <button
           className="p-[8px] ml-[-8px] rounded-full hover:bg-muted"

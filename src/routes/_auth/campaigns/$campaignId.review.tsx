@@ -75,7 +75,7 @@ function ReviewCampaign() {
   const ready = readiness === "ready";
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-background">
+    <div className="h-full min-h-0 flex flex-col bg-background text-foreground">
       <CampaignWorkspaceHeader title={t("Revisar campaña")} activeStep={2} />
 
       <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30 p-[16px] md:p-[24px]">

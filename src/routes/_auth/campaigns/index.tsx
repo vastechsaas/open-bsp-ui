@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -109,7 +110,7 @@ function CampaignList() {
   );
 
   return (
-    <div className="h-full min-w-0 overflow-y-auto bg-background p-[16px] md:p-[28px]">
+    <div className="h-full min-w-0 overflow-y-auto bg-background text-foreground p-[16px] md:p-[28px]">
       <div className="mx-auto max-w-[1500px]">
         <div className="flex flex-col sm:flex-row sm:items-center gap-[16px] mb-[22px]">
           <div>
@@ -134,37 +135,39 @@ function CampaignList() {
             <label className="flex items-center gap-[9px] rounded-lg border border-input px-[12px] h-[40px] lg:max-w-[360px] lg:flex-1">
               <Search className="w-[16px] h-[16px] text-muted-foreground" />
               <input
-                className="bg-transparent border-none outline-none w-full text-[14px]"
+                className="bg-transparent border-none outline-none w-full text-[14px] text-foreground placeholder:text-muted-foreground"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t("Buscar campañas")}
               />
             </label>
-            <select
-              className="lg:w-[220px] h-[40px]"
+            <CampaignFilterSelect
+              ariaLabel={t("Todas las audiencias")}
+              className="lg:w-[220px]"
               value={audienceFilter}
-              onChange={(event) =>
-                setAudienceFilter(event.target.value as AudienceFilter)
-              }
-            >
-              <option value="all">{t("Todas las audiencias")}</option>
-              {Object.entries(audienceLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="lg:w-[200px] h-[40px]"
+              onChange={setAudienceFilter}
+              options={[
+                { value: "all", label: t("Todas las audiencias") },
+                ...Object.entries(audienceLabels).map(([value, label]) => ({
+                  value: value as CampaignAudienceType,
+                  label,
+                })),
+              ]}
+            />
+            <CampaignFilterSelect
+              ariaLabel={t("Todos los estados")}
+              className="lg:w-[200px]"
               value={readinessFilter}
-              onChange={(event) =>
-                setReadinessFilter(event.target.value as ReadinessFilter)
-              }
-            >
-              <option value="all">{t("Todos los estados")}</option>
-              <option value="ready">{t("Listas para revisar")}</option>
-              <option value="needs_attention">{t("Requieren atención")}</option>
-            </select>
+              onChange={setReadinessFilter}
+              options={[
+                { value: "all", label: t("Todos los estados") },
+                { value: "ready", label: t("Listas para revisar") },
+                {
+                  value: "needs_attention",
+                  label: t("Requieren atención"),
+                },
+              ]}
+            />
           </div>
 
           {isLoading ? (
