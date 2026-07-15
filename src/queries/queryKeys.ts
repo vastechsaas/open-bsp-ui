@@ -55,4 +55,11 @@ export const queryKeys = {
   conversationQueues: {
     config: (orgId: NullableId) => [orgId, "conversation_queues"] as const,
   },
+  campaigns: {
+    all: (orgId: NullableId) => [orgId, "campaigns"] as const,
+    detail: (orgId: NullableId, id: NullableId) =>
+      [orgId, "campaigns", id] as const,
+    audience: (orgId: NullableId, id: NullableId) =>
+      [orgId, "campaigns", id, "audience"] as const,
+  },
 };

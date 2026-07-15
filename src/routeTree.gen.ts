@@ -24,6 +24,7 @@ import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings/i
 import { Route as AuthIntegrationsIndexRouteImport } from './routes/_auth/integrations/index'
 import { Route as AuthConversationsIndexRouteImport } from './routes/_auth/conversations/index'
 import { Route as AuthContactsIndexRouteImport } from './routes/_auth/contacts/index'
+import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns/index'
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
 import { Route as OnboardInstagramCallbackRouteImport } from './routes/onboard.instagram.callback'
@@ -34,6 +35,8 @@ import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes
 import { Route as AuthConversationsNewRouteImport } from './routes/_auth/conversations/new'
 import { Route as AuthContactsNewRouteImport } from './routes/_auth/contacts/new'
 import { Route as AuthContactsContactIdRouteImport } from './routes/_auth/contacts/$contactId'
+import { Route as AuthCampaignsNewRouteImport } from './routes/_auth/campaigns/new'
+import { Route as AuthCampaignsCampaignIdRouteImport } from './routes/_auth/campaigns/$campaignId'
 import { Route as AuthAgentsNewRouteImport } from './routes/_auth/agents/new'
 import { Route as AuthAgentsAgentIdRouteImport } from './routes/_auth/agents/$agentId'
 import { Route as AuthSettingsWebhooksIndexRouteImport } from './routes/_auth/settings/webhooks/index'
@@ -138,6 +141,11 @@ const AuthContactsIndexRoute = AuthContactsIndexRouteImport.update({
   path: '/contacts/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthCampaignsIndexRoute = AuthCampaignsIndexRouteImport.update({
+  id: '/campaigns/',
+  path: '/campaigns/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthAgentsIndexRoute = AuthAgentsIndexRouteImport.update({
   id: '/agents/',
   path: '/agents/',
@@ -188,6 +196,16 @@ const AuthContactsNewRoute = AuthContactsNewRouteImport.update({
 const AuthContactsContactIdRoute = AuthContactsContactIdRouteImport.update({
   id: '/contacts/$contactId',
   path: '/contacts/$contactId',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCampaignsNewRoute = AuthCampaignsNewRouteImport.update({
+  id: '/campaigns/new',
+  path: '/campaigns/new',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCampaignsCampaignIdRoute = AuthCampaignsCampaignIdRouteImport.update({
+  id: '/campaigns/$campaignId',
+  path: '/campaigns/$campaignId',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthAgentsNewRoute = AuthAgentsNewRouteImport.update({
@@ -372,6 +390,8 @@ export interface FileRoutesByFullPath {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
+  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/campaigns/new': typeof AuthCampaignsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
@@ -382,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/agents': typeof AuthAgentsIndexRoute
+  '/campaigns': typeof AuthCampaignsIndexRoute
   '/contacts': typeof AuthContactsIndexRoute
   '/conversations': typeof AuthConversationsIndexRoute
   '/integrations': typeof AuthIntegrationsIndexRoute
@@ -426,6 +447,8 @@ export interface FileRoutesByTo {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
+  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/campaigns/new': typeof AuthCampaignsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
@@ -436,6 +459,7 @@ export interface FileRoutesByTo {
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/agents': typeof AuthAgentsIndexRoute
+  '/campaigns': typeof AuthCampaignsIndexRoute
   '/contacts': typeof AuthContactsIndexRoute
   '/conversations': typeof AuthConversationsIndexRoute
   '/integrations': typeof AuthIntegrationsIndexRoute
@@ -483,6 +507,8 @@ export interface FileRoutesById {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
+  '/_auth/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/_auth/campaigns/new': typeof AuthCampaignsNewRoute
   '/_auth/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/_auth/contacts/new': typeof AuthContactsNewRoute
   '/_auth/conversations/new': typeof AuthConversationsNewRoute
@@ -493,6 +519,7 @@ export interface FileRoutesById {
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
+  '/_auth/campaigns/': typeof AuthCampaignsIndexRoute
   '/_auth/contacts/': typeof AuthContactsIndexRoute
   '/_auth/conversations/': typeof AuthConversationsIndexRoute
   '/_auth/integrations/': typeof AuthIntegrationsIndexRoute
@@ -540,6 +567,8 @@ export interface FileRouteTypes {
     | '/oauth/instagram'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/campaigns/$campaignId'
+    | '/campaigns/new'
     | '/contacts/$contactId'
     | '/contacts/new'
     | '/conversations/new'
@@ -550,6 +579,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
     | '/agents'
+    | '/campaigns'
     | '/contacts'
     | '/conversations'
     | '/integrations'
@@ -594,6 +624,8 @@ export interface FileRouteTypes {
     | '/oauth/instagram'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/campaigns/$campaignId'
+    | '/campaigns/new'
     | '/contacts/$contactId'
     | '/contacts/new'
     | '/conversations/new'
@@ -604,6 +636,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
     | '/agents'
+    | '/campaigns'
     | '/contacts'
     | '/conversations'
     | '/integrations'
@@ -650,6 +683,8 @@ export interface FileRouteTypes {
     | '/oauth/instagram'
     | '/_auth/agents/$agentId'
     | '/_auth/agents/new'
+    | '/_auth/campaigns/$campaignId'
+    | '/_auth/campaigns/new'
     | '/_auth/contacts/$contactId'
     | '/_auth/contacts/new'
     | '/_auth/conversations/new'
@@ -660,6 +695,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
     | '/_auth/agents/'
+    | '/_auth/campaigns/'
     | '/_auth/contacts/'
     | '/_auth/conversations/'
     | '/_auth/integrations/'
@@ -816,6 +852,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthContactsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/campaigns/': {
+      id: '/_auth/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof AuthCampaignsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/agents/': {
       id: '/_auth/agents/'
       path: '/agents'
@@ -884,6 +927,20 @@ declare module '@tanstack/react-router' {
       path: '/contacts/$contactId'
       fullPath: '/contacts/$contactId'
       preLoaderRoute: typeof AuthContactsContactIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/campaigns/new': {
+      id: '/_auth/campaigns/new'
+      path: '/campaigns/new'
+      fullPath: '/campaigns/new'
+      preLoaderRoute: typeof AuthCampaignsNewRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/campaigns/$campaignId': {
+      id: '/_auth/campaigns/$campaignId'
+      path: '/campaigns/$campaignId'
+      fullPath: '/campaigns/$campaignId'
+      preLoaderRoute: typeof AuthCampaignsCampaignIdRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/agents/new': {
@@ -1112,11 +1169,14 @@ interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
+  AuthCampaignsCampaignIdRoute: typeof AuthCampaignsCampaignIdRoute
+  AuthCampaignsNewRoute: typeof AuthCampaignsNewRoute
   AuthContactsContactIdRoute: typeof AuthContactsContactIdRoute
   AuthContactsNewRoute: typeof AuthContactsNewRoute
   AuthConversationsNewRoute: typeof AuthConversationsNewRoute
   AuthIntegrationsMediaPreprocessingRoute: typeof AuthIntegrationsMediaPreprocessingRoute
   AuthAgentsIndexRoute: typeof AuthAgentsIndexRoute
+  AuthCampaignsIndexRoute: typeof AuthCampaignsIndexRoute
   AuthContactsIndexRoute: typeof AuthContactsIndexRoute
   AuthConversationsIndexRoute: typeof AuthConversationsIndexRoute
   AuthIntegrationsIndexRoute: typeof AuthIntegrationsIndexRoute
@@ -1154,12 +1214,15 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthStatsRoute: AuthStatsRouteWithChildren,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
   AuthAgentsNewRoute: AuthAgentsNewRoute,
+  AuthCampaignsCampaignIdRoute: AuthCampaignsCampaignIdRoute,
+  AuthCampaignsNewRoute: AuthCampaignsNewRoute,
   AuthContactsContactIdRoute: AuthContactsContactIdRoute,
   AuthContactsNewRoute: AuthContactsNewRoute,
   AuthConversationsNewRoute: AuthConversationsNewRoute,
   AuthIntegrationsMediaPreprocessingRoute:
     AuthIntegrationsMediaPreprocessingRoute,
   AuthAgentsIndexRoute: AuthAgentsIndexRoute,
+  AuthCampaignsIndexRoute: AuthCampaignsIndexRoute,
   AuthContactsIndexRoute: AuthContactsIndexRoute,
   AuthConversationsIndexRoute: AuthConversationsIndexRoute,
   AuthIntegrationsIndexRoute: AuthIntegrationsIndexRoute,
