@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { TemplateData } from "../src/supabase/client.ts";
 import {
+  getCampaignReadiness,
   getTemplateVariables,
+  isCampaignWorkspacePath,
   parseCampaignCsv,
 } from "../src/utils/CampaignUtils.ts";
 
@@ -70,4 +72,53 @@ void test("template variables preserve header and body positions", () => {
     { key: "body.1", section: "body", index: 1 },
     { key: "body.2", section: "body", index: 2 },
   ]);
+});
+
+void test("campaign readiness requires valid mappings and recipients", () => {
+  const template: TemplateData = {
+    id: "template-1",
+    name: "campaign_offer",
+    status: "APPROVED",
+    category: "MARKETING",
+    language: "en_US",
+    sub_category: "CUSTOM",
+    components: [{ type: "BODY", text: "Hello {{1}}" }],
+  };
+
+  assert.equal(
+    getCampaignReadiness({
+      template,
+      mapping: { "body.1": "contact.name" },
+      audienceCount: 10,
+    }),
+    "ready",
+  );
+  assert.equal(
+    getCampaignReadiness({ template, mapping: {}, audienceCount: 10 }),
+    "needs_attention",
+  );
+  assert.equal(
+    getCampaignReadiness({
+      template,
+      mapping: { "body.1": "contact.name" },
+      audienceCount: 0,
+    }),
+    "needs_attention",
+  );
+  assert.equal(
+    getCampaignReadiness({
+      template,
+      mapping: { "body.1": "contact.name" },
+      audienceCount: null,
+      audienceUnavailable: true,
+    }),
+    "unavailable",
+  );
+});
+
+void test("only listing, create, and review use the campaign workspace", () => {
+  assert.equal(isCampaignWorkspacePath("/campaigns"), true);
+  assert.equal(isCampaignWorkspacePath("/campaigns/new"), true);
+  assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1/review"), true);
+  assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1"), false);
 });

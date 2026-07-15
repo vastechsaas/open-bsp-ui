@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { type Database, type Json, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import type { CampaignCsvRecipient } from "@/utils/CampaignUtils";
@@ -96,6 +101,25 @@ export function useCampaignAudienceCount(id: string | undefined) {
         .throwOnError(),
     enabled: !!orgId && !!id,
     select: (result) => result.data,
+  });
+}
+
+export function useCampaignAudienceCounts(ids: string[]) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: [...queryKeys.campaigns.audience(orgId, id), "count"],
+      queryFn: async () =>
+        await supabase
+          .rpc("get_campaign_audience_count", {
+            p_organization_id: orgId!,
+            p_campaign_id: id,
+          })
+          .throwOnError(),
+      enabled: !!orgId,
+      select: (result: { data: number | null }) => result.data,
+    })),
   });
 }
 

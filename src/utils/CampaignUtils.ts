@@ -17,6 +17,57 @@ export type TemplateVariable = {
   index: number;
 };
 
+export type CampaignSubmitIntent = "save" | "review";
+export type CampaignReadiness =
+  | "loading"
+  | "ready"
+  | "needs_attention"
+  | "unavailable";
+
+export function isCampaignWorkspacePath(pathname: string) {
+  const normalizedPath = pathname.replace(/\/$/, "") || "/";
+  return (
+    normalizedPath === "/campaigns" ||
+    normalizedPath === "/campaigns/new" ||
+    /^\/campaigns\/[^/]+\/review$/.test(normalizedPath)
+  );
+}
+
+export function isTemplateMappingComplete(
+  template: TemplateData | null | undefined,
+  mapping: Record<string, unknown>,
+) {
+  return getTemplateVariables(template).every((variable) => {
+    const value = mapping[variable.key];
+    return typeof value === "string" && value.length > 0;
+  });
+}
+
+export function getCampaignReadiness({
+  template,
+  mapping,
+  audienceCount,
+  audienceUnavailable = false,
+}: {
+  template: TemplateData | null | undefined;
+  mapping: Record<string, unknown>;
+  audienceCount: number | null | undefined;
+  audienceUnavailable?: boolean;
+}): CampaignReadiness {
+  if (audienceUnavailable) return "unavailable";
+  if (audienceCount === undefined) return "loading";
+  if (
+    !template ||
+    template.status !== "APPROVED" ||
+    !isTemplateMappingComplete(template, mapping) ||
+    audienceCount === null ||
+    audienceCount <= 0
+  ) {
+    return "needs_attention";
+  }
+  return "ready";
+}
+
 function parseCsvRows(input: string) {
   const rows: string[][] = [];
   let row: string[] = [];

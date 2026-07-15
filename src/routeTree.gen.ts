@@ -54,6 +54,7 @@ import { Route as AuthSettingsApiKeysNewRouteImport } from './routes/_auth/setti
 import { Route as AuthSettingsApiKeysApiKeyIdRouteImport } from './routes/_auth/settings/api-keys/$apiKeyId'
 import { Route as AuthIntegrationsWhatsappNewRouteImport } from './routes/_auth/integrations/whatsapp/new'
 import { Route as AuthIntegrationsInstagramNewRouteImport } from './routes/_auth/integrations/instagram/new'
+import { Route as AuthCampaignsCampaignIdReviewRouteImport } from './routes/_auth/campaigns/$campaignId.review'
 import { Route as AuthIntegrationsWhatsappOnboardingIndexRouteImport } from './routes/_auth/integrations/whatsapp/onboarding/index'
 import { Route as AuthIntegrationsWhatsappOrgAddressIdIndexRouteImport } from './routes/_auth/integrations/whatsapp/$orgAddressId/index'
 import { Route as AuthIntegrationsInstagramOnboardingIndexRouteImport } from './routes/_auth/integrations/instagram/onboarding/index'
@@ -305,6 +306,12 @@ const AuthIntegrationsInstagramNewRoute =
     path: '/integrations/instagram/new',
     getParentRoute: () => AuthRoute,
   } as any)
+const AuthCampaignsCampaignIdReviewRoute =
+  AuthCampaignsCampaignIdReviewRouteImport.update({
+    id: '/review',
+    path: '/review',
+    getParentRoute: () => AuthCampaignsCampaignIdRoute,
+  } as any)
 const AuthIntegrationsWhatsappOnboardingIndexRoute =
   AuthIntegrationsWhatsappOnboardingIndexRouteImport.update({
     id: '/integrations/whatsapp/onboarding/',
@@ -390,7 +397,7 @@ export interface FileRoutesByFullPath {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
-  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/campaigns/new': typeof AuthCampaignsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
@@ -408,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats/': typeof AuthStatsIndexRoute
+  '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
   '/settings/api-keys/$apiKeyId': typeof AuthSettingsApiKeysApiKeyIdRoute
@@ -447,7 +455,7 @@ export interface FileRoutesByTo {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
-  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/campaigns/new': typeof AuthCampaignsNewRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
@@ -465,6 +473,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats': typeof AuthStatsIndexRoute
+  '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
   '/settings/api-keys/$apiKeyId': typeof AuthSettingsApiKeysApiKeyIdRoute
@@ -507,7 +516,7 @@ export interface FileRoutesById {
   '/oauth/instagram': typeof OauthInstagramRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
-  '/_auth/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
+  '/_auth/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/_auth/campaigns/new': typeof AuthCampaignsNewRoute
   '/_auth/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/_auth/contacts/new': typeof AuthContactsNewRoute
@@ -525,6 +534,7 @@ export interface FileRoutesById {
   '/_auth/integrations/': typeof AuthIntegrationsIndexRoute
   '/_auth/settings/': typeof AuthSettingsIndexRoute
   '/_auth/stats/': typeof AuthStatsIndexRoute
+  '/_auth/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/_auth/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/_auth/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
   '/_auth/settings/api-keys/$apiKeyId': typeof AuthSettingsApiKeysApiKeyIdRoute
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats/'
+    | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
     | '/integrations/whatsapp/new'
     | '/settings/api-keys/$apiKeyId'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats'
+    | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
     | '/integrations/whatsapp/new'
     | '/settings/api-keys/$apiKeyId'
@@ -701,6 +713,7 @@ export interface FileRouteTypes {
     | '/_auth/integrations/'
     | '/_auth/settings/'
     | '/_auth/stats/'
+    | '/_auth/campaigns/$campaignId/review'
     | '/_auth/integrations/instagram/new'
     | '/_auth/integrations/whatsapp/new'
     | '/_auth/settings/api-keys/$apiKeyId'
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIntegrationsInstagramNewRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/campaigns/$campaignId/review': {
+      id: '/_auth/campaigns/$campaignId/review'
+      path: '/review'
+      fullPath: '/campaigns/$campaignId/review'
+      preLoaderRoute: typeof AuthCampaignsCampaignIdReviewRouteImport
+      parentRoute: typeof AuthCampaignsCampaignIdRoute
+    }
     '/_auth/integrations/whatsapp/onboarding/': {
       id: '/_auth/integrations/whatsapp/onboarding/'
       path: '/integrations/whatsapp/onboarding'
@@ -1165,11 +1185,25 @@ const AuthStatsRouteWithChildren = AuthStatsRoute._addFileChildren(
   AuthStatsRouteChildren,
 )
 
+interface AuthCampaignsCampaignIdRouteChildren {
+  AuthCampaignsCampaignIdReviewRoute: typeof AuthCampaignsCampaignIdReviewRoute
+}
+
+const AuthCampaignsCampaignIdRouteChildren: AuthCampaignsCampaignIdRouteChildren =
+  {
+    AuthCampaignsCampaignIdReviewRoute: AuthCampaignsCampaignIdReviewRoute,
+  }
+
+const AuthCampaignsCampaignIdRouteWithChildren =
+  AuthCampaignsCampaignIdRoute._addFileChildren(
+    AuthCampaignsCampaignIdRouteChildren,
+  )
+
 interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
-  AuthCampaignsCampaignIdRoute: typeof AuthCampaignsCampaignIdRoute
+  AuthCampaignsCampaignIdRoute: typeof AuthCampaignsCampaignIdRouteWithChildren
   AuthCampaignsNewRoute: typeof AuthCampaignsNewRoute
   AuthContactsContactIdRoute: typeof AuthContactsContactIdRoute
   AuthContactsNewRoute: typeof AuthContactsNewRoute
@@ -1214,7 +1248,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthStatsRoute: AuthStatsRouteWithChildren,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
   AuthAgentsNewRoute: AuthAgentsNewRoute,
-  AuthCampaignsCampaignIdRoute: AuthCampaignsCampaignIdRoute,
+  AuthCampaignsCampaignIdRoute: AuthCampaignsCampaignIdRouteWithChildren,
   AuthCampaignsNewRoute: AuthCampaignsNewRoute,
   AuthContactsContactIdRoute: AuthContactsContactIdRoute,
   AuthContactsNewRoute: AuthContactsNewRoute,
