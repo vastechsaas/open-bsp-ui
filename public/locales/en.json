@@ -515,5 +515,6 @@
   "Vista previa de destinatarios": "Recipient preview",
   "Volver a campañas": "Back to campaigns",
   "Volver a configuración": "Back to setup",
+  "No se pudieron cargar las plantillas aprobadas. Vuelve a conectar la cuenta de WhatsApp e intenta de nuevo.": "Approved templates could not be loaded. Reconnect the WhatsApp account and try again.",
   "campañas": "campaigns"
 }
