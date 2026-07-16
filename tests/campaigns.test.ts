@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { TemplateData } from "../src/supabase/client.ts";
 import {
+  canStartCampaign,
   getCampaignReadiness,
   getTemplateVariables,
   isCampaignWorkspacePath,
+  isCampaignProcessing,
   parseCampaignCsv,
 } from "../src/utils/CampaignUtils.ts";
 
@@ -121,4 +123,18 @@ void test("only listing, create, and review use the campaign workspace", () => {
   assert.equal(isCampaignWorkspacePath("/campaigns/new"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1/review"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1"), false);
+});
+
+void test("campaign execution is allowed only for a ready draft", () => {
+  assert.equal(canStartCampaign("draft", "ready"), true);
+  assert.equal(canStartCampaign("draft", "needs_attention"), false);
+  assert.equal(canStartCampaign("queued", "ready"), false);
+  assert.equal(canStartCampaign("completed", "ready"), false);
+});
+
+void test("queued and running campaigns are treated as processing", () => {
+  assert.equal(isCampaignProcessing("queued"), true);
+  assert.equal(isCampaignProcessing("running"), true);
+  assert.equal(isCampaignProcessing("draft"), false);
+  assert.equal(isCampaignProcessing("completed"), false);
 });

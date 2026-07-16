@@ -702,15 +702,72 @@ export type Database = {
           },
         ]
       }
+      campaign_deliveries: {
+        Row: {
+          attempts: number
+          campaign_id: string
+          contact_address: string
+          created_at: string
+          error: Json | null
+          external_id: string | null
+          id: string
+          name: string | null
+          organization_id: string
+          status: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          attempts?: number
+          campaign_id: string
+          contact_address: string
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          name?: string | null
+          organization_id: string
+          status?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string
+          contact_address?: string
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          name?: string | null
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_deliveries_campaign_fkey"
+            columns: ["organization_id", "campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
+          accepted_count: number
           audience_type: Database["public"]["Enums"]["campaign_audience_type"]
           created_at: string
           created_by: string | null
+          failed_count: number
           id: string
           name: string
           organization_address: string
           organization_id: string
+          processing_count: number
+          queued_count: number
           service: Database["public"]["Enums"]["service"]
           status: string
           template: Json
@@ -718,13 +775,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_count?: number
           audience_type: Database["public"]["Enums"]["campaign_audience_type"]
           created_at?: string
           created_by?: string | null
+          failed_count?: number
           id?: string
           name: string
           organization_address: string
           organization_id: string
+          processing_count?: number
+          queued_count?: number
           service?: Database["public"]["Enums"]["service"]
           status?: string
           template: Json
@@ -732,13 +793,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_count?: number
           audience_type?: Database["public"]["Enums"]["campaign_audience_type"]
           created_at?: string
           created_by?: string | null
+          failed_count?: number
           id?: string
           name?: string
           organization_address?: string
           organization_id?: string
+          processing_count?: number
+          queued_count?: number
           service?: Database["public"]["Enums"]["service"]
           status?: string
           template?: Json
@@ -1282,6 +1347,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_campaign_deliveries: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          campaign_id: string
+          contact_address: string
+          contact_name: string
+          delivery_id: string
+          organization_address: string
+          organization_id: string
+          template: Json
+          template_variable_mapping: Json
+          variables: Json
+        }[]
+      }
       contact_address_update_rules: {
         Args: {
           p_address: string
@@ -1376,6 +1456,19 @@ export type Database = {
       org_update_by_admin_rules: {
         Args: { p_id: string; p_name: string }
         Returns: boolean
+      }
+      record_campaign_delivery_result: {
+        Args: {
+          p_delivery_id: string
+          p_error?: Json
+          p_external_id?: string
+          p_retryable?: boolean
+        }
+        Returns: string
+      }
+      start_campaign: {
+        Args: { p_campaign_id: string; p_organization_id: string }
+        Returns: number
       }
       unassign_conversation_from_me: {
         Args: { p_conversation_id: string }
