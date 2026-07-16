@@ -6,7 +6,10 @@ import {
 } from "@tanstack/react-query";
 import { type Database, type Json, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
-import type { CampaignCsvRecipient } from "@/utils/CampaignUtils";
+import {
+  type CampaignCsvRecipient,
+  isCampaignProcessing,
+} from "@/utils/CampaignUtils";
 import { queryKeys } from "./queryKeys";
 
 export type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
@@ -66,6 +69,14 @@ export function useCampaigns() {
         .throwOnError(),
     enabled: !!orgId,
     select: (result) => result.data as CampaignRow[],
+    refetchInterval: (query) => {
+      const result = query.state.data;
+      return result?.data?.some((campaign) =>
+        isCampaignProcessing(campaign.status),
+      )
+        ? 3_000
+        : false;
+    },
   });
 }
 
@@ -84,6 +95,10 @@ export function useCampaign(id: string | undefined) {
         .throwOnError(),
     enabled: !!orgId && !!id,
     select: (result) => result.data as CampaignRow,
+    refetchInterval: (query) =>
+      isCampaignProcessing(query.state.data?.data?.status || "")
+        ? 3_000
+        : false,
   });
 }
 
@@ -263,6 +278,36 @@ export function useDeleteCampaign() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.campaigns.all(orgId),
       });
+    },
+  });
+}
+
+export function useStartCampaign() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async (campaignId: string) => {
+      if (!orgId) throw new Error("No active organization");
+
+      const { data } = await supabase
+        .rpc("start_campaign", {
+          p_campaign_id: campaignId,
+          p_organization_id: orgId,
+        })
+        .throwOnError();
+
+      return data;
+    },
+    onSuccess: async (_recipientCount, campaignId) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.campaigns.all(orgId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.campaigns.detail(orgId, campaignId),
+        }),
+      ]);
     },
   });
 }

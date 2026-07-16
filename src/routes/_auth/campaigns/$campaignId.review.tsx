@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, CheckCircle2, Users } from "lucide-react";
+import { message } from "antd";
+import { AlertCircle, CheckCircle2, LoaderCircle, Users } from "lucide-react";
 import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
 import Spinner from "@/components/Spinner";
 import TemplatePreview from "@/components/TemplatePreview";
@@ -9,11 +11,14 @@ import {
   useCampaign,
   useCampaignAudienceCount,
   useCampaignAudiencePreview,
+  useStartCampaign,
 } from "@/queries/useCampaigns";
 import type { Json, TemplateData } from "@/supabase/client";
 import {
+  canStartCampaign,
   getCampaignReadiness,
   getTemplateVariables,
+  isCampaignProcessing,
 } from "@/utils/CampaignUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
@@ -34,7 +39,9 @@ function ReviewCampaign() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
   const { campaignId } = Route.useParams();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { data: campaign, isLoading, isError } = useCampaign(campaignId);
+  const startCampaign = useStartCampaign();
   const {
     data: audienceCount,
     isLoading: countLoading,
@@ -73,6 +80,28 @@ function ReviewCampaign() {
     audienceUnavailable: countError,
   });
   const ready = readiness === "ready";
+  const canRun = canStartCampaign(campaign.status, readiness);
+  const processing = isCampaignProcessing(campaign.status);
+  const statusLabels: Record<string, string> = {
+    draft: t("Borrador"),
+    queued: t("En cola"),
+    running: t("En ejecución"),
+    completed: t("Completada"),
+    failed: t("Fallida"),
+  };
+  const statusLabel = statusLabels[campaign.status] || campaign.status;
+
+  const runCampaign = async () => {
+    try {
+      const recipientCount = await startCampaign.mutateAsync(campaignId);
+      setConfirmOpen(false);
+      void message.success(
+        `${t("Campaña iniciada")} · ${recipientCount.toLocaleString()} ${t("destinatarios")}`,
+      );
+    } catch {
+      void message.error(t("No se pudo iniciar la campaña"));
+    }
+  };
 
   return (
     <div className="h-full min-h-0 flex flex-col bg-background text-foreground">
@@ -92,7 +121,7 @@ function ReviewCampaign() {
                   </h2>
                 </div>
                 <span className="px-[10px] py-[5px] rounded-full bg-muted text-[11px]">
-                  {t("Borrador")}
+                  {statusLabel}
                 </span>
               </div>
               <div className="grid sm:grid-cols-3 gap-[14px] mt-[20px]">
@@ -141,26 +170,73 @@ function ReviewCampaign() {
 
             <section className="campaign-review-card">
               <div className="flex items-center gap-[9px]">
-                {ready ? (
+                {processing ? (
+                  <LoaderCircle className="w-[20px] h-[20px] text-primary animate-spin" />
+                ) : campaign.status === "completed" ? (
+                  <CheckCircle2 className="w-[20px] h-[20px] text-green-500" />
+                ) : campaign.status === "failed" ? (
+                  <AlertCircle className="w-[20px] h-[20px] text-destructive" />
+                ) : ready ? (
                   <CheckCircle2 className="w-[20px] h-[20px] text-green-500" />
                 ) : (
                   <AlertCircle className="w-[20px] h-[20px] text-amber-500" />
                 )}
                 <h2 className="font-medium">
-                  {ready
-                    ? t("La campaña está lista para revisar")
-                    : t("La campaña requiere atención")}
+                  {processing
+                    ? t("La campaña se está procesando")
+                    : campaign.status === "completed"
+                      ? t("La campaña finalizó")
+                      : campaign.status === "failed"
+                        ? t("La campaña falló")
+                        : ready
+                          ? t("La campaña está lista para ejecutar")
+                          : t("La campaña requiere atención")}
                 </h2>
               </div>
               <p className="text-[12px] text-muted-foreground mt-[8px]">
-                {t(
-                  "La ejecución se habilitará cuando se implemente la siguiente fase del backend.",
-                )}
+                {processing
+                  ? t("Los resultados se actualizan automáticamente.")
+                  : campaign.status === "completed"
+                    ? t("Todos los destinatarios fueron procesados.")
+                    : campaign.status === "failed"
+                      ? t("La ejecución no pudo completarse.")
+                      : ready
+                        ? t(
+                            "Confirmá la ejecución para agregar los destinatarios a la cola.",
+                          )
+                        : t("Corregí la configuración antes de ejecutar.")}
               </p>
             </section>
           </div>
 
           <aside className="flex flex-col gap-[16px] min-w-0">
+            <section className="campaign-review-card">
+              <div className="flex items-center justify-between gap-[12px]">
+                <h2 className="font-medium">{t("Estado de ejecución")}</h2>
+                <span className="text-[12px] text-muted-foreground">
+                  {statusLabel}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-[10px] mt-[14px]">
+                <ExecutionCount
+                  label={t("En cola")}
+                  value={campaign.queued_count}
+                />
+                <ExecutionCount
+                  label={t("Procesando")}
+                  value={campaign.processing_count}
+                />
+                <ExecutionCount
+                  label={t("Aceptados")}
+                  value={campaign.accepted_count}
+                />
+                <ExecutionCount
+                  label={t("Fallidos")}
+                  value={campaign.failed_count}
+                />
+              </div>
+            </section>
+
             <section className="campaign-review-card overflow-hidden">
               <h2 className="font-medium mb-[14px]">
                 {t("Vista previa de la plantilla")}
@@ -213,22 +289,83 @@ function ReviewCampaign() {
         <button
           className="px-[22px] py-[10px] border border-border rounded-lg"
           onClick={() =>
-            void navigate({
-              to: "/campaigns/$campaignId",
-              params: { campaignId },
-            })
+            void (campaign.status === "draft"
+              ? navigate({
+                  to: "/campaigns/$campaignId",
+                  params: { campaignId },
+                })
+              : navigate({ to: "/campaigns" }))
           }
         >
-          {t("Volver a configuración")}
+          {campaign.status === "draft"
+            ? t("Volver a configuración")
+            : t("Volver a campañas")}
         </button>
         <button
           className="primary px-[28px] py-[10px] disabled:opacity-50"
-          disabled
-          title={t("La ejecución estará disponible en la próxima fase")}
+          disabled={!canRun || startCampaign.isPending}
+          title={
+            campaign.status !== "draft"
+              ? t("Esta campaña ya fue ejecutada")
+              : !ready
+                ? t("Completá la configuración antes de ejecutar")
+                : undefined
+          }
+          onClick={() => setConfirmOpen(true)}
         >
-          {t("Ejecutar campaña")}
+          {startCampaign.isPending ? t("Iniciando…") : t("Ejecutar campaña")}
         </button>
       </footer>
+
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-[16px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="run-campaign-title"
+        >
+          <div className="w-full max-w-[460px] rounded-xl border border-border bg-background p-[22px] shadow-2xl">
+            <h2 id="run-campaign-title" className="text-[18px] font-semibold">
+              {t("¿Ejecutar esta campaña?")}
+            </h2>
+            <p className="text-[13px] text-muted-foreground mt-[8px]">
+              {t("Se enviará la plantilla seleccionada a")} {audienceCount || 0}{" "}
+              {t(
+                "destinatarios. Esta campaña no se puede ejecutar nuevamente.",
+              )}
+            </p>
+            <div className="flex justify-end gap-[10px] mt-[22px]">
+              <button
+                className="px-[16px] py-[9px] border border-border rounded-lg"
+                disabled={startCampaign.isPending}
+                onClick={() => setConfirmOpen(false)}
+              >
+                {t("Cancelar")}
+              </button>
+              <button
+                className="primary px-[18px] py-[9px] disabled:opacity-50"
+                disabled={startCampaign.isPending}
+                onClick={() => void runCampaign()}
+              >
+                {startCampaign.isPending
+                  ? t("Iniciando…")
+                  : t("Confirmar y ejecutar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExecutionCount({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-muted/50 p-[12px]">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="text-[20px] font-semibold mt-[3px]">
+        {value.toLocaleString()}
+      </div>
     </div>
   );
 }

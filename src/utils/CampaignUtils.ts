@@ -23,6 +23,20 @@ export type CampaignReadiness =
   | "ready"
   | "needs_attention"
   | "unavailable";
+export type CampaignExecutionStatus =
+  | "draft"
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed";
+
+export function canStartCampaign(status: string, readiness: CampaignReadiness) {
+  return status === "draft" && readiness === "ready";
+}
+
+export function isCampaignProcessing(status: string) {
+  return status === "queued" || status === "running";
+}
 
 export function isCampaignWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";

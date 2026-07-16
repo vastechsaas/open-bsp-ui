@@ -283,7 +283,9 @@ function CampaignTableRow({
       <td className="px-[16px] py-[14px]">
         <div className="font-medium text-[13px]">{campaign.name}</div>
         <div className="text-[11px] text-muted-foreground mt-[2px]">
-          {t("Borrador")}
+          {campaign.status === "draft"
+            ? t("Borrador")
+            : getCampaignStatusLabel(campaign.status, t)}
         </div>
       </td>
       <td className="px-[16px] py-[14px] text-[12px]">
@@ -305,7 +307,11 @@ function CampaignTableRow({
         {formatUpdatedAt(campaign.updated_at)}
       </td>
       <td className="px-[16px] py-[14px]">
-        <ReadinessBadge readiness={campaign.readiness} />
+        {campaign.status === "draft" ? (
+          <ReadinessBadge readiness={campaign.readiness} />
+        ) : (
+          <CampaignStatusBadge status={campaign.status} />
+        )}
       </td>
       <td className="px-[16px] py-[14px]">
         <CampaignActions campaign={campaign} />
@@ -334,7 +340,11 @@ function CampaignCard({
             {campaign.templateData.name} · {audienceLabel}
           </div>
         </div>
-        <ReadinessBadge readiness={campaign.readiness} />
+        {campaign.status === "draft" ? (
+          <ReadinessBadge readiness={campaign.readiness} />
+        ) : (
+          <CampaignStatusBadge status={campaign.status} />
+        )}
       </div>
       <div className="grid grid-cols-2 gap-[12px] mt-[16px] text-[12px]">
         <div>
@@ -365,6 +375,24 @@ function CampaignActions({ campaign }: { campaign: CampaignListItem }) {
       to: "/campaigns/$campaignId",
       params: { campaignId: campaign.id },
     });
+
+  if (campaign.status !== "draft") {
+    return (
+      <div className="flex justify-end">
+        <button
+          className="primary px-[12px] py-[8px] text-[12px]"
+          onClick={() =>
+            void navigate({
+              to: "/campaigns/$campaignId/review",
+              params: { campaignId: campaign.id },
+            })
+          }
+        >
+          {t("Ver ejecución")}
+        </button>
+      </div>
+    );
+  }
 
   if (campaign.readiness !== "ready") {
     return (
@@ -400,6 +428,34 @@ function CampaignActions({ campaign }: { campaign: CampaignListItem }) {
         {t("Revisar y ejecutar")}
       </button>
     </div>
+  );
+}
+
+function getCampaignStatusLabel(status: string, t: (value: string) => string) {
+  const labels: Record<string, string> = {
+    queued: t("En cola"),
+    running: t("En ejecución"),
+    completed: t("Completada"),
+    failed: t("Fallida"),
+  };
+  return labels[status] || status;
+}
+
+function CampaignStatusBadge({ status }: { status: string }) {
+  const { translate: t } = useTranslation();
+  const styles: Record<string, string> = {
+    queued: "bg-primary/15 text-primary",
+    running: "bg-primary/15 text-primary",
+    completed: "bg-green-500/15 text-green-500",
+    failed: "bg-destructive/15 text-destructive",
+  };
+
+  return (
+    <span
+      className={`inline-flex px-[9px] py-[4px] rounded-full text-[11px] whitespace-nowrap ${styles[status] || "bg-muted text-muted-foreground"}`}
+    >
+      {getCampaignStatusLabel(status, t)}
+    </span>
   );
 }
 
