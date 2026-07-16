@@ -120,8 +120,11 @@ export default function CampaignForm({
   const templateId = watch("template_id");
   const audienceType = watch("audience_type");
   const { data: addresses } = useOrganizationsAddresses();
-  const { data: templates, isLoading: templatesLoading } =
-    useTemplates(organizationAddress);
+  const {
+    data: templates,
+    isLoading: templatesLoading,
+    isError: templatesError,
+  } = useTemplates(organizationAddress);
   const { data: contacts } = useContacts();
   const { data: storedAudienceCount } = useCampaignAudienceCount(campaign?.id);
   const { data: storedPreview } = useCampaignAudiencePreview(campaign?.id);
@@ -318,21 +321,34 @@ export default function CampaignForm({
                 setMapping({});
               }}
             />
-            <SelectField
-              name="template_id"
-              control={control}
-              label={t("Plantilla aprobada")}
-              placeholder={
-                templatesLoading ? t("Cargando...") : t("Seleccionar plantilla")
-              }
-              required
-              disabled={!organizationAddress || templatesLoading}
-              options={approvedTemplates.map((template) => ({
-                value: template.id,
-                label: `${template.name} · ${template.language}`,
-              }))}
-              onValueChange={() => setMapping({})}
-            />
+            <div>
+              <SelectField
+                name="template_id"
+                control={control}
+                label={t("Plantilla aprobada")}
+                placeholder={
+                  templatesLoading
+                    ? t("Cargando...")
+                    : t("Seleccionar plantilla")
+                }
+                required
+                disabled={
+                  !organizationAddress || templatesLoading || templatesError
+                }
+                options={approvedTemplates.map((template) => ({
+                  value: template.id,
+                  label: `${template.name} · ${template.language}`,
+                }))}
+                onValueChange={() => setMapping({})}
+              />
+              {organizationAddress && templatesError && (
+                <p className="mt-[6px] text-[12px] text-destructive">
+                  {t(
+                    "No se pudieron cargar las plantillas aprobadas. Vuelve a conectar la cuenta de WhatsApp e intenta de nuevo.",
+                  )}
+                </p>
+              )}
+            </div>
           </div>
         </section>
 
