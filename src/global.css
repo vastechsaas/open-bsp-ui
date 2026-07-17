@@ -169,6 +169,10 @@ button:disabled {
     @apply w-full focus-visible:outline-none text-[16px] text-foreground placeholder:text-muted-foreground bg-transparent focus-visible:border-primary;
   }
 
+  .template-input {
+    @apply h-[42px] w-full rounded-lg border border-input bg-background px-[12px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-default disabled:opacity-70;
+  }
+
   .instructions {
     @apply text-[14px] flex flex-col gap-[8px] leading-relaxed;
   }

@@ -1,496 +1,760 @@
-import { useEffect, useRef } from "react";
-import { type TemplateData } from "@/supabase/client";
-import { useTranslation } from "@/hooks/useTranslation";
-import { PlusIcon } from "lucide-react";
-import { useForm, useFieldArray } from "react-hook-form";
-import TemplatePreview from "./TemplatePreview";
-import FieldError from "./FieldError";
-import SectionBody from "./SectionBody";
-import SectionFooter from "./SectionFooter";
-import Button from "./Button";
-import SelectField from "./SelectField";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useCreateTemplate, useUpdateTemplate } from "@/queries/useTemplates";
+import { message } from "antd";
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Plus,
+  X,
+} from "lucide-react";
+import CampaignFilterSelect from "./campaigns/CampaignFilterSelect";
+import TemplatePreview from "./TemplatePreview";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
+import {
+  type TemplateRecord,
+  useCreateTemplateDraft,
+  useSubmitTemplateDraft,
+  useUpdateTemplateDraft,
+} from "@/queries/useTemplates";
+import type {
+  TemplateCategory,
+  TemplateComponent,
+  TemplateData,
+} from "@/supabase/client";
+import {
+  buildTemplateDraftInput,
+  getTemplateContentErrors,
+  getTemplateDetailsErrors,
+  getTemplateVariableIndexes,
+  type TemplateEditorValues,
+} from "@/utils/TemplateDraftUtils";
+import { formatPhoneNumber } from "@/utils/FormatUtils";
 
-interface TemplateFormData {
-  name: string;
-  language: string;
-  category: "MARKETING" | "UTILITY";
-  header: string;
-  headerVariable: string;
-  body: string;
-  bodyVariables: { value: string }[];
-  footer: string;
-}
+type Step = 1 | 2 | 3;
 
 export default function TemplateEditor({
   existingTemplate,
   organizationAddress,
 }: {
-  existingTemplate?: TemplateData;
+  existingTemplate?: TemplateRecord;
   organizationAddress: string;
 }) {
-  "use no memo";
-  const { translate: t, currentLanguage } = useTranslation();
+  const { translate: t } = useTranslation();
   const navigate = useNavigate();
-
-  const createMutation = useCreateTemplate();
-  const updateMutation = useUpdateTemplate();
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
-  const existingHeader = existingTemplate?.components.find(
-    (c) => c.type === "HEADER",
+  const { data: addresses } = useOrganizationsAddresses();
+  const [values, setValues] = useState<TemplateEditorValues>(() =>
+    getInitialValues(
+      existingTemplate,
+      (existingTemplate?.components || []) as unknown as TemplateComponent[],
+      organizationAddress,
+    ),
   );
-  const existingBody = existingTemplate?.components.find(
-    (c) => c.type === "BODY",
+  const [step, setStep] = useState<Step>(
+    existingTemplate?.status === "draft" ? 1 : 3,
   );
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    setValue,
-    formState: { isDirty, isValid, errors },
-  } = useForm<TemplateFormData>({
-    mode: "onTouched",
-    defaultValues: {
-      name: existingTemplate?.name || "",
-      language: existingTemplate?.language || currentLanguage || "es",
-      category: existingTemplate?.category || "MARKETING",
-      header: existingHeader?.text || "",
-      headerVariable: existingHeader?.example?.header_text?.[0] || "",
-      body: existingBody?.text || "",
-      bodyVariables: (existingBody?.example?.body_text[0] || []).map(
-        (v: string) => ({ value: v }),
-      ),
-      footer:
-        existingTemplate?.components.find((c) => c.type === "FOOTER")?.text ||
-        "",
-    },
-  });
-
-  const { fields, replace } = useFieldArray({
-    control,
-    name: "bodyVariables",
-  });
-
-  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
-  const headerRef = useRef<HTMLInputElement | null>(null);
-
-  const bodyText = watch("body");
-  const headerText = watch("header");
-  const footerText = watch("footer");
-  const nameText = watch("name");
-  const categoryValue = watch("category");
-  const languageValue = watch("language");
-  const headerVariableValue = watch("headerVariable");
-  const bodyVariablesValue = watch("bodyVariables");
-
-  // Get unique variable numbers from text, in order of appearance
-  function getVarNumbers(text: string): number[] {
-    const seen = new Set<number>();
-    const ordered: number[] = [];
-    for (const m of text.matchAll(/\{\{(\d+)\}\}/g)) {
-      const n = parseInt(m[1]);
-      if (!seen.has(n)) {
-        seen.add(n);
-        ordered.push(n);
-      }
-    }
-    return ordered;
-  }
-
-  // Renumber variables in text to contiguous 1..n, returns [newText, reorderMap]
-  function renumberVars(text: string) {
-    const matches = Array.from(text.matchAll(/\{\{(\d+)\}\}/g));
-    const seen = new Set<number>();
-    const ordered: number[] = [];
-    for (const m of matches) {
-      const n = parseInt(m[1]);
-      if (!seen.has(n)) {
-        seen.add(n);
-        ordered.push(n);
-      }
-    }
-    if (ordered.every((n, i) => n === i + 1)) return { text, ordered };
-    const renumber = new Map<number, number>();
-    ordered.forEach((old, i) => renumber.set(old, i + 1));
-    let result = text;
-    for (const [old, _new] of renumber) {
-      result = result.replaceAll(`{{${old}}}`, `__VAR_${_new}__`);
-    }
-    for (let i = 1; i <= renumber.size; i++) {
-      result = result.replaceAll(`__VAR_${i}__`, `{{${i}}}`);
-    }
-    return { text: result, ordered };
-  }
-
-  // Insert text at position with spaces on left/right as needed
-  function insertAtPos(text: string, pos: number, insertion: string) {
-    const before = text.slice(0, pos);
-    const after = text.slice(pos);
-    const needsSpaceBefore =
-      before.length > 0 && !before.endsWith(" ") && !before.endsWith("\n");
-    const needsSpaceAfter =
-      after.length > 0 && !after.startsWith(" ") && !after.startsWith("\n");
-    return (
-      before +
-      (needsSpaceBefore ? " " : "") +
-      insertion +
-      (needsSpaceAfter ? " " : "") +
-      after
-    );
-  }
-
-  // Track actual variable numbers found in body text
-  const bodyVarNumbers = getVarNumbers(bodyText);
-
-  // Sync bodyVariables field count with unique variables in body text
-  useEffect(() => {
-    const currentVars = bodyVariablesValue || [];
-    if (bodyVarNumbers.length !== currentVars.length) {
-      const newFields = Array.from(
-        { length: bodyVarNumbers.length },
-        (_, i) => ({
-          value: currentVars[i]?.value || "",
-        }),
-      );
-      replace(newFields);
-    }
-  }, [bodyText]);
-
-  // Build TemplateData from watched form values for preview
-  // Renumber for preview so {{N}} indices match example array positions
-  const { text: previewBody } = renumberVars(bodyText);
-  const previewVars = bodyVarNumbers.map(
-    (_, i) => bodyVariablesValue?.[i]?.value || "",
+  const [savedDraftId, setSavedDraftId] = useState(
+    existingTemplate?.status === "draft" ? existingTemplate.id : undefined,
   );
-
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const createDraft = useCreateTemplateDraft();
+  const updateDraft = useUpdateTemplateDraft();
+  const submitDraft = useSubmitTemplateDraft();
+  const isReadOnly = !!existingTemplate && existingTemplate.status !== "draft";
+  const isPending =
+    createDraft.isPending || updateDraft.isPending || submitDraft.isPending;
+  const detailsErrors = getTemplateDetailsErrors(values);
+  const contentErrors = getTemplateContentErrors(values);
+  const readinessErrors = [...detailsErrors, ...contentErrors];
+  const bodyIndexes = useMemo(
+    () => getTemplateVariableIndexes(values.body),
+    [values.body],
+  );
+  const whatsappAccounts =
+    addresses?.filter((item) => item.service === "whatsapp") || [];
   const previewTemplate: TemplateData = {
-    id: existingTemplate?.id || "",
-    name: nameText,
-    status: existingTemplate?.status || "PENDING",
-    category: categoryValue,
-    sub_category: "CUSTOM",
-    language: languageValue,
-    components: [
-      ...(headerText
-        ? [
-            {
-              type: "HEADER" as const,
-              text: headerText,
-              format: "TEXT" as const,
-              ...(headerText.includes("{{1}}") && headerVariableValue
-                ? {
-                    example: { header_text: [headerVariableValue] as [string] },
-                  }
-                : {}),
-            },
-          ]
-        : []),
-      {
-        type: "BODY",
-        text: previewBody,
-        ...(previewVars.length
-          ? {
-              example: {
-                body_text: [previewVars],
-              },
-            }
-          : {}),
-      },
-      ...(footerText ? [{ type: "FOOTER" as const, text: footerText }] : []),
-    ],
+    id: existingTemplate?.external_id || existingTemplate?.id || "preview",
+    name: values.name || "template_preview",
+    language: values.language || "en",
+    category: values.category,
+    status: "PENDING",
+    components: buildTemplateDraftInput(values).components,
   };
 
-  function onSubmit(data: TemplateFormData) {
-    // Renumber variables to contiguous 1..n on submit
-    const { text: renumberedBody, ordered } = renumberVars(data.body);
-    const reorderedVars = ordered.map(
-      (_, i) => data.bodyVariables[i]?.value || "",
-    );
+  useEffect(() => {
+    setValues((current) => {
+      if (current.bodySamples.length === bodyIndexes.length) return current;
+      return {
+        ...current,
+        bodySamples: bodyIndexes.map(
+          (_, index) => current.bodySamples[index] || "",
+        ),
+      };
+    });
+  }, [bodyIndexes]);
 
-    const template: TemplateData = {
-      id: existingTemplate?.id || "",
-      name: data.name,
-      status: existingTemplate?.status || "PENDING",
-      category: data.category,
-      sub_category: "CUSTOM",
-      language: data.language,
-      components: [
-        ...(data.header
-          ? [
-              {
-                type: "HEADER" as const,
-                text: data.header,
-                format: "TEXT" as const,
-                ...(data.header.includes("{{1}}") && data.headerVariable
-                  ? {
-                      example: {
-                        header_text: [data.headerVariable] as [string],
-                      },
-                    }
-                  : {}),
-              },
-            ]
-          : []),
-        {
-          type: "BODY",
-          text: renumberedBody,
-          ...(reorderedVars.length
-            ? {
-                example: {
-                  body_text: [reorderedVars],
-                },
-              }
-            : {}),
-        },
-        ...(data.footer
-          ? [{ type: "FOOTER" as const, text: data.footer }]
-          : []),
-      ],
-    };
+  const update = <K extends keyof TemplateEditorValues>(
+    key: K,
+    value: TemplateEditorValues[K],
+  ) => setValues((current) => ({ ...current, [key]: value }));
 
-    const mutation = existingTemplate ? updateMutation : createMutation;
-    mutation.mutate(
-      { template, organizationAddress },
-      {
-        onSuccess: () => navigate({ to: "..", hash: (prevHash) => prevHash! }),
+  const persistDraft = async () => {
+    const template = buildTemplateDraftInput(values);
+    if (savedDraftId) {
+      await updateDraft.mutateAsync({
+        draftId: savedDraftId,
+        organizationAddress: values.organizationAddress,
+        template,
+      });
+      return savedDraftId;
+    }
+    const draft = await createDraft.mutateAsync({
+      organizationAddress: values.organizationAddress,
+      template,
+    });
+    setSavedDraftId(draft.id);
+    return draft.id;
+  };
+
+  const returnToList = () =>
+    void navigate({
+      to: "/integrations/whatsapp/$orgAddressId/templates",
+      params: {
+        orgAddressId: values.organizationAddress || organizationAddress,
       },
-    );
-  }
+    });
+
+  const saveDraft = async () => {
+    if (detailsErrors.length) return;
+    try {
+      await persistDraft();
+      void message.success(t("Borrador guardado"));
+      returnToList();
+    } catch {
+      void message.error(t("No se pudo guardar el borrador"));
+    }
+  };
+
+  const submit = async () => {
+    if (readinessErrors.length) return;
+    try {
+      const draftId = await persistDraft();
+      await submitDraft.mutateAsync({
+        draftId,
+        organizationAddress: values.organizationAddress,
+        template: buildTemplateDraftInput(values),
+      });
+      void message.success(t("Plantilla enviada a Meta"));
+      returnToList();
+    } catch {
+      void message.error(
+        t("El borrador se guardó, pero no se pudo enviar a Meta"),
+      );
+    }
+  };
 
   return (
-    <>
-      <SectionBody>
-        <form id="template-form" onSubmit={handleSubmit(onSubmit)}>
-          {/* Category */}
-          <SelectField<TemplateFormData>
-            name="category"
-            control={control}
-            label={t("Categoría")}
-            disabled={!!existingTemplate}
-            options={[
-              { value: "MARKETING", label: t("Promoción") },
-              { value: "UTILITY", label: t("Utilidad") },
-            ]}
-          />
-
-          {/* Language */}
-          <SelectField<TemplateFormData>
-            name="language"
-            control={control}
-            label={t("Idioma")}
-            disabled={!!existingTemplate}
-            options={[
-              { value: "es", label: "Español" },
-              { value: "en", label: "English" },
-              { value: "pt", label: "Português" },
-            ]}
-          />
-
-          {/* Name */}
-          <label>
-            <div className="label">{t("Nombre")}</div>
-            <input
-              type="text"
-              className="text"
-              placeholder={t("nombre_de_plantilla")}
-              disabled={!!existingTemplate}
-              {...register("name", {
-                required: t("El nombre es obligatorio"),
-                onChange: (e) => {
-                  e.target.value = e.target.value.replace(/ /g, "_");
-                },
-              })}
-            />
-            <FieldError error={errors.name} />
-          </label>
-
-          {/* Header */}
-          <div className="flex flex-col">
-            <label>
-              <div className="label">
-                {t("Encabezado")} ({t("opcional")})
-              </div>
-              <input
-                type="text"
-                className="text"
-                placeholder={t("Oferta para {{1}}")}
-                maxLength={60}
-                {...register("header", {
-                  maxLength: { value: 60, message: t("Máximo 60 caracteres") },
-                })}
-                ref={(e) => {
-                  register("header").ref(e);
-                  headerRef.current = e;
-                }}
-              />
-              <FieldError error={errors.header} />
-            </label>
-
-            {!headerText?.includes("{{1}}") && (
+    <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
+      <header className="border-b border-border px-[18px] py-[18px] md:px-[28px]">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="flex items-center justify-between gap-[16px]">
+            <div className="flex items-center gap-[12px]">
               <button
                 type="button"
-                className="self-end flex items-center gap-[3px] text-primary text-[14px] mt-[6px]"
-                onClick={() => {
-                  const el = headerRef.current;
-                  const current = watch("header");
-                  const pos = el?.selectionStart ?? current.length;
-                  const newHeader = insertAtPos(current, pos, "{{1}}");
-                  setValue("header", newHeader, { shouldDirty: true });
-                  const cursorPos =
-                    newHeader.indexOf("{{1}}", pos > 0 ? pos - 1 : 0) +
-                    "{{1}}".length;
-                  requestAnimationFrame(() => {
-                    el?.focus();
-                    el?.setSelectionRange(cursorPos, cursorPos);
-                  });
-                }}
+                className="rounded-lg p-[7px] hover:bg-muted"
+                onClick={returnToList}
+                aria-label={t("Volver")}
               >
-                <PlusIcon className="w-[16px] h-[16px]" />
-                {t("Agregar variable")}
+                <ArrowLeft className="h-[20px] w-[20px]" />
               </button>
-            )}
-          </div>
-
-          {headerText?.includes("{{1}}") && (
-            <label>
-              <div className="label">
-                {t("Variable de encabezado")} {"{{1}}"}
+              <div>
+                <h1 className="text-[22px] font-semibold">
+                  {isReadOnly
+                    ? t("Detalles de plantilla")
+                    : existingTemplate
+                      ? t("Continuar plantilla")
+                      : t("Crear plantilla")}
+                </h1>
+                <p className="mt-[2px] text-[12px] text-muted-foreground">
+                  {isReadOnly
+                    ? t("Esta plantilla ya fue enviada a Meta.")
+                    : t("Prepará el contenido antes de enviarlo a Meta.")}
+                </p>
               </div>
-              <input
-                type="text"
-                className="text"
-                placeholder={t("Ejemplo: Juan, #1234...")}
-                {...register("headerVariable", {
-                  validate: (value) =>
-                    headerText?.includes("{{1}}") && !value
-                      ? t("Ingresá un ejemplo para la variable")
-                      : true,
-                })}
-              />
-              <FieldError error={errors.headerVariable} />
-            </label>
-          )}
-
-          {/* Body */}
-          <div className="flex flex-col">
-            <label>
-              <div className="label">{t("Cuerpo")}</div>
-              <textarea
-                className="text"
-                rows={4}
-                maxLength={1024}
-                placeholder={t("Hola {{1}}, tu pedido está listo.")}
-                {...register("body", {
-                  required: t("El cuerpo es obligatorio"),
-                  maxLength: {
-                    value: 1024,
-                    message: t("Máximo 1024 caracteres"),
-                  },
-                  validate: (value) => {
-                    const trimmed = value.trim();
-                    if (/^\{\{\d+\}\}/.test(trimmed))
-                      return t("El cuerpo no puede empezar con una variable");
-                    if (/\{\{\d+\}\}$/.test(trimmed))
-                      return t("El cuerpo no puede terminar con una variable");
-                    return true;
-                  },
-                })}
-                ref={(e) => {
-                  register("body").ref(e);
-                  bodyRef.current = e;
-                }}
-              />
-            </label>
-
-            <FieldError error={errors.body} />
-
+            </div>
             <button
               type="button"
-              className="self-end flex items-center gap-[3px] text-primary text-[14px] mt-[6px]"
-              onClick={() => {
-                const el = bodyRef.current;
-                const current = watch("body");
-                const nums = getVarNumbers(current);
-                const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-                const pos = el?.selectionStart ?? current.length;
-                const newBody = insertAtPos(current, pos, `{{${next}}}`);
-                setValue("body", newBody, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                });
-                // Restore cursor after the inserted variable
-                const cursorPos =
-                  newBody.indexOf(`{{${next}}}`, pos > 0 ? pos - 1 : 0) +
-                  `{{${next}}}`.length;
-                requestAnimationFrame(() => {
-                  el?.focus();
-                  el?.setSelectionRange(cursorPos, cursorPos);
-                });
-              }}
+              className="text-[13px] text-muted-foreground hover:text-foreground"
+              onClick={returnToList}
             >
-              <PlusIcon className="w-[16px] h-[16px]" />
-              {t("Agregar variable")}
+              {t("Volver a plantillas")}
             </button>
           </div>
+          <Progress step={step} readOnly={isReadOnly} />
+        </div>
+      </header>
 
-          {/* Body variables */}
-          {fields.map((field, idx) => (
-            <label key={field.id}>
-              <div className="label">{`{{${bodyVarNumbers[idx] ?? idx + 1}}}`}</div>
-              <input
-                type="text"
-                className="text"
-                placeholder={t("Ejemplo: Juan, #1234...")}
-                {...register(`bodyVariables.${idx}.value`, {
-                  validate: (value) =>
-                    !value ? t("Ingresá un ejemplo para la variable") : true,
-                })}
+      <div className="min-h-0 flex-1 overflow-y-auto px-[16px] py-[20px] md:px-[28px]">
+        <div className="mx-auto grid max-w-[1500px] gap-[20px] xl:grid-cols-[minmax(0,1fr)_380px]">
+          <main className="min-w-0">
+            {step === 1 && (
+              <DetailsStep
+                values={values}
+                update={update}
+                accounts={whatsappAccounts}
+                readOnly={isReadOnly}
               />
-              <FieldError error={errors.bodyVariables?.[idx]?.value} />
-            </label>
-          ))}
+            )}
+            {step === 2 && (
+              <ContentStep
+                values={values}
+                update={update}
+                bodyIndexes={bodyIndexes}
+                bodyRef={bodyRef}
+                readOnly={isReadOnly}
+              />
+            )}
+            {step === 3 && (
+              <ReviewStep
+                values={values}
+                accountLabel={getAccountLabel(
+                  values.organizationAddress,
+                  whatsappAccounts.find(
+                    (item) => item.address === values.organizationAddress,
+                  )?.extra,
+                )}
+                status={existingTemplate?.status}
+              />
+            )}
+          </main>
 
-          {/* Footer */}
-          <label>
-            <div className="label">
-              {t("Pie")} ({t("opcional")})
-            </div>
-            <input
-              type="text"
-              className="text"
-              placeholder={t("Texto del pie")}
-              maxLength={60}
-              {...register("footer", {
-                maxLength: { value: 60, message: t("Máximo 60 caracteres") },
-              })}
-            />
-          </label>
+          <aside className="space-y-[16px] xl:sticky xl:top-0 xl:self-start">
+            <section className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="border-b border-border px-[16px] py-[13px] font-medium">
+                {t("Vista previa de WhatsApp")}
+              </div>
+              <div className="min-h-[260px] bg-chat py-[18px] [&>div]:!mx-[12px] [&>div>div>div]:!max-w-[92%]">
+                <TemplatePreview editMode template={previewTemplate} />
+              </div>
+            </section>
+            <section className="rounded-xl border border-border bg-card p-[16px]">
+              <div className="flex items-center gap-[8px] font-medium">
+                {readinessErrors.length ? (
+                  <CircleAlert className="h-[18px] w-[18px] text-amber-500" />
+                ) : (
+                  <CheckCircle2 className="h-[18px] w-[18px] text-green-500" />
+                )}
+                {t("Preparación")}
+              </div>
+              {readinessErrors.length ? (
+                <ul className="mt-[12px] space-y-[7px] text-[12px] text-muted-foreground">
+                  {readinessErrors.slice(0, 4).map((error) => (
+                    <li key={error} className="flex gap-[7px]">
+                      <span>•</span>
+                      <span>{error}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-[9px] text-[12px] text-green-500">
+                  {t("Lista para enviar a Meta.")}
+                </p>
+              )}
+            </section>
+          </aside>
+        </div>
+      </div>
 
-          {/* Preview */}
-          <label>
-            <div className="label">{t("Previsualización")}</div>
-            <div className="py-[12px] bg-chat relative rounded-[7.5px] [&>div>div]:!px-0 [&>div>div>div]:!max-w-[85%]">
-              <TemplatePreview editMode template={previewTemplate} />
-            </div>
-          </label>
-        </form>
-      </SectionBody>
-
-      <SectionFooter>
-        <Button
-          type="submit"
-          form="template-form"
-          invalid={!isValid || !isDirty}
-          loading={isPending}
-          className="primary"
-        >
-          {t("Enviar a revisión")}
-        </Button>
-      </SectionFooter>
-    </>
+      <footer className="border-t border-border bg-background px-[16px] py-[14px] md:px-[28px]">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-end gap-[10px]">
+          {isReadOnly ? (
+            <button
+              type="button"
+              className="primary px-[18px] py-[10px]"
+              onClick={returnToList}
+            >
+              {t("Volver a plantillas")}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="mr-auto rounded-lg border border-border px-[17px] py-[10px] text-[13px] hover:bg-muted disabled:opacity-50"
+                disabled={isPending || detailsErrors.length > 0}
+                onClick={() => void saveDraft()}
+              >
+                {t("Guardar borrador")}
+              </button>
+              {step > 1 && (
+                <button
+                  type="button"
+                  className="rounded-lg border border-border px-[17px] py-[10px] text-[13px] hover:bg-muted"
+                  disabled={isPending}
+                  onClick={() => setStep((step - 1) as Step)}
+                >
+                  {t("Atrás")}
+                </button>
+              )}
+              {step < 3 ? (
+                <button
+                  type="button"
+                  className="primary flex items-center gap-[7px] px-[18px] py-[10px] disabled:opacity-50"
+                  disabled={
+                    isPending ||
+                    (step === 1
+                      ? detailsErrors.length > 0
+                      : readinessErrors.length > 0)
+                  }
+                  onClick={() => setStep((step + 1) as Step)}
+                >
+                  {t("Continuar")}
+                  <ChevronRight className="h-[16px] w-[16px]" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="primary px-[18px] py-[10px] disabled:opacity-50"
+                  disabled={isPending || readinessErrors.length > 0}
+                  onClick={() => void submit()}
+                >
+                  {isPending ? t("Enviando...") : t("Enviar a Meta")}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </footer>
+    </div>
   );
+}
+
+function Progress({ step, readOnly }: { step: Step; readOnly: boolean }) {
+  const { translate: t } = useTranslation();
+  const items = [t("Detalles"), t("Contenido"), t("Revisión")];
+  return (
+    <div className="mx-auto mt-[20px] flex max-w-[760px] items-center">
+      {items.map((label, index) => {
+        const number = (index + 1) as Step;
+        const complete = readOnly || number < step;
+        const active = readOnly ? number === 3 : number === step;
+        return (
+          <div
+            key={label}
+            className={`flex items-center ${index < items.length - 1 ? "flex-1" : ""}`}
+          >
+            <div className="flex items-center gap-[8px]">
+              <span
+                className={`flex h-[30px] w-[30px] items-center justify-center rounded-full border text-[12px] ${complete ? "border-primary bg-primary text-primary-foreground" : active ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                {complete ? <Check className="h-[15px] w-[15px]" /> : number}
+              </span>
+              <span
+                className={`hidden text-[12px] sm:inline ${active ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {label}
+              </span>
+            </div>
+            {index < items.length - 1 && (
+              <div
+                className={`mx-[12px] h-px flex-1 ${number < step || readOnly ? "bg-primary" : "bg-border"}`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DetailsStep({
+  values,
+  update,
+  accounts,
+  readOnly,
+}: StepProps & { accounts: Array<{ address: string; extra: unknown }> }) {
+  const { translate: t } = useTranslation();
+  return (
+    <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
+      <h2 className="text-[18px] font-semibold">
+        {t("Detalles de plantilla")}
+      </h2>
+      <p className="mt-[4px] text-[13px] text-muted-foreground">
+        {t("Elegí la cuenta, la categoría y el nombre interno de Meta.")}
+      </p>
+      <div className="mt-[22px] grid gap-[18px] md:grid-cols-2">
+        <Field label={t("Cuenta de WhatsApp")}>
+          <CampaignFilterSelect
+            ariaLabel={t("Cuenta de WhatsApp")}
+            value={values.organizationAddress}
+            onChange={(value) => update("organizationAddress", value)}
+            options={accounts.map((item) => ({
+              value: item.address,
+              label: getAccountLabel(item.address, item.extra),
+            }))}
+          />
+        </Field>
+        <Field label={t("Categoría")}>
+          <CampaignFilterSelect
+            ariaLabel={t("Categoría")}
+            value={values.category}
+            onChange={(value) => update("category", value as TemplateCategory)}
+            options={[
+              { value: "UTILITY", label: t("Utilidad") },
+              { value: "MARKETING", label: t("Marketing") },
+              { value: "AUTHENTICATION", label: t("Autenticación") },
+            ]}
+          />
+        </Field>
+        <Field label={t("Idioma")}>
+          <CampaignFilterSelect
+            ariaLabel={t("Idioma")}
+            value={values.language}
+            onChange={(value) => update("language", value)}
+            options={[
+              { value: "en", label: "English" },
+              { value: "es", label: "Español" },
+              { value: "pt_BR", label: "Português (Brasil)" },
+            ]}
+          />
+        </Field>
+        <Field
+          label={t("Nombre de plantilla")}
+          hint={t("Minúsculas, números y guiones bajos.")}
+        >
+          <input
+            className="template-input"
+            value={values.name}
+            disabled={readOnly}
+            maxLength={512}
+            placeholder="order_update"
+            onChange={(event) =>
+              update(
+                "name",
+                event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+              )
+            }
+          />
+        </Field>
+      </div>
+    </section>
+  );
+}
+
+type StepProps = {
+  values: TemplateEditorValues;
+  update: <K extends keyof TemplateEditorValues>(
+    key: K,
+    value: TemplateEditorValues[K],
+  ) => void;
+  readOnly: boolean;
+};
+
+function ContentStep({
+  values,
+  update,
+  bodyIndexes,
+  bodyRef,
+  readOnly,
+}: StepProps & {
+  bodyIndexes: number[];
+  bodyRef: React.RefObject<HTMLTextAreaElement | null>;
+}) {
+  const { translate: t } = useTranslation();
+  const appendBodyVariable = () => {
+    const next = bodyIndexes.length + 1;
+    const suffix = values.body && !values.body.endsWith(" ") ? " " : "";
+    update("body", `${values.body}${suffix}{{${next}}}`);
+    requestAnimationFrame(() => bodyRef.current?.focus());
+  };
+  return (
+    <div className="space-y-[16px]">
+      <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
+        <h2 className="text-[18px] font-semibold">
+          {t("Contenido del mensaje")}
+        </h2>
+        <p className="mt-[4px] text-[13px] text-muted-foreground">
+          {t("Creá el mensaje y agregá ejemplos para cada variable.")}
+        </p>
+        <div className="mt-[22px] space-y-[18px]">
+          <Field
+            label={`${t("Encabezado")} (${t("opcional")})`}
+            hint={`${values.header.length}/60`}
+          >
+            <div className="flex gap-[8px]">
+              <input
+                className="template-input"
+                value={values.header}
+                disabled={readOnly}
+                maxLength={60}
+                placeholder={t("Actualización de tu pedido")}
+                onChange={(event) => update("header", event.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded-lg border border-border px-[11px] text-primary disabled:opacity-40"
+                disabled={
+                  readOnly || values.header.includes("{{1}}") || !values.header
+                }
+                onClick={() => update("header", `${values.header} {{1}}`)}
+                title={t("Agregar variable")}
+              >
+                <Plus className="h-[16px] w-[16px]" />
+              </button>
+            </div>
+          </Field>
+          {values.header.includes("{{1}}") && (
+            <Field label={`${t("Ejemplo para")} {{1}}`}>
+              <input
+                className="template-input"
+                value={values.headerSample}
+                disabled={readOnly}
+                placeholder={t("Pedido #1234")}
+                onChange={(event) => update("headerSample", event.target.value)}
+              />
+            </Field>
+          )}
+          <Field label={t("Cuerpo")} hint={`${values.body.length}/1024`}>
+            <textarea
+              ref={bodyRef}
+              className="template-input min-h-[160px] resize-y py-[11px]"
+              value={values.body}
+              disabled={readOnly}
+              maxLength={1024}
+              placeholder={t("Hola {{1}}, tu pedido está listo.")}
+              onChange={(event) => update("body", event.target.value)}
+            />
+            <button
+              type="button"
+              className="mt-[7px] flex items-center gap-[5px] text-[12px] text-primary disabled:opacity-40"
+              disabled={readOnly}
+              onClick={appendBodyVariable}
+            >
+              <Plus className="h-[14px] w-[14px]" />
+              {t("Agregar variable")}
+            </button>
+          </Field>
+          {bodyIndexes.map((variable, index) => (
+            <Field
+              key={variable}
+              label={`${t("Ejemplo para")} {{${variable}}}`}
+            >
+              <input
+                className="template-input"
+                value={values.bodySamples[index] || ""}
+                disabled={readOnly}
+                placeholder={t("Ejemplo: Juan, #1234...")}
+                onChange={(event) => {
+                  const samples = [...values.bodySamples];
+                  samples[index] = event.target.value;
+                  update("bodySamples", samples);
+                }}
+              />
+            </Field>
+          ))}
+          <Field
+            label={`${t("Pie")} (${t("opcional")})`}
+            hint={`${values.footer.length}/60`}
+          >
+            <input
+              className="template-input"
+              value={values.footer}
+              disabled={readOnly}
+              maxLength={60}
+              placeholder={t("Respondé si necesitás ayuda")}
+              onChange={(event) => update("footer", event.target.value)}
+            />
+          </Field>
+        </div>
+      </section>
+      <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-semibold">
+              {t("Respuestas rápidas")}
+            </h2>
+            <p className="mt-[3px] text-[12px] text-muted-foreground">
+              {t("Agregá hasta tres botones opcionales.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex items-center gap-[5px] text-[12px] text-primary disabled:opacity-40"
+            disabled={readOnly || values.quickReplies.length >= 3}
+            onClick={() => update("quickReplies", [...values.quickReplies, ""])}
+          >
+            <Plus className="h-[14px] w-[14px]" />
+            {t("Agregar")}
+          </button>
+        </div>
+        <div className="mt-[14px] space-y-[9px]">
+          {values.quickReplies.length === 0 && (
+            <div className="rounded-lg border border-dashed border-border p-[18px] text-center text-[12px] text-muted-foreground">
+              {t("No hay botones agregados.")}
+            </div>
+          )}
+          {values.quickReplies.map((reply, index) => (
+            <div key={index} className="flex gap-[8px]">
+              <input
+                className="template-input"
+                value={reply}
+                disabled={readOnly}
+                maxLength={25}
+                placeholder={t("Confirmar")}
+                onChange={(event) => {
+                  const replies = [...values.quickReplies];
+                  replies[index] = event.target.value;
+                  update("quickReplies", replies);
+                }}
+              />
+              <button
+                type="button"
+                className="rounded-lg border border-border px-[10px] text-muted-foreground hover:text-destructive"
+                disabled={readOnly}
+                onClick={() =>
+                  update(
+                    "quickReplies",
+                    values.quickReplies.filter(
+                      (_, itemIndex) => itemIndex !== index,
+                    ),
+                  )
+                }
+              >
+                <X className="h-[15px] w-[15px]" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ReviewStep({
+  values,
+  accountLabel,
+  status,
+}: {
+  values: TemplateEditorValues;
+  accountLabel: string;
+  status?: string;
+}) {
+  const { translate: t } = useTranslation();
+  return (
+    <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
+      <div className="flex items-start justify-between gap-[12px]">
+        <div>
+          <h2 className="text-[18px] font-semibold">
+            {t("Revisar plantilla")}
+          </h2>
+          <p className="mt-[4px] text-[13px] text-muted-foreground">
+            {t("Confirmá los detalles antes de enviar a Meta.")}
+          </p>
+        </div>
+        {status && (
+          <span className="rounded-full bg-muted px-[9px] py-[4px] text-[11px] capitalize text-muted-foreground">
+            {status.replaceAll("_", " ")}
+          </span>
+        )}
+      </div>
+      <dl className="mt-[22px] grid gap-[16px] rounded-xl border border-border p-[18px] sm:grid-cols-2">
+        <Summary label={t("Nombre")} value={values.name} />
+        <Summary label={t("Cuenta")} value={accountLabel} />
+        <Summary label={t("Categoría")} value={values.category.toLowerCase()} />
+        <Summary label={t("Idioma")} value={values.language} />
+        <Summary
+          label={t("Variables")}
+          value={String(
+            getTemplateVariableIndexes(values.header).length +
+              getTemplateVariableIndexes(values.body).length,
+          )}
+        />
+        <Summary
+          label={t("Respuestas rápidas")}
+          value={String(values.quickReplies.length)}
+        />
+      </dl>
+      <div className="mt-[18px] rounded-lg border border-primary/30 bg-primary/5 p-[14px] text-[12px] text-muted-foreground">
+        {t(
+          "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.",
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-[7px] flex items-center justify-between gap-[8px] text-[12px] font-medium">
+        <span>{label}</span>
+        {hint && (
+          <span className="font-normal text-muted-foreground">{hint}</span>
+        )}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-[5px] break-words text-[13px] font-medium capitalize">
+        {value || "—"}
+      </dd>
+    </div>
+  );
+}
+
+function getInitialValues(
+  existingTemplate: TemplateRecord | undefined,
+  components: TemplateComponent[],
+  organizationAddress: string,
+): TemplateEditorValues {
+  const header = components.find((component) => component.type === "HEADER");
+  const body = components.find((component) => component.type === "BODY");
+  const footer = components.find((component) => component.type === "FOOTER");
+  const buttons = components.find((component) => component.type === "BUTTONS");
+  return {
+    organizationAddress:
+      existingTemplate?.organization_address || organizationAddress,
+    name: existingTemplate?.name || "",
+    language: existingTemplate?.language || "en",
+    category:
+      (existingTemplate?.category?.toUpperCase() as TemplateCategory) ||
+      "UTILITY",
+    header: header?.text || "",
+    headerSample: header?.example?.header_text?.[0] || "",
+    body: body?.text || "",
+    bodySamples: body?.example?.body_text?.[0] || [],
+    footer: footer?.text || "",
+    quickReplies: buttons?.buttons.map((button) => button.text) || [],
+  };
+}
+
+function getAccountLabel(address: string, extra: unknown) {
+  const details =
+    extra && typeof extra === "object" && !Array.isArray(extra)
+      ? (extra as Record<string, unknown>)
+      : {};
+  const name =
+    typeof details.verified_name === "string" ? details.verified_name : "";
+  const rawPhone =
+    typeof details.phone_number === "string" ? details.phone_number : address;
+  const phone = formatPhoneNumber(rawPhone);
+  return name ? `${name} · ${phone}` : phone;
 }
