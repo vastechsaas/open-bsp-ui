@@ -57,6 +57,8 @@ export const queryKeys = {
   },
   campaigns: {
     all: (orgId: NullableId) => [orgId, "campaigns"] as const,
+    page: (orgId: NullableId, params: object) =>
+      [orgId, "campaigns", "page", params] as const,
     detail: (orgId: NullableId, id: NullableId) =>
       [orgId, "campaigns", id] as const,
     audience: (orgId: NullableId, id: NullableId) =>
