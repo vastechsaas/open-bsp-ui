@@ -17,6 +17,14 @@ export type TemplateEditorValues = {
   quickReplies: string[];
 };
 
+export type TemplateEditorStep = 1 | 2 | 3;
+
+export function getInitialTemplateEditorStep(
+  status?: string | null,
+): TemplateEditorStep {
+  return status && status !== "draft" ? 3 : 1;
+}
+
 export function isTemplateWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   return /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+)?$/.test(

@@ -29,12 +29,12 @@ import {
   buildTemplateDraftInput,
   getTemplateContentErrors,
   getTemplateDetailsErrors,
+  getInitialTemplateEditorStep,
   getTemplateVariableIndexes,
+  type TemplateEditorStep,
   type TemplateEditorValues,
 } from "@/utils/TemplateDraftUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
-
-type Step = 1 | 2 | 3;
 
 export default function TemplateEditor({
   existingTemplate,
@@ -53,8 +53,8 @@ export default function TemplateEditor({
       organizationAddress,
     ),
   );
-  const [step, setStep] = useState<Step>(
-    existingTemplate?.status === "draft" ? 1 : 3,
+  const [step, setStep] = useState<TemplateEditorStep>(() =>
+    getInitialTemplateEditorStep(existingTemplate?.status),
   );
   const [savedDraftId, setSavedDraftId] = useState(
     existingTemplate?.status === "draft" ? existingTemplate.id : undefined,
@@ -293,7 +293,7 @@ export default function TemplateEditor({
                   type="button"
                   className="rounded-lg border border-border px-[17px] py-[10px] text-[13px] hover:bg-muted"
                   disabled={isPending}
-                  onClick={() => setStep((step - 1) as Step)}
+                  onClick={() => setStep((step - 1) as TemplateEditorStep)}
                 >
                   {t("Atrás")}
                 </button>
@@ -308,7 +308,7 @@ export default function TemplateEditor({
                       ? detailsErrors.length > 0
                       : readinessErrors.length > 0)
                   }
-                  onClick={() => setStep((step + 1) as Step)}
+                  onClick={() => setStep((step + 1) as TemplateEditorStep)}
                 >
                   {t("Continuar")}
                   <ChevronRight className="h-[16px] w-[16px]" />
@@ -331,13 +331,19 @@ export default function TemplateEditor({
   );
 }
 
-function Progress({ step, readOnly }: { step: Step; readOnly: boolean }) {
+function Progress({
+  step,
+  readOnly,
+}: {
+  step: TemplateEditorStep;
+  readOnly: boolean;
+}) {
   const { translate: t } = useTranslation();
   const items = [t("Detalles"), t("Contenido"), t("Revisión")];
   return (
     <div className="mx-auto mt-[20px] flex max-w-[760px] items-center">
       {items.map((label, index) => {
-        const number = (index + 1) as Step;
+        const number = (index + 1) as TemplateEditorStep;
         const complete = readOnly || number < step;
         const active = readOnly ? number === 3 : number === step;
         return (

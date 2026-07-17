@@ -589,5 +589,6 @@
   "El cuerpo no puede terminar con una variable.": "The body cannot end with a variable.",
   "Agregá un ejemplo para cada variable del cuerpo.": "Add a sample for every body variable.",
   "Agregá como máximo tres respuestas rápidas.": "Add no more than three quick replies.",
-  "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Quick replies must contain 1 to 25 characters."
+  "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Quick replies must contain 1 to 25 characters.",
+  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "After submission, Meta will review the template. Its status will appear in the Template Manager."
 }

@@ -589,5 +589,6 @@
   "El cuerpo no puede terminar con una variable.": "Le corps ne peut pas se terminer par une variable.",
   "Agregá un ejemplo para cada variable del cuerpo.": "Ajoutez un exemple pour chaque variable du corps.",
   "Agregá como máximo tres respuestas rápidas.": "Ajoutez au maximum trois réponses rapides.",
-  "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Les réponses rapides doivent contenir entre 1 et 25 caractères."
+  "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Les réponses rapides doivent contenir entre 1 et 25 caractères.",
+  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "Après l'envoi, Meta vérifiera le modèle. Son statut apparaîtra dans le gestionnaire de modèles."
 }
