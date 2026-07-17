@@ -10,6 +10,7 @@ import {
   type CampaignCsvRecipient,
   isCampaignProcessing,
 } from "@/utils/CampaignUtils";
+import type { DataTablePageParams } from "@/utils/DataTableUtils";
 import { queryKeys } from "./queryKeys";
 
 export type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
@@ -17,6 +18,13 @@ export type CampaignInsert =
   Database["public"]["Tables"]["campaigns"]["Insert"];
 export type CampaignAudienceType =
   Database["public"]["Enums"]["campaign_audience_type"];
+export type CampaignListRow =
+  Database["public"]["Functions"]["list_campaigns_page"]["Returns"][number];
+
+export type CampaignPageParams = DataTablePageParams & {
+  audienceType?: CampaignAudienceType;
+  readiness?: "ready" | "needs_attention";
+};
 
 export type CampaignDraftInput = Omit<
   CampaignInsert,
@@ -55,23 +63,31 @@ function toRecipientRows(
   }));
 }
 
-export function useCampaigns() {
+export function useCampaigns(params: CampaignPageParams) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
 
   return useQuery({
-    queryKey: queryKeys.campaigns.all(orgId),
-    queryFn: async () =>
-      await supabase
-        .from("campaigns")
-        .select()
-        .eq("organization_id", orgId!)
-        .order("updated_at", { ascending: false })
-        .throwOnError(),
+    queryKey: queryKeys.campaigns.page(orgId, params),
+    queryFn: async () => {
+      const result = await supabase
+        .rpc("list_campaigns_page", {
+          p_organization_id: orgId!,
+          p_page: params.page,
+          p_page_size: params.pageSize,
+          p_search: params.search || undefined,
+          p_audience_type: params.audienceType,
+          p_readiness: params.readiness,
+        })
+        .throwOnError();
+
+      return {
+        rows: result.data as CampaignListRow[],
+        total: result.data[0]?.total_count || 0,
+      };
+    },
     enabled: !!orgId,
-    select: (result) => result.data as CampaignRow[],
     refetchInterval: (query) => {
-      const result = query.state.data;
-      return result?.data?.some((campaign) =>
+      return query.state.data?.rows.some((campaign) =>
         isCampaignProcessing(campaign.status),
       )
         ? 3_000

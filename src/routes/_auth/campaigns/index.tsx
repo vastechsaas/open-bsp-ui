@@ -1,27 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Megaphone,
-  Pencil,
-  Plus,
-  Search,
-} from "lucide-react";
+import { Megaphone, Pencil, Plus, Search } from "lucide-react";
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
+import DataTablePagination from "@/components/DataTablePagination";
 import Spinner from "@/components/Spinner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type CampaignAudienceType,
-  type CampaignRow,
-  useCampaignAudienceCounts,
+  type CampaignListRow,
   useCampaigns,
 } from "@/queries/useCampaigns";
-import type { Json, TemplateData } from "@/supabase/client";
-import {
-  type CampaignReadiness,
-  getCampaignReadiness,
-} from "@/utils/CampaignUtils";
+import type { TemplateData } from "@/supabase/client";
+import type { CampaignReadiness } from "@/utils/CampaignUtils";
+import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
 export const Route = createFileRoute("/_auth/campaigns/")({
@@ -30,31 +22,33 @@ export const Route = createFileRoute("/_auth/campaigns/")({
 
 type ReadinessFilter = "all" | "ready" | "needs_attention";
 type AudienceFilter = "all" | CampaignAudienceType;
-type CampaignListItem = CampaignRow & {
-  audienceCount: number | null | undefined;
+type CampaignListItem = CampaignListRow & {
   readiness: CampaignReadiness;
   templateData: TemplateData;
 };
 
-const PAGE_SIZE = 10;
-
-function toRecord(value: Json): Record<string, unknown> {
-  if (!value || Array.isArray(value) || typeof value !== "object") return {};
-  return value;
-}
-
 function CampaignList() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
-  const { data: campaigns, isLoading, isError } = useCampaigns();
-  const countQueries = useCampaignAudienceCounts(
-    campaigns?.map((campaign) => campaign.id) || [],
-  );
   const [search, setSearch] = useState("");
   const [audienceFilter, setAudienceFilter] = useState<AudienceFilter>("all");
   const [readinessFilter, setReadinessFilter] =
     useState<ReadinessFilter>("all");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_DATA_TABLE_PAGE_SIZE);
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const {
+    data: campaignPage,
+    isLoading,
+    isError,
+  } = useCampaigns({
+    page,
+    pageSize,
+    search: debouncedSearch || undefined,
+    audienceType: audienceFilter === "all" ? undefined : audienceFilter,
+    readiness:
+      readinessFilter === "all" ? undefined : readinessFilter,
+  });
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
     all_contacts: t("Todos los contactos"),
@@ -62,52 +56,18 @@ function CampaignList() {
     csv_upload: t("Archivo CSV"),
   };
 
-  const items = useMemo<CampaignListItem[]>(
-    () =>
-      (campaigns || []).map((campaign, index) => {
-        const countQuery = countQueries[index];
-        const templateData = campaign.template as unknown as TemplateData;
-        return {
-          ...campaign,
-          templateData,
-          audienceCount: countQuery?.data,
-          readiness: getCampaignReadiness({
-            template: templateData,
-            mapping: toRecord(campaign.template_variable_mapping),
-            audienceCount: countQuery?.data,
-            audienceUnavailable: countQuery?.isError,
-          }),
-        };
-      }),
-    [campaigns, countQueries],
+  const items: CampaignListItem[] = (campaignPage?.rows || []).map(
+    (campaign) => ({
+      ...campaign,
+      templateData: campaign.template as unknown as TemplateData,
+      readiness: campaign.readiness as CampaignReadiness,
+    }),
   );
-
-  const filteredItems = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase();
-    return items.filter((campaign) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        [
-          campaign.name,
-          campaign.organization_address,
-          campaign.templateData.name,
-        ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch));
-      const matchesAudience =
-        audienceFilter === "all" || campaign.audience_type === audienceFilter;
-      const matchesReadiness =
-        readinessFilter === "all" || campaign.readiness === readinessFilter;
-      return matchesSearch && matchesAudience && matchesReadiness;
-    });
-  }, [audienceFilter, items, readinessFilter, search]);
+  const total = campaignPage?.total || 0;
+  const hasFilters =
+    !!search.trim() || audienceFilter !== "all" || readinessFilter !== "all";
 
   useEffect(() => setPage(1), [search, audienceFilter, readinessFilter]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const visibleItems = filteredItems.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
 
   return (
     <div className="h-full min-w-0 overflow-y-auto bg-background text-foreground p-[16px] md:p-[28px]">
@@ -179,15 +139,15 @@ function CampaignList() {
               title={t("No se pudieron cargar las campañas")}
               description={t("Intentá nuevamente en unos minutos.")}
             />
-          ) : visibleItems.length === 0 ? (
+          ) : items.length === 0 ? (
             <EmptyState
               title={
-                campaigns?.length
+                hasFilters
                   ? t("No hay campañas que coincidan con los filtros")
                   : t("Todavía no hay campañas")
               }
               description={
-                campaigns?.length
+                hasFilters
                   ? t("Probá cambiando la búsqueda o los filtros.")
                   : t("Creá tu primera campaña para comenzar.")
               }
@@ -215,7 +175,7 @@ function CampaignList() {
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleItems.map((campaign) => (
+                    {items.map((campaign) => (
                       <CampaignTableRow
                         key={campaign.id}
                         campaign={campaign}
@@ -227,7 +187,7 @@ function CampaignList() {
               </div>
 
               <div className="lg:hidden divide-y divide-border">
-                {visibleItems.map((campaign) => (
+                {items.map((campaign) => (
                   <CampaignCard
                     key={campaign.id}
                     campaign={campaign}
@@ -238,31 +198,21 @@ function CampaignList() {
             </>
           )}
 
-          <div className="border-t border-border px-[14px] py-[12px] flex items-center justify-between text-[12px] text-muted-foreground">
+          <div className="border-t border-border px-[14px] py-[12px] flex flex-col sm:flex-row sm:items-center justify-between gap-[10px] text-[12px] text-muted-foreground">
             <span>
-              {filteredItems.length} {t("campañas")}
+              {total} {t("campañas")}
             </span>
-            <div className="flex items-center gap-[8px]">
-              <button
-                className="p-[7px] border border-border rounded-lg disabled:opacity-40"
-                disabled={currentPage <= 1}
-                onClick={() => setPage((value) => Math.max(1, value - 1))}
-              >
-                <ChevronLeft className="w-[15px] h-[15px]" />
-              </button>
-              <span className="px-[7px] text-foreground">
-                {currentPage} / {pageCount}
-              </span>
-              <button
-                className="p-[7px] border border-border rounded-lg disabled:opacity-40"
-                disabled={currentPage >= pageCount}
-                onClick={() =>
-                  setPage((value) => Math.min(pageCount, value + 1))
-                }
-              >
-                <ChevronRight className="w-[15px] h-[15px]" />
-              </button>
-            </div>
+            <DataTablePagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              disabled={isLoading}
+              onPageChange={setPage}
+              onPageSizeChange={(value) => {
+                setPageSize(value);
+                setPage(1);
+              }}
+            />
           </div>
         </div>
       </div>
@@ -299,9 +249,7 @@ function CampaignTableRow({
       </td>
       <td className="px-[16px] py-[14px] text-[12px]">{audienceLabel}</td>
       <td className="px-[16px] py-[14px] text-[12px] font-medium">
-        {campaign.audienceCount === undefined
-          ? "—"
-          : campaign.audienceCount?.toLocaleString() || "0"}
+        {campaign.audience_count.toLocaleString()}
       </td>
       <td className="px-[16px] py-[14px] text-[12px] text-muted-foreground">
         {formatUpdatedAt(campaign.updated_at)}
@@ -350,9 +298,7 @@ function CampaignCard({
         <div>
           <div className="text-muted-foreground">{t("Destinatarios")}</div>
           <div className="mt-[3px]">
-            {campaign.audienceCount === undefined
-              ? "—"
-              : campaign.audienceCount?.toLocaleString() || "0"}
+            {campaign.audience_count.toLocaleString()}
           </div>
         </div>
         <div>
