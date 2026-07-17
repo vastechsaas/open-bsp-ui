@@ -1,11 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   buildTemplateDraftInput,
   getTemplateContentErrors,
   getTemplateVariableIndexes,
+  isTemplateWorkspacePath,
   type TemplateEditorValues,
 } from "../src/utils/TemplateDraftUtils.ts";
+
+void test("template manager routes use the full-width workspace", () => {
+  assert.equal(
+    isTemplateWorkspacePath("/integrations/whatsapp/account-1/templates"),
+    true,
+  );
+  assert.equal(
+    isTemplateWorkspacePath("/integrations/whatsapp/account-1/templates/new"),
+    true,
+  );
+  assert.equal(
+    isTemplateWorkspacePath(
+      "/integrations/whatsapp/account-1/templates/template-1",
+    ),
+    true,
+  );
+  assert.equal(
+    isTemplateWorkspacePath("/integrations/whatsapp/account-1/profile"),
+    false,
+  );
+});
 
 const readyTemplate: TemplateEditorValues = {
   organizationAddress: "15550000000",
@@ -19,6 +42,36 @@ const readyTemplate: TemplateEditorValues = {
   footer: "Reply for help",
   quickReplies: ["Confirm"],
 };
+
+void test("template manager labels exist in every supported locale", () => {
+  const sourceFiles = [
+    new URL("../src/components/TemplateEditor.tsx", import.meta.url),
+    new URL(
+      "../src/routes/_auth/integrations/whatsapp/$orgAddressId/templates/index.tsx",
+      import.meta.url,
+    ),
+  ];
+  const keys = [
+    ...new Set(
+      sourceFiles.flatMap((file) =>
+        [...readFileSync(file, "utf8").matchAll(/t\("([^"]+)"\)/g)].map(
+          (match) => match[1],
+        ),
+      ),
+    ),
+  ];
+
+  for (const language of ["en", "pt", "fr", "sw"]) {
+    const translations = JSON.parse(
+      readFileSync(
+        new URL(`../public/locales/${language}.json`, import.meta.url),
+        "utf8",
+      ),
+    ) as Record<string, string>;
+    const missing = keys.filter((key) => !translations[key]);
+    assert.deepEqual(missing, [], `${language} is missing template labels`);
+  }
+});
 
 void test("template variable indexes are unique and ordered", () => {
   assert.deepEqual(
@@ -35,7 +88,7 @@ void test("template readiness requires sequential variables and samples", () => 
       body: "Hello {{2}}",
       bodySamples: ["Alice"],
     }).join(" "),
-    /sequential/,
+    /secuenciales/,
   );
 });
 

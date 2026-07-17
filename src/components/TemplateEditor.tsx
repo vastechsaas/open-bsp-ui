@@ -254,7 +254,7 @@ export default function TemplateEditor({
                   {readinessErrors.slice(0, 4).map((error) => (
                     <li key={error} className="flex gap-[7px]">
                       <span>•</span>
-                      <span>{error}</span>
+                      <span>{t(error)}</span>
                     </li>
                   ))}
                 </ul>
