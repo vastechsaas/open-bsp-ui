@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  type ReactNode,
+} from "react";
 import useBoundStore from "@/stores/useBoundStore";
 import { getTranslation, loadTranslations } from "@/i18n/translations";
 import type { Language } from "@/stores/uiSlice";
@@ -24,9 +30,19 @@ export function useTranslation(languageOverride?: Language) {
   const contextLanguage = useContext(TranslationLanguageContext);
   const language = languageOverride ?? contextLanguage ?? storedLanguage;
   const setLanguage = useBoundStore((state) => state.ui.setLanguage);
+  const [, translationsLoaded] = useReducer(
+    (version: number) => version + 1,
+    0,
+  );
 
   useEffect(() => {
-    loadTranslations(language);
+    let active = true;
+    void loadTranslations(language).then(() => {
+      if (active) translationsLoaded();
+    });
+    return () => {
+      active = false;
+    };
   }, [language]);
 
   return {

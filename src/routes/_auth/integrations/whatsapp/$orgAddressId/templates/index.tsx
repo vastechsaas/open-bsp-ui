@@ -102,7 +102,7 @@ function TemplatesIndex() {
                 syncTemplates.mutate(orgAddressId, {
                   onSuccess: (result) =>
                     void message.success(
-                      t(`${result.synced} plantillas sincronizadas`),
+                      `${t("Plantillas sincronizadas")}: ${result.synced}`,
                     ),
                   onError: () =>
                     void message.error(

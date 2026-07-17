@@ -17,6 +17,13 @@ export type TemplateEditorValues = {
   quickReplies: string[];
 };
 
+export function isTemplateWorkspacePath(pathname: string) {
+  const normalizedPath = pathname.replace(/\/$/, "") || "/";
+  return /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+)?$/.test(
+    normalizedPath,
+  );
+}
+
 export function getTemplateVariableIndexes(text: string) {
   const indexes = new Set<number>();
   for (const match of text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)) {
@@ -31,14 +38,15 @@ function variablesAreSequential(indexes: number[]) {
 
 export function getTemplateDetailsErrors(values: TemplateEditorValues) {
   const errors: string[] = [];
-  if (!values.organizationAddress) errors.push("Select a WhatsApp account.");
+  if (!values.organizationAddress)
+    errors.push("Seleccioná una cuenta de WhatsApp.");
   if (!/^[a-z0-9_]+$/.test(values.name) || values.name.length > 512) {
     errors.push(
-      "Use lowercase letters, numbers, and underscores for the name.",
+      "Usá letras minúsculas, números y guiones bajos para el nombre.",
     );
   }
-  if (!values.language) errors.push("Select a language.");
-  if (!values.category) errors.push("Select a category.");
+  if (!values.language) errors.push("Seleccioná un idioma.");
+  if (!values.category) errors.push("Seleccioná una categoría.");
   return errors;
 }
 
@@ -48,35 +56,35 @@ export function getTemplateContentErrors(values: TemplateEditorValues) {
   const bodyIndexes = getTemplateVariableIndexes(values.body);
   const trimmedBody = values.body.trim();
 
-  if (!trimmedBody) errors.push("Add the message body.");
+  if (!trimmedBody) errors.push("Agregá el cuerpo del mensaje.");
   if (values.header.length > 60)
-    errors.push("Keep the header within 60 characters.");
+    errors.push("Mantené el encabezado dentro de 60 caracteres.");
   if (values.body.length > 1024)
-    errors.push("Keep the body within 1,024 characters.");
+    errors.push("Mantené el cuerpo dentro de 1.024 caracteres.");
   if (values.footer.length > 60)
-    errors.push("Keep the footer within 60 characters.");
+    errors.push("Mantené el pie dentro de 60 caracteres.");
   if (!variablesAreSequential(headerIndexes) || headerIndexes.length > 1) {
-    errors.push("The header can use only {{1}}.");
+    errors.push("El encabezado solo puede usar {{1}}.");
   }
   if (headerIndexes.length && !values.headerSample.trim()) {
-    errors.push("Add a sample for the header variable.");
+    errors.push("Agregá un ejemplo para la variable del encabezado.");
   }
   if (!variablesAreSequential(bodyIndexes)) {
-    errors.push("Body variables must be sequential from {{1}}.");
+    errors.push("Las variables del cuerpo deben ser secuenciales desde {{1}}.");
   }
   if (/^\{\{\s*\d+\s*\}\}/.test(trimmedBody)) {
-    errors.push("The body cannot start with a variable.");
+    errors.push("El cuerpo no puede comenzar con una variable.");
   }
   if (/\{\{\s*\d+\s*\}\}$/.test(trimmedBody)) {
-    errors.push("The body cannot end with a variable.");
+    errors.push("El cuerpo no puede terminar con una variable.");
   }
   if (bodyIndexes.some((_, index) => !values.bodySamples[index]?.trim())) {
-    errors.push("Add a sample for every body variable.");
+    errors.push("Agregá un ejemplo para cada variable del cuerpo.");
   }
   if (values.quickReplies.length > 3)
-    errors.push("Add no more than three quick replies.");
+    errors.push("Agregá como máximo tres respuestas rápidas.");
   if (values.quickReplies.some((reply) => !reply.trim() || reply.length > 25)) {
-    errors.push("Quick replies must contain 1 to 25 characters.");
+    errors.push("Las respuestas rápidas deben tener entre 1 y 25 caracteres.");
   }
   return errors;
 }
