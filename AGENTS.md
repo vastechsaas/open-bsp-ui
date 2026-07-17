@@ -74,6 +74,31 @@ npm run lint
 `npm run lint` currently has an existing warning baseline. Treat new lint errors
 as blockers; do not expand warning noise unnecessarily.
 
+## Data-table convention
+
+Use the shared server-paginated pattern for list screens that can grow.
+
+- Use `src/components/DataTablePagination.tsx` for page navigation and page-size
+  selection. Do not recreate pagination buttons inside a module route.
+- Use the shared types, constants, and page calculations from
+  `src/utils/DataTableUtils.ts`. Standard page sizes are 10, 25, and 50.
+- Debounce server-side search with `src/hooks/useDebouncedValue.ts` and reset to
+  page 1 when search, filters, or page size changes.
+- Include page, page size, search, and filters in the TanStack Query key. Keep
+  the module root key as a prefix so mutations can invalidate every cached
+  page.
+- Fetch only the requested page from the backend. Do not fetch all records and
+  paginate with frontend `slice()`, and avoid one follow-up request per row.
+- Expect the backend page response to contain `rows` and `total`; backend RPC
+  rows expose `total_count`, which the query hook maps into this shared shape.
+- Keep table columns module-specific and preserve responsive alternatives such
+  as cards where needed. Reuse pagination behavior, not one universal column
+  definition.
+- Show loading, error, empty, and filtered-empty states consistently.
+
+The Campaign Manager list and `useCampaigns()` are the reference frontend
+implementation for this pattern.
+
 ## Meta / Facebook onboarding notes
 
 Current frontend routes relevant to OAuth/onboarding include:
