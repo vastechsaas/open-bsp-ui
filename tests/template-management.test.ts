@@ -3,11 +3,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   buildTemplateDraftInput,
+  getInitialTemplateEditorStep,
   getTemplateContentErrors,
   getTemplateVariableIndexes,
   isTemplateWorkspacePath,
   type TemplateEditorValues,
 } from "../src/utils/TemplateDraftUtils.ts";
+
+void test("new and draft templates start on Details", () => {
+  assert.equal(getInitialTemplateEditorStep(), 1);
+  assert.equal(getInitialTemplateEditorStep("draft"), 1);
+  assert.equal(getInitialTemplateEditorStep("pending"), 3);
+  assert.equal(getInitialTemplateEditorStep("approved"), 3);
+});
 
 void test("template manager routes use the full-width workspace", () => {
   assert.equal(
@@ -54,7 +62,7 @@ void test("template manager labels exist in every supported locale", () => {
   const keys = [
     ...new Set(
       sourceFiles.flatMap((file) =>
-        [...readFileSync(file, "utf8").matchAll(/t\("([^"]+)"\)/g)].map(
+        [...readFileSync(file, "utf8").matchAll(/t\(\s*"([^"]+)"/g)].map(
           (match) => match[1],
         ),
       ),
