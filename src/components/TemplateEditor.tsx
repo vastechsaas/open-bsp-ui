@@ -121,10 +121,7 @@ export default function TemplateEditor({
 
   const returnToList = () =>
     void navigate({
-      to: "/integrations/whatsapp/$orgAddressId/templates",
-      params: {
-        orgAddressId: values.organizationAddress || organizationAddress,
-      },
+      to: "/templates",
     });
 
   const saveDraft = async () => {

@@ -1,14 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import TemplateEditor from "@/components/TemplateEditor";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/templates/new",
 )({
-  component: NewTemplate,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/templates/new",
+      search: { account: params.orgAddressId },
+    });
+  },
 });
-
-function NewTemplate() {
-  const { orgAddressId } = Route.useParams();
-
-  return <TemplateEditor organizationAddress={orgAddressId} />;
-}

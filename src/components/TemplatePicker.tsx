@@ -116,9 +116,9 @@ export default function TemplatePicker() {
               className="w-full text-left px-[10px] py-[8px] rounded-xl hover:bg-accent cursor-pointer"
               onClick={() => {
                 toggle("templatePicker", false);
-                navigate({
-                  to: "/integrations/whatsapp/$orgAddressId/templates/new",
-                  params: { orgAddressId: orgAddress },
+                void navigate({
+                  to: "/templates/new",
+                  search: { account: orgAddress },
                   hash: (prevHash) => prevHash!,
                 });
               }}

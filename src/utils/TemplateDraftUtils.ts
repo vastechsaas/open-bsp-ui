@@ -27,8 +27,11 @@ export function getInitialTemplateEditorStep(
 
 export function isTemplateWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
-  return /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+)?$/.test(
-    normalizedPath,
+  return (
+    /^\/templates(?:\/[^/]+)?$/.test(normalizedPath) ||
+    /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+)?$/.test(
+      normalizedPath,
+    )
   );
 }
 

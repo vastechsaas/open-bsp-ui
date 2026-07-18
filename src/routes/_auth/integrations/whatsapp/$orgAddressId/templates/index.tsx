@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
 import {
   Eye,
@@ -25,14 +25,24 @@ import { formatPhoneNumber } from "@/utils/FormatUtils";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/templates/",
-)({ component: TemplatesIndex });
+)({
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/templates",
+      search: { account: params.orgAddressId },
+    });
+  },
+});
 
-function TemplatesIndex() {
+export function TemplatesIndex({
+  initialAccount,
+}: {
+  initialAccount?: string;
+}) {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
-  const { orgAddressId } = Route.useParams();
   const [search, setSearch] = useState("");
-  const [account, setAccount] = useState("all");
+  const [account, setAccount] = useState(initialAccount || "all");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -72,13 +82,32 @@ function TemplatesIndex() {
 
   useEffect(() => setPage(1), [search, account, category, status]);
 
+  const syncVisibleAccounts = async () => {
+    const accountAddresses =
+      account === "all"
+        ? whatsappAccounts.map((item) => item.address)
+        : [account];
+    if (!accountAddresses.length) {
+      void message.error(t("No se pudieron sincronizar las plantillas"));
+      return;
+    }
+
+    try {
+      let synced = 0;
+      for (const address of accountAddresses) {
+        const result = await syncTemplates.mutateAsync(address);
+        synced += result.synced;
+      }
+      void message.success(`${t("Plantillas sincronizadas")}: ${synced}`);
+    } catch {
+      void message.error(t("No se pudieron sincronizar las plantillas"));
+    }
+  };
+
   const openTemplate = (template: TemplateListRow) =>
     void navigate({
-      to: "/integrations/whatsapp/$orgAddressId/templates/$templateId",
-      params: {
-        orgAddressId: template.organization_address,
-        templateId: template.id,
-      },
+      to: "/templates/$templateId",
+      params: { templateId: template.id },
     });
 
   return (
@@ -97,19 +126,8 @@ function TemplatesIndex() {
             <button
               type="button"
               className="flex items-center justify-center gap-[7px] rounded-lg border border-border px-[13px] py-[9px] text-[13px] hover:bg-muted disabled:opacity-50"
-              disabled={syncTemplates.isPending}
-              onClick={() =>
-                syncTemplates.mutate(orgAddressId, {
-                  onSuccess: (result) =>
-                    void message.success(
-                      `${t("Plantillas sincronizadas")}: ${result.synced}`,
-                    ),
-                  onError: () =>
-                    void message.error(
-                      t("No se pudieron sincronizar las plantillas"),
-                    ),
-                })
-              }
+              disabled={syncTemplates.isPending || !whatsappAccounts.length}
+              onClick={() => void syncVisibleAccounts()}
             >
               <RefreshCw
                 className={`h-[16px] w-[16px] ${syncTemplates.isPending ? "animate-spin" : ""}`}
@@ -120,8 +138,10 @@ function TemplatesIndex() {
               className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px]"
               onClick={() =>
                 void navigate({
-                  to: "/integrations/whatsapp/$orgAddressId/templates/new",
-                  params: { orgAddressId },
+                  to: "/templates/new",
+                  search: {
+                    account: account === "all" ? undefined : account,
+                  },
                 })
               }
             >
