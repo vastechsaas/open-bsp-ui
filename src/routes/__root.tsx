@@ -29,7 +29,7 @@ export const Route = createRootRoute({
   }),
   beforeLoad: async ({ search, location }) => {
     const isAlwaysPublicPath = ALWAYS_PUBLIC_PATH_PREFIXES.some((path) =>
-      location.pathname.startsWith(path)
+      location.pathname.startsWith(path),
     );
     const isLandingPage = location.pathname === "/";
 
@@ -44,13 +44,13 @@ export const Route = createRootRoute({
 
     if (user && location.pathname.startsWith("/login")) {
       throw redirect({
-        to: search.redirect || "/conversations",
+        to: search.redirect || "/dashboard",
       });
     }
 
     if (user && isLandingPage) {
       throw redirect({
-        to: "/conversations",
+        to: "/dashboard",
       });
     }
 

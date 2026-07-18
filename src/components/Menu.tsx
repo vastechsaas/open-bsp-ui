@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Languages,
   LayoutTemplate,
+  LayoutDashboard,
   LogOut,
   Megaphone,
   MessageSquareText,
@@ -99,6 +100,15 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
       >
         <MenuGroupLabel expanded={expanded} label={t("Espacio de trabajo")} />
         <div className="space-y-[3px]">
+          <LinkButton
+            to="/dashboard"
+            title={t("Panel")}
+            isActive={pathname === "/dashboard"}
+            expanded={expanded}
+          >
+            <LayoutDashboard className="h-[21px] w-[21px] stroke-[2]" />
+          </LinkButton>
+
           <LinkButton
             to="/conversations"
             title={t("Mensajes")}
@@ -222,7 +232,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                     label: organization.name,
                     onClick: () => {
                       setActiveOrg(organization.id);
-                      void navigate({ to: "/conversations" });
+                      void navigate({ to: "/dashboard" });
                     },
                   })) || []),
                   {

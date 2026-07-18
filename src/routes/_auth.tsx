@@ -23,6 +23,7 @@ import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
+import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
 import {
   getResizablePanelMaxWidth,
   getSidebarWidth,
@@ -56,6 +57,7 @@ function AppLayout() {
   const canToggleSidebar = viewportWidth >= SIDEBAR_DESKTOP_BREAKPOINT;
   const isStatsRoute = pathname.startsWith("/stats");
   const isWorkspaceRoute =
+    isDashboardWorkspacePath(pathname) ||
     isCampaignWorkspacePath(pathname) ||
     isTemplateWorkspacePath(pathname) ||
     isWhatsAppManagerWorkspacePath(pathname) ||

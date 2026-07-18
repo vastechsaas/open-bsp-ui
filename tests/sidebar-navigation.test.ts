@@ -43,6 +43,7 @@ void test("sidebar keeps the approved grouping and bottom navigation order", () 
     "utf8",
   );
   const workspaceIndex = menu.indexOf('t("Espacio de trabajo")');
+  const dashboardIndex = menu.indexOf('to="/dashboard"');
   const messagesIndex = menu.indexOf('to="/conversations"');
   const teamIndex = menu.indexOf('to="/team-members"');
   const toolsIndex = menu.indexOf('t("Herramientas")');
@@ -50,7 +51,8 @@ void test("sidebar keeps the approved grouping and bottom navigation order", () 
   const whatsappIndex = menu.indexOf('to="/whatsapp-manager"');
   const settingsIndex = menu.indexOf('to="/settings"');
 
-  assert.ok(workspaceIndex >= 0 && messagesIndex > workspaceIndex);
+  assert.ok(workspaceIndex >= 0 && dashboardIndex > workspaceIndex);
+  assert.ok(messagesIndex > dashboardIndex);
   assert.ok(teamIndex > messagesIndex && toolsIndex > teamIndex);
   assert.ok(integrationsIndex > toolsIndex);
   assert.ok(whatsappIndex > integrationsIndex);

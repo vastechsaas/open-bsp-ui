@@ -38,7 +38,7 @@ function EmailLogin() {
       return;
     }
 
-    void navigate({ to: redirect || "/" });
+    void navigate({ to: redirect || "/dashboard" });
   }
 
   return (

@@ -20,6 +20,7 @@ import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
 import { Route as AuthWhatsappManagerRouteImport } from './routes/_auth/whatsapp-manager'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
+import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
 import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
 import { Route as AuthTeamMembersIndexRouteImport } from './routes/_auth/team-members/index'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
@@ -126,6 +127,11 @@ const AuthWhatsappManagerRoute = AuthWhatsappManagerRouteImport.update({
 const AuthStatsRoute = AuthStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthDashboardRoute = AuthDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthTemplatesIndexRoute = AuthTemplatesIndexRouteImport.update({
@@ -428,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/dashboard': typeof AuthDashboardRoute
   '/stats': typeof AuthStatsRouteWithChildren
   '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
@@ -493,6 +500,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/dashboard': typeof AuthDashboardRoute
   '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -559,6 +567,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/_auth/dashboard': typeof AuthDashboardRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
   '/_auth/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login_/email': typeof LoginEmailRoute
@@ -626,6 +635,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/terms'
+    | '/dashboard'
     | '/stats'
     | '/whatsapp-manager'
     | '/login/email'
@@ -691,6 +701,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/terms'
+    | '/dashboard'
     | '/whatsapp-manager'
     | '/login/email'
     | '/oauth/callback'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/terms'
+    | '/_auth/dashboard'
     | '/_auth/stats'
     | '/_auth/whatsapp-manager'
     | '/login_/email'
@@ -908,6 +920,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof AuthStatsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/templates/': {
@@ -1329,6 +1348,7 @@ const AuthTemplatesTemplateIdRouteWithChildren =
   )
 
 interface AuthRouteChildren {
+  AuthDashboardRoute: typeof AuthDashboardRoute
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
   AuthWhatsappManagerRoute: typeof AuthWhatsappManagerRoute
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
@@ -1379,6 +1399,7 @@ interface AuthRouteChildren {
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthDashboardRoute: AuthDashboardRoute,
   AuthStatsRoute: AuthStatsRouteWithChildren,
   AuthWhatsappManagerRoute: AuthWhatsappManagerRoute,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
