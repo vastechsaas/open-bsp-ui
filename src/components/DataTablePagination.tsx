@@ -4,6 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   clampDataTablePage,
   DATA_TABLE_PAGE_SIZE_OPTIONS,
+  getDataTablePageCorrection,
   getDataTablePageCount,
 } from "@/utils/DataTableUtils";
 
@@ -27,10 +28,16 @@ export default function DataTablePagination({
   const { translate: t } = useTranslation();
   const pageCount = getDataTablePageCount(total, pageSize);
   const currentPage = clampDataTablePage(page, total, pageSize);
+  const pageCorrection = getDataTablePageCorrection(
+    page,
+    total,
+    pageSize,
+    disabled,
+  );
 
   useEffect(() => {
-    if (currentPage !== page) onPageChange(currentPage);
-  }, [currentPage, onPageChange, page]);
+    if (pageCorrection !== null) onPageChange(pageCorrection);
+  }, [onPageChange, pageCorrection]);
 
   return (
     <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-[12px]">
