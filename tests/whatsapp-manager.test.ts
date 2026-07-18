@@ -12,6 +12,14 @@ void test("WhatsApp Manager uses the full-width workspace", () => {
   assert.equal(isWhatsAppManagerWorkspacePath("/integrations"), false);
 });
 
+void test("full-width workspaces inherit the project foreground color", () => {
+  const layout = readFileSync(
+    new URL("../src/routes/_auth.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(layout, /flex bg-background text-foreground/);
+});
+
 void test("WhatsApp Manager prefers the connected WhatsApp account", () => {
   const selected = selectWhatsAppManagerAccount([
     { address: "200", service: "whatsapp", status: "disconnected" },

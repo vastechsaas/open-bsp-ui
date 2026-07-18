@@ -116,7 +116,7 @@ function AppLayout() {
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
           (isWorkspaceRoute
-            ? " flex bg-background"
+            ? " flex bg-background text-foreground"
             : isStatsRoute
               ? " flex bg-muted"
               : activeConvId
