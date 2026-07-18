@@ -127,6 +127,7 @@ export type UIState = {
   searchPattern: string;
   isLoading: boolean;
   language: Language;
+  sidebarCollapsed: boolean;
 };
 
 export type UIActions = {
@@ -140,6 +141,7 @@ export type UIActions = {
   setSearchPattern: (searchPattern: string) => void;
   setTemplateDraft: (convId: string, draft: TemplateDraft | null) => void;
   setLanguage: (lang: Language) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 };
 
 export type UISlice = UIState & UIActions;
@@ -165,6 +167,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   searchPattern: "",
   isLoading: false,
   language: detectDefaultLanguage(),
+  sidebarCollapsed: false,
   toggle: (component: keyof UIState, value?: boolean) =>
     set((state) => ({
       ui: {
@@ -177,6 +180,13 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       ui: {
         ...state.ui,
         activeOrgId,
+      },
+    })),
+  setSidebarCollapsed: (sidebarCollapsed: boolean) =>
+    set((state) => ({
+      ui: {
+        ...state.ui,
+        sidebarCollapsed,
       },
     })),
   setActiveConv: (activeConvId: string | null) =>

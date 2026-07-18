@@ -4,7 +4,7 @@ import Menu from "@/components/Menu";
 import Chat from "@/components/Chat";
 import ChatHeader from "@/components/ChatHeader";
 import ChatFooter from "@/components/ChatFooter";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import FilePicker from "@/components/FileUploader/FilePicker";
 import FilePreviewer from "@/components/FilePreviewer";
@@ -23,6 +23,12 @@ import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
+import {
+  getResizablePanelMaxWidth,
+  getSidebarWidth,
+  isSidebarExpanded,
+  SIDEBAR_DESKTOP_BREAKPOINT,
+} from "@/utils/SidebarUtils";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -30,19 +36,13 @@ export const Route = createFileRoute("/_auth")({
 
 const MIN_PANEL_WIDTH = 300;
 
-function getMenuWidth() {
-  return window.innerWidth >= 1024 ? 64 : 48;
-}
-
-function getMaxPanelWidth() {
-  // Max is 1/2 of available space (equal to chat panel)
-  const availableSpace = window.innerWidth - getMenuWidth();
-  return Math.floor(availableSpace / 2);
-}
-
 function AppLayout() {
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const sidebarCollapsed = useBoundStore((state) => state.ui.sidebarCollapsed);
+  const setSidebarCollapsed = useBoundStore(
+    (state) => state.ui.setSidebarCollapsed,
+  );
   // AI-agent onboarding is intentionally hidden for the Meta review.
   // const { data: agents } = useCurrentAgents();
   // const hasAiAgents = agents?.some((a) => a.ai);
@@ -50,6 +50,10 @@ function AppLayout() {
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
   const pathname = location.pathname;
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const menuWidth = getSidebarWidth(viewportWidth, sidebarCollapsed);
+  const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);
+  const canToggleSidebar = viewportWidth >= SIDEBAR_DESKTOP_BREAKPOINT;
   const isStatsRoute = pathname.startsWith("/stats");
   const isWorkspaceRoute =
     isCampaignWorkspacePath(pathname) ||
@@ -58,6 +62,10 @@ function AppLayout() {
     isTeamMembersWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
+  const getMaxPanelWidth = useCallback(
+    () => getResizablePanelMaxWidth(window.innerWidth, menuWidth),
+    [menuWidth],
+  );
 
   const {
     width: panelWidth,
@@ -67,6 +75,19 @@ function AppLayout() {
     minWidth: MIN_PANEL_WIDTH,
     getMaxWidth: getMaxPanelWidth,
   });
+  const effectivePanelWidth =
+    panelWidth === null
+      ? null
+      : Math.min(
+          panelWidth,
+          getResizablePanelMaxWidth(viewportWidth, menuWidth),
+        );
+
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", updateViewportWidth);
+    return () => window.removeEventListener("resize", updateViewportWidth);
+  }, []);
 
   // Sync fragment identifier with activeConvId
   // i.e. /conversations#1234
@@ -80,21 +101,24 @@ function AppLayout() {
   console.log("active conv", activeConvId);
 
   const showCenterPanel = activeConvId || isStatsRoute || isWorkspaceRoute;
+  const gridTemplateColumns = isWorkspaceRoute
+    ? `${menuWidth}px 1fr`
+    : effectivePanelWidth !== null
+      ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
+      : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
 
   return (
     <div
-      className="app-grid"
-      style={
-        isWorkspaceRoute
-          ? { gridTemplateColumns: `${getMenuWidth()}px 1fr` }
-          : panelWidth !== null
-            ? { gridTemplateColumns: `${getMenuWidth()}px ${panelWidth}px 1fr` }
-            : undefined
-      }
+      className="app-grid transition-[grid-template-columns] duration-200"
+      style={viewportWidth >= 768 ? { gridTemplateColumns } : undefined}
     >
       {/* Menu - Fixed width */}
       <div className={showCenterPanel ? "hidden md:flex" : "flex"}>
-        <Menu />
+        <Menu
+          expanded={sidebarExpanded}
+          canToggle={canToggleSidebar}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
       </div>
       {/* Left Panel - Router Outlet */}
       <div

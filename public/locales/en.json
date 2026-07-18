@@ -637,5 +637,11 @@
   "La cuenta de autenticación de la persona no será eliminada.": "The person's authentication account will not be deleted.",
   "Ya existe un miembro o una invitación para este correo.": "A member or invitation already exists for this email.",
   "Asigná otro propietario antes de realizar esta acción.": "Assign another owner before performing this action.",
-  "No se pudo completar la acción.": "The action could not be completed."
+  "No se pudo completar la acción.": "The action could not be completed.",
+  "Espacio de trabajo": "Workspace",
+  "Contraer navegación": "Collapse navigation",
+  "Expandir navegación": "Expand navigation",
+  "Navegación principal": "Main navigation",
+  "Abrir menú de usuario": "Open user menu",
+  "Organizaciones": "Organizations"
 }
