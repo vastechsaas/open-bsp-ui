@@ -18,6 +18,9 @@ void test("new and draft templates start on Details", () => {
 });
 
 void test("template manager routes use the full-width workspace", () => {
+  assert.equal(isTemplateWorkspacePath("/templates"), true);
+  assert.equal(isTemplateWorkspacePath("/templates/new"), true);
+  assert.equal(isTemplateWorkspacePath("/templates/template-1"), true);
   assert.equal(
     isTemplateWorkspacePath("/integrations/whatsapp/account-1/templates"),
     true,
@@ -36,6 +39,7 @@ void test("template manager routes use the full-width workspace", () => {
     isTemplateWorkspacePath("/integrations/whatsapp/account-1/profile"),
     false,
   );
+  assert.equal(isTemplateWorkspacePath("/integrations"), false);
 });
 
 const readyTemplate: TemplateEditorValues = {

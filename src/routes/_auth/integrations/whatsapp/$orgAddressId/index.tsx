@@ -87,9 +87,9 @@ function WhatsAppDetails() {
             </div>
           }
           onClick={() =>
-            navigate({
-              to: "/integrations/whatsapp/$orgAddressId/templates",
-              params: { orgAddressId },
+            void navigate({
+              to: "/templates",
+              search: { account: orgAddressId },
               hash: (prevHash) => prevHash!,
             })
           }
