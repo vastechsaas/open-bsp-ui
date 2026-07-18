@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
-import { GoogleOutlined } from "@ant-design/icons";
 import { loadTranslations } from "@/i18n/translations";
 import LegalLinks from "@/components/LegalLinks";
+// import { supabase } from "@/supabase/client";
+// import { GoogleOutlined } from "@ant-design/icons";
 // import { GithubOutlined } from "@ant-design/icons";
 
-type OAuthProvider = "google" | "github";
+// type OAuthProvider = "google" | "github";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: () => loadTranslations("en"),
@@ -21,14 +21,15 @@ function Login() {
   const { translate: t } = useTranslation("en");
   const navigate = useNavigate();
 
-  async function handleLogInWithOauth(provider: OAuthProvider) {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: window.location.origin + (redirect || "/"),
-      },
-    });
-  }
+  // OAuth login is intentionally hidden for the staging deployment.
+  // async function handleLogInWithOauth(provider: OAuthProvider) {
+  //   await supabase.auth.signInWithOAuth({
+  //     provider,
+  //     options: {
+  //       redirectTo: window.location.origin + (redirect || "/"),
+  //     },
+  //   });
+  // }
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
@@ -45,6 +46,7 @@ function Login() {
       </a>
 
       <div className="flex flex-col gap-3 w-[250px]">
+        {/* Google OAuth is intentionally hidden for the staging deployment.
         <button
           type="button"
           className="primary bg-blue-500 hover:bg-blue-400 text-white w-full border-none"
@@ -52,6 +54,7 @@ function Login() {
         >
           <GoogleOutlined /> {t("Continuar con Google")}
         </button>
+        */}
 
         <button
           type="button"
