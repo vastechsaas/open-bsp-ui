@@ -14,6 +14,7 @@ import {
   NotebookTabs,
   Megaphone,
   LayoutTemplate,
+  UsersRound,
 } from "lucide-react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { LinkButton } from "./LinkButton";
@@ -119,6 +120,15 @@ export default function Menu() {
           className="mt-[10px]"
         >
           <BarChart3 className="w-[24px] h-[24px] stroke-[2]" />
+        </LinkButton>
+
+        <LinkButton
+          to="/team-members"
+          title={t("Miembros del equipo")}
+          isActive={pathname.startsWith("/team-members")}
+          className="mt-[10px]"
+        >
+          <UsersRound className="w-[24px] h-[24px] stroke-[2]" />
         </LinkButton>
       </div>
 

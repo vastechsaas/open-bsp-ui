@@ -22,6 +22,7 @@ import StatsCenter from "@/components/stats/StatsCenter";
 import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
+import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -53,7 +54,8 @@ function AppLayout() {
   const isWorkspaceRoute =
     isCampaignWorkspacePath(pathname) ||
     isTemplateWorkspacePath(pathname) ||
-    isWhatsAppManagerWorkspacePath(pathname);
+    isWhatsAppManagerWorkspacePath(pathname) ||
+    isTeamMembersWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
 

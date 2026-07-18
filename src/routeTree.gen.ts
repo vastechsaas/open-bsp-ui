@@ -21,6 +21,7 @@ import { Route as LoginEmailRouteImport } from './routes/login_.email'
 import { Route as AuthWhatsappManagerRouteImport } from './routes/_auth/whatsapp-manager'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
 import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
+import { Route as AuthTeamMembersIndexRouteImport } from './routes/_auth/team-members/index'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
 import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings/index'
 import { Route as AuthIntegrationsIndexRouteImport } from './routes/_auth/integrations/index'
@@ -130,6 +131,11 @@ const AuthStatsRoute = AuthStatsRouteImport.update({
 const AuthTemplatesIndexRoute = AuthTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeamMembersIndexRoute = AuthTeamMembersIndexRouteImport.update({
+  id: '/team-members/',
+  path: '/team-members/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthStatsIndexRoute = AuthStatsIndexRouteImport.update({
@@ -449,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats/': typeof AuthStatsIndexRoute
+  '/team-members': typeof AuthTeamMembersIndexRoute
   '/templates': typeof AuthTemplatesIndexRoute
   '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -512,6 +519,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats': typeof AuthStatsIndexRoute
+  '/team-members': typeof AuthTeamMembersIndexRoute
   '/templates': typeof AuthTemplatesIndexRoute
   '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -578,6 +586,7 @@ export interface FileRoutesById {
   '/_auth/integrations/': typeof AuthIntegrationsIndexRoute
   '/_auth/settings/': typeof AuthSettingsIndexRoute
   '/_auth/stats/': typeof AuthStatsIndexRoute
+  '/_auth/team-members/': typeof AuthTeamMembersIndexRoute
   '/_auth/templates/': typeof AuthTemplatesIndexRoute
   '/_auth/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/_auth/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -644,6 +653,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats/'
+    | '/team-members'
     | '/templates'
     | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
@@ -707,6 +717,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats'
+    | '/team-members'
     | '/templates'
     | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
@@ -772,6 +783,7 @@ export interface FileRouteTypes {
     | '/_auth/integrations/'
     | '/_auth/settings/'
     | '/_auth/stats/'
+    | '/_auth/team-members/'
     | '/_auth/templates/'
     | '/_auth/campaigns/$campaignId/review'
     | '/_auth/integrations/instagram/new'
@@ -903,6 +915,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof AuthTemplatesIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/team-members/': {
+      id: '/_auth/team-members/'
+      path: '/team-members'
+      fullPath: '/team-members'
+      preLoaderRoute: typeof AuthTeamMembersIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/stats/': {
@@ -1328,6 +1347,7 @@ interface AuthRouteChildren {
   AuthConversationsIndexRoute: typeof AuthConversationsIndexRoute
   AuthIntegrationsIndexRoute: typeof AuthIntegrationsIndexRoute
   AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
+  AuthTeamMembersIndexRoute: typeof AuthTeamMembersIndexRoute
   AuthTemplatesIndexRoute: typeof AuthTemplatesIndexRoute
   AuthIntegrationsInstagramNewRoute: typeof AuthIntegrationsInstagramNewRoute
   AuthIntegrationsWhatsappNewRoute: typeof AuthIntegrationsWhatsappNewRoute
@@ -1378,6 +1398,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthConversationsIndexRoute: AuthConversationsIndexRoute,
   AuthIntegrationsIndexRoute: AuthIntegrationsIndexRoute,
   AuthSettingsIndexRoute: AuthSettingsIndexRoute,
+  AuthTeamMembersIndexRoute: AuthTeamMembersIndexRoute,
   AuthTemplatesIndexRoute: AuthTemplatesIndexRoute,
   AuthIntegrationsInstagramNewRoute: AuthIntegrationsInstagramNewRoute,
   AuthIntegrationsWhatsappNewRoute: AuthIntegrationsWhatsappNewRoute,
