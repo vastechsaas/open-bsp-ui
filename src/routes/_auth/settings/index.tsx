@@ -42,8 +42,7 @@ function SettingsIndex() {
             }
             onClick={() =>
               navigate({
-                to: "/settings/members",
-                hash: (prevHash) => prevHash!,
+                to: "/team-members",
               })
             }
           />
