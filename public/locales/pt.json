@@ -590,5 +590,19 @@
   "Agregá un ejemplo para cada variable del cuerpo.": "Adicione um exemplo para cada variável do corpo.",
   "Agregá como máximo tres respuestas rápidas.": "Adicione no máximo três respostas rápidas.",
   "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "As respostas rápidas devem ter entre 1 e 25 caracteres.",
-  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "Após o envio, a Meta revisará o modelo. O status aparecerá no Gerenciador de modelos."
+  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "Após o envio, a Meta revisará o modelo. O status aparecerá no Gerenciador de modelos.",
+  "Los cambios se guardaron en Meta, pero la sincronización sigue pendiente.": "As alterações foram salvas na Meta, mas a sincronização ainda está pendente.",
+  "Cambios guardados en Meta": "Alterações salvas na Meta",
+  "No se pudieron guardar los cambios en Meta": "Não foi possível salvar as alterações na Meta",
+  "Editá la categoría y el contenido; la cuenta, el nombre y el idioma no cambian.": "Edite a categoria e o conteúdo; a conta, o nome e o idioma permanecem inalterados.",
+  "Guardando...": "Salvando...",
+  "Guardar cambios en Meta": "Salvar alterações na Meta",
+  "Eliminar plantilla permanentemente": "Excluir modelo permanentemente",
+  "Esta acción eliminará permanentemente la plantilla": "Esta ação excluirá permanentemente o modelo",
+  "Cancelar": "Cancelar",
+  "Plantilla eliminada": "Modelo excluído",
+  "No se pudo eliminar la plantilla. No se realizaron cambios.": "Não foi possível excluir o modelo. Nenhuma alteração foi feita.",
+  "Esta plantilla no se puede editar": "Este modelo não pode ser editado",
+  "El estado actual de Meta permite únicamente verla.": "O status atual da Meta permite apenas a visualização.",
+  "Ver plantilla": "Ver modelo"
 }

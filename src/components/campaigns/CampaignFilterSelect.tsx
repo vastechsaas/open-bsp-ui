@@ -12,12 +12,14 @@ export default function CampaignFilterSelect<T extends string>({
   options,
   onChange,
   className = "",
+  disabled = false,
 }: {
   ariaLabel: string;
   value: T;
   options: CampaignFilterOption<T>[];
   onChange: (value: T) => void;
   className?: string;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +52,8 @@ export default function CampaignFilterSelect<T extends string>({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="h-[40px] w-full rounded-lg border border-input bg-background px-[12px] flex items-center justify-between gap-[10px] text-[14px] text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        disabled={disabled}
+        className="h-[40px] w-full rounded-lg border border-input bg-background px-[12px] flex items-center justify-between gap-[10px] text-[14px] text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
         onClick={() => setIsOpen((open) => !open)}
       >
         <span className="truncate">{selectedOption?.label}</span>

@@ -220,6 +220,11 @@ type TemplateDraftVariables = {
   template: TemplateDraftInput;
 };
 
+export type SubmittedTemplateEditResult = {
+  template: TemplateRecord;
+  sync_pending: boolean;
+};
+
 function useInvalidateTemplateRecords() {
   const queryClient = useQueryClient();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -314,6 +319,49 @@ export function useDeleteTemplateDraft() {
         { organization_id: activeOrgId, draft_id: draftId },
       );
       if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useEditSubmittedTemplate() {
+  const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const invalidate = useInvalidateTemplateRecords();
+
+  return useMutation({
+    mutationFn: async ({
+      templateId,
+      template,
+    }: {
+      templateId: string;
+      template: TemplateDraftInput;
+    }) => {
+      const { data, error } =
+        await invokeTemplateFunction<SubmittedTemplateEditResult>(
+          `whatsapp-management/templates/${templateId}`,
+          "PATCH",
+          { organization_id: activeOrgId, template },
+        );
+      if (error) throw error;
+      return data!;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteSubmittedTemplate() {
+  const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const invalidate = useInvalidateTemplateRecords();
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const { data, error } = await invokeTemplateFunction<{
+        template: TemplateRecord;
+      }>(`whatsapp-management/templates/${templateId}`, "DELETE", {
+        organization_id: activeOrgId,
+      });
+      if (error) throw error;
+      return data!;
     },
     onSuccess: invalidate,
   });

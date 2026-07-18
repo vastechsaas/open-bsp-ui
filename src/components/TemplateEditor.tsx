@@ -17,6 +17,7 @@ import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type TemplateRecord,
   useCreateTemplateDraft,
+  useEditSubmittedTemplate,
   useSubmitTemplateDraft,
   useUpdateTemplateDraft,
 } from "@/queries/useTemplates";
@@ -29,6 +30,7 @@ import {
   buildTemplateDraftInput,
   getTemplateContentErrors,
   getTemplateDetailsErrors,
+  getTemplateEditorAccess,
   getInitialTemplateEditorStep,
   getTemplateVariableIndexes,
   type TemplateEditorStep,
@@ -39,9 +41,11 @@ import { formatPhoneNumber } from "@/utils/FormatUtils";
 export default function TemplateEditor({
   existingTemplate,
   organizationAddress,
+  submittedEdit = false,
 }: {
   existingTemplate?: TemplateRecord;
   organizationAddress: string;
+  submittedEdit?: boolean;
 }) {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
@@ -54,7 +58,7 @@ export default function TemplateEditor({
     ),
   );
   const [step, setStep] = useState<TemplateEditorStep>(() =>
-    getInitialTemplateEditorStep(existingTemplate?.status),
+    getInitialTemplateEditorStep(existingTemplate?.status, submittedEdit),
   );
   const [savedDraftId, setSavedDraftId] = useState(
     existingTemplate?.status === "draft" ? existingTemplate.id : undefined,
@@ -63,9 +67,16 @@ export default function TemplateEditor({
   const createDraft = useCreateTemplateDraft();
   const updateDraft = useUpdateTemplateDraft();
   const submitDraft = useSubmitTemplateDraft();
-  const isReadOnly = !!existingTemplate && existingTemplate.status !== "draft";
+  const editSubmittedTemplate = useEditSubmittedTemplate();
+  const { isReadOnly, lockIdentity } = getTemplateEditorAccess(
+    existingTemplate?.status,
+    submittedEdit,
+  );
   const isPending =
-    createDraft.isPending || updateDraft.isPending || submitDraft.isPending;
+    createDraft.isPending ||
+    updateDraft.isPending ||
+    submitDraft.isPending ||
+    editSubmittedTemplate.isPending;
   const detailsErrors = getTemplateDetailsErrors(values);
   const contentErrors = getTemplateContentErrors(values);
   const readinessErrors = [...detailsErrors, ...contentErrors];
@@ -153,6 +164,28 @@ export default function TemplateEditor({
     }
   };
 
+  const saveSubmittedChanges = async () => {
+    if (!existingTemplate || readinessErrors.length) return;
+    try {
+      const result = await editSubmittedTemplate.mutateAsync({
+        templateId: existingTemplate.id,
+        template: buildTemplateDraftInput(values),
+      });
+      if (result.sync_pending) {
+        void message.warning(
+          t(
+            "Los cambios se guardaron en Meta, pero la sincronización sigue pendiente.",
+          ),
+        );
+      } else {
+        void message.success(t("Cambios guardados en Meta"));
+      }
+      returnToList();
+    } catch {
+      void message.error(t("No se pudieron guardar los cambios en Meta"));
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="border-b border-border px-[18px] py-[18px] md:px-[28px]">
@@ -171,14 +204,20 @@ export default function TemplateEditor({
                 <h1 className="text-[22px] font-semibold">
                   {isReadOnly
                     ? t("Detalles de plantilla")
-                    : existingTemplate
-                      ? t("Continuar plantilla")
-                      : t("Crear plantilla")}
+                    : submittedEdit
+                      ? t("Editar plantilla")
+                      : existingTemplate
+                        ? t("Continuar plantilla")
+                        : t("Crear plantilla")}
                 </h1>
                 <p className="mt-[2px] text-[12px] text-muted-foreground">
                   {isReadOnly
                     ? t("Esta plantilla ya fue enviada a Meta.")
-                    : t("Prepará el contenido antes de enviarlo a Meta.")}
+                    : submittedEdit
+                      ? t(
+                          "Editá la categoría y el contenido; la cuenta, el nombre y el idioma no cambian.",
+                        )
+                      : t("Prepará el contenido antes de enviarlo a Meta.")}
                 </p>
               </div>
             </div>
@@ -203,6 +242,7 @@ export default function TemplateEditor({
                 update={update}
                 accounts={whatsappAccounts}
                 readOnly={isReadOnly}
+                lockIdentity={lockIdentity}
               />
             )}
             {step === 2 && (
@@ -277,14 +317,16 @@ export default function TemplateEditor({
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                className="mr-auto rounded-lg border border-border px-[17px] py-[10px] text-[13px] hover:bg-muted disabled:opacity-50"
-                disabled={isPending || detailsErrors.length > 0}
-                onClick={() => void saveDraft()}
-              >
-                {t("Guardar borrador")}
-              </button>
+              {!submittedEdit && (
+                <button
+                  type="button"
+                  className="mr-auto rounded-lg border border-border px-[17px] py-[10px] text-[13px] hover:bg-muted disabled:opacity-50"
+                  disabled={isPending || detailsErrors.length > 0}
+                  onClick={() => void saveDraft()}
+                >
+                  {t("Guardar borrador")}
+                </button>
+              )}
               {step > 1 && (
                 <button
                   type="button"
@@ -315,9 +357,15 @@ export default function TemplateEditor({
                   type="button"
                   className="primary px-[18px] py-[10px] disabled:opacity-50"
                   disabled={isPending || readinessErrors.length > 0}
-                  onClick={() => void submit()}
+                  onClick={() =>
+                    void (submittedEdit ? saveSubmittedChanges() : submit())
+                  }
                 >
-                  {isPending ? t("Enviando...") : t("Enviar a Meta")}
+                  {isPending
+                    ? t("Guardando...")
+                    : submittedEdit
+                      ? t("Guardar cambios en Meta")
+                      : t("Enviar a Meta")}
                 </button>
               )}
             </>
@@ -377,7 +425,11 @@ function DetailsStep({
   update,
   accounts,
   readOnly,
-}: StepProps & { accounts: Array<{ address: string; extra: unknown }> }) {
+  lockIdentity,
+}: StepProps & {
+  accounts: Array<{ address: string; extra: unknown }>;
+  lockIdentity: boolean;
+}) {
   const { translate: t } = useTranslation();
   return (
     <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
@@ -392,6 +444,7 @@ function DetailsStep({
           <CampaignFilterSelect
             ariaLabel={t("Cuenta de WhatsApp")}
             value={values.organizationAddress}
+            disabled={readOnly || lockIdentity}
             onChange={(value) => update("organizationAddress", value)}
             options={accounts.map((item) => ({
               value: item.address,
@@ -403,6 +456,7 @@ function DetailsStep({
           <CampaignFilterSelect
             ariaLabel={t("Categoría")}
             value={values.category}
+            disabled={readOnly}
             onChange={(value) => update("category", value as TemplateCategory)}
             options={[
               { value: "UTILITY", label: t("Utilidad") },
@@ -415,6 +469,7 @@ function DetailsStep({
           <CampaignFilterSelect
             ariaLabel={t("Idioma")}
             value={values.language}
+            disabled={readOnly || lockIdentity}
             onChange={(value) => update("language", value)}
             options={[
               { value: "en", label: "English" },
@@ -430,7 +485,7 @@ function DetailsStep({
           <input
             className="template-input"
             value={values.name}
-            disabled={readOnly}
+            disabled={readOnly || lockIdentity}
             maxLength={512}
             placeholder="order_update"
             onChange={(event) =>
