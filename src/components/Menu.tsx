@@ -20,6 +20,7 @@ import { LinkButton } from "./LinkButton";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { Dropdown } from "antd";
+import { WhatsAppOutlined } from "@ant-design/icons";
 import { useOrganizations } from "@/queries/useOrganizations";
 
 export default function Menu() {
@@ -123,6 +124,15 @@ export default function Menu() {
 
       {/* Lower section */}
       <div className="flex flex-col items-center">
+        <LinkButton
+          to="/whatsapp-manager"
+          title={t("Gestor de WhatsApp")}
+          isActive={pathname.startsWith("/whatsapp-manager")}
+          className="mt-[10px]"
+        >
+          <WhatsAppOutlined className="text-[21px]" />
+        </LinkButton>
+
         {/* Settings button */}
         <LinkButton
           to="/settings"

@@ -604,5 +604,11 @@
   "No se pudo eliminar la plantilla. No se realizaron cambios.": "Kiolezo hakikuweza kufutwa. Hakuna mabadiliko yaliyofanywa.",
   "Esta plantilla no se puede editar": "Kiolezo hiki hakiwezi kuhaririwa",
   "El estado actual de Meta permite únicamente verla.": "Hali ya sasa ya Meta inaruhusu kutazama tu.",
-  "Ver plantilla": "Tazama kiolezo"
+  "Ver plantilla": "Tazama kiolezo",
+  "Gestor de WhatsApp": "Kidhibiti cha WhatsApp",
+  "No se pudo cargar la cuenta de WhatsApp": "Akaunti ya WhatsApp haikuweza kupakiwa",
+  "Intentá nuevamente o revisá la configuración de WhatsApp.": "Jaribu tena au kagua mipangilio ya WhatsApp.",
+  "No hay una cuenta de WhatsApp conectada": "Hakuna akaunti ya WhatsApp iliyounganishwa",
+  "Conectá WhatsApp para administrar tu perfil comercial.": "Unganisha WhatsApp ili kudhibiti wasifu wako wa biashara.",
+  "Intentar nuevamente": "Jaribu tena"
 }

@@ -604,5 +604,11 @@
   "No se pudo eliminar la plantilla. No se realizaron cambios.": "The template could not be deleted. No changes were made.",
   "Esta plantilla no se puede editar": "This template cannot be edited",
   "El estado actual de Meta permite únicamente verla.": "The current Meta status only allows viewing.",
-  "Ver plantilla": "View template"
+  "Ver plantilla": "View template",
+  "Gestor de WhatsApp": "WhatsApp Manager",
+  "No se pudo cargar la cuenta de WhatsApp": "The WhatsApp account could not be loaded",
+  "Intentá nuevamente o revisá la configuración de WhatsApp.": "Try again or review the WhatsApp configuration.",
+  "No hay una cuenta de WhatsApp conectada": "There is no connected WhatsApp account",
+  "Conectá WhatsApp para administrar tu perfil comercial.": "Connect WhatsApp to manage your business profile.",
+  "Intentar nuevamente": "Try again"
 }
