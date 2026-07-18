@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   buildTemplateDraftInput,
+  getTemplateEditorAccess,
+  getTemplateActions,
   getInitialTemplateEditorStep,
   getTemplateContentErrors,
   getTemplateVariableIndexes,
@@ -15,12 +17,42 @@ void test("new and draft templates start on Details", () => {
   assert.equal(getInitialTemplateEditorStep("draft"), 1);
   assert.equal(getInitialTemplateEditorStep("pending"), 3);
   assert.equal(getInitialTemplateEditorStep("approved"), 3);
+  assert.equal(getInitialTemplateEditorStep("approved", true), 1);
+});
+
+void test("template actions follow the supported Meta status matrix", () => {
+  assert.deepEqual(getTemplateActions("draft"), ["edit", "delete"]);
+  for (const status of ["pending", "approved", "rejected"]) {
+    assert.deepEqual(getTemplateActions(status), ["view", "edit", "delete"]);
+  }
+  for (const status of ["paused", "disabled", "pending_deletion", "deleted"]) {
+    assert.deepEqual(getTemplateActions(status), ["view"]);
+  }
+});
+
+void test("submitted editing unlocks content but keeps identity locked", () => {
+  assert.deepEqual(getTemplateEditorAccess("draft"), {
+    isSubmitted: false,
+    isReadOnly: false,
+    lockIdentity: false,
+  });
+  assert.deepEqual(getTemplateEditorAccess("approved"), {
+    isSubmitted: true,
+    isReadOnly: true,
+    lockIdentity: true,
+  });
+  assert.deepEqual(getTemplateEditorAccess("approved", true), {
+    isSubmitted: true,
+    isReadOnly: false,
+    lockIdentity: true,
+  });
 });
 
 void test("template manager routes use the full-width workspace", () => {
   assert.equal(isTemplateWorkspacePath("/templates"), true);
   assert.equal(isTemplateWorkspacePath("/templates/new"), true);
   assert.equal(isTemplateWorkspacePath("/templates/template-1"), true);
+  assert.equal(isTemplateWorkspacePath("/templates/template-1/edit"), true);
   assert.equal(
     isTemplateWorkspacePath("/integrations/whatsapp/account-1/templates"),
     true,
@@ -62,6 +94,10 @@ void test("template manager labels exist in every supported locale", () => {
       "../src/routes/_auth/integrations/whatsapp/$orgAddressId/templates/index.tsx",
       import.meta.url,
     ),
+    new URL(
+      "../src/routes/_auth/templates/$templateId.edit.tsx",
+      import.meta.url,
+    ),
   ];
   const keys = [
     ...new Set(
@@ -83,6 +119,21 @@ void test("template manager labels exist in every supported locale", () => {
     const missing = keys.filter((key) => !translations[key]);
     assert.deepEqual(missing, [], `${language} is missing template labels`);
   }
+});
+
+void test("submitted mutations use local template ID endpoints", () => {
+  const queries = readFileSync(
+    new URL("../src/queries/useTemplates.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    queries,
+    /`whatsapp-management\/templates\/\$\{templateId\}`,[\s\S]*?"PATCH"/,
+  );
+  assert.match(
+    queries,
+    /`whatsapp-management\/templates\/\$\{templateId\}`,[\s\S]*?"DELETE"/,
+  );
 });
 
 void test("template variable indexes are unique and ordered", () => {

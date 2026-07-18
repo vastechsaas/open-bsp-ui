@@ -48,6 +48,7 @@ import { Route as AuthSettingsMembersIndexRouteImport } from './routes/_auth/set
 import { Route as AuthSettingsApiKeysIndexRouteImport } from './routes/_auth/settings/api-keys/index'
 import { Route as AuthIntegrationsWhatsappIndexRouteImport } from './routes/_auth/integrations/whatsapp/index'
 import { Route as AuthIntegrationsInstagramIndexRouteImport } from './routes/_auth/integrations/instagram/index'
+import { Route as AuthTemplatesTemplateIdEditRouteImport } from './routes/_auth/templates/$templateId.edit'
 import { Route as AuthSettingsWebhooksNewRouteImport } from './routes/_auth/settings/webhooks/new'
 import { Route as AuthSettingsWebhooksWebhookIdRouteImport } from './routes/_auth/settings/webhooks/$webhookId'
 import { Route as AuthSettingsOrganizationNewRouteImport } from './routes/_auth/settings/organization/new'
@@ -273,6 +274,12 @@ const AuthIntegrationsInstagramIndexRoute =
     path: '/integrations/instagram/',
     getParentRoute: () => AuthRoute,
   } as any)
+const AuthTemplatesTemplateIdEditRoute =
+  AuthTemplatesTemplateIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthTemplatesTemplateIdRoute,
+  } as any)
 const AuthSettingsWebhooksNewRoute = AuthSettingsWebhooksNewRouteImport.update({
   id: '/settings/webhooks/new',
   path: '/settings/webhooks/new',
@@ -423,7 +430,7 @@ export interface FileRoutesByFullPath {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
-  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
   '/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
@@ -446,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
+  '/templates/$templateId/edit': typeof AuthTemplatesTemplateIdEditRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
   '/integrations/whatsapp': typeof AuthIntegrationsWhatsappIndexRoute
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
@@ -484,7 +492,7 @@ export interface FileRoutesByTo {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
-  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
   '/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
@@ -507,6 +515,7 @@ export interface FileRoutesByTo {
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
+  '/templates/$templateId/edit': typeof AuthTemplatesTemplateIdEditRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
   '/integrations/whatsapp': typeof AuthIntegrationsWhatsappIndexRoute
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
@@ -548,7 +557,7 @@ export interface FileRoutesById {
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
   '/_auth/stats/usage': typeof AuthStatsUsageRoute
-  '/_auth/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/_auth/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
   '/_auth/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
@@ -571,6 +580,7 @@ export interface FileRoutesById {
   '/_auth/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/_auth/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/_auth/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
+  '/_auth/templates/$templateId/edit': typeof AuthTemplatesTemplateIdEditRoute
   '/_auth/integrations/instagram/': typeof AuthIntegrationsInstagramIndexRoute
   '/_auth/integrations/whatsapp/': typeof AuthIntegrationsWhatsappIndexRoute
   '/_auth/settings/api-keys/': typeof AuthSettingsApiKeysIndexRoute
@@ -635,6 +645,7 @@ export interface FileRouteTypes {
     | '/settings/organization/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
+    | '/templates/$templateId/edit'
     | '/integrations/instagram'
     | '/integrations/whatsapp'
     | '/settings/api-keys'
@@ -696,6 +707,7 @@ export interface FileRouteTypes {
     | '/settings/organization/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
+    | '/templates/$templateId/edit'
     | '/integrations/instagram'
     | '/integrations/whatsapp'
     | '/settings/api-keys'
@@ -759,6 +771,7 @@ export interface FileRouteTypes {
     | '/_auth/settings/organization/new'
     | '/_auth/settings/webhooks/$webhookId'
     | '/_auth/settings/webhooks/new'
+    | '/_auth/templates/$templateId/edit'
     | '/_auth/integrations/instagram/'
     | '/_auth/integrations/whatsapp/'
     | '/_auth/settings/api-keys/'
@@ -1069,6 +1082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIntegrationsInstagramIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/templates/$templateId/edit': {
+      id: '/_auth/templates/$templateId/edit'
+      path: '/edit'
+      fullPath: '/templates/$templateId/edit'
+      preLoaderRoute: typeof AuthTemplatesTemplateIdEditRouteImport
+      parentRoute: typeof AuthTemplatesTemplateIdRoute
+    }
     '/_auth/settings/webhooks/new': {
       id: '/_auth/settings/webhooks/new'
       path: '/settings/webhooks/new'
@@ -1256,6 +1276,20 @@ const AuthCampaignsCampaignIdRouteWithChildren =
     AuthCampaignsCampaignIdRouteChildren,
   )
 
+interface AuthTemplatesTemplateIdRouteChildren {
+  AuthTemplatesTemplateIdEditRoute: typeof AuthTemplatesTemplateIdEditRoute
+}
+
+const AuthTemplatesTemplateIdRouteChildren: AuthTemplatesTemplateIdRouteChildren =
+  {
+    AuthTemplatesTemplateIdEditRoute: AuthTemplatesTemplateIdEditRoute,
+  }
+
+const AuthTemplatesTemplateIdRouteWithChildren =
+  AuthTemplatesTemplateIdRoute._addFileChildren(
+    AuthTemplatesTemplateIdRouteChildren,
+  )
+
 interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
@@ -1266,7 +1300,7 @@ interface AuthRouteChildren {
   AuthContactsNewRoute: typeof AuthContactsNewRoute
   AuthConversationsNewRoute: typeof AuthConversationsNewRoute
   AuthIntegrationsMediaPreprocessingRoute: typeof AuthIntegrationsMediaPreprocessingRoute
-  AuthTemplatesTemplateIdRoute: typeof AuthTemplatesTemplateIdRoute
+  AuthTemplatesTemplateIdRoute: typeof AuthTemplatesTemplateIdRouteWithChildren
   AuthTemplatesNewRoute: typeof AuthTemplatesNewRoute
   AuthAgentsIndexRoute: typeof AuthAgentsIndexRoute
   AuthCampaignsIndexRoute: typeof AuthCampaignsIndexRoute
@@ -1315,7 +1349,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthConversationsNewRoute: AuthConversationsNewRoute,
   AuthIntegrationsMediaPreprocessingRoute:
     AuthIntegrationsMediaPreprocessingRoute,
-  AuthTemplatesTemplateIdRoute: AuthTemplatesTemplateIdRoute,
+  AuthTemplatesTemplateIdRoute: AuthTemplatesTemplateIdRouteWithChildren,
   AuthTemplatesNewRoute: AuthTemplatesNewRoute,
   AuthAgentsIndexRoute: AuthAgentsIndexRoute,
   AuthCampaignsIndexRoute: AuthCampaignsIndexRoute,

@@ -590,5 +590,19 @@
   "Agregá un ejemplo para cada variable del cuerpo.": "Ongeza mfano kwa kila kigezo cha maudhui.",
   "Agregá como máximo tres respuestas rápidas.": "Ongeza majibu ya haraka yasiyozidi matatu.",
   "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Majibu ya haraka lazima yawe na herufi 1 hadi 25.",
-  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "Baada ya kutuma, Meta itakagua kiolezo. Hali yake itaonekana kwenye Kidhibiti cha Violezo."
+  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "Baada ya kutuma, Meta itakagua kiolezo. Hali yake itaonekana kwenye Kidhibiti cha Violezo.",
+  "Los cambios se guardaron en Meta, pero la sincronización sigue pendiente.": "Mabadiliko yamehifadhiwa Meta, lakini ulandanishi bado unasubiri.",
+  "Cambios guardados en Meta": "Mabadiliko yamehifadhiwa Meta",
+  "No se pudieron guardar los cambios en Meta": "Mabadiliko hayakuweza kuhifadhiwa Meta",
+  "Editá la categoría y el contenido; la cuenta, el nombre y el idioma no cambian.": "Hariri aina na maudhui; akaunti, jina na lugha havibadiliki.",
+  "Guardando...": "Inahifadhi...",
+  "Guardar cambios en Meta": "Hifadhi mabadiliko Meta",
+  "Eliminar plantilla permanentemente": "Futa kiolezo kabisa",
+  "Esta acción eliminará permanentemente la plantilla": "Hatua hii itafuta kiolezo kabisa",
+  "Cancelar": "Ghairi",
+  "Plantilla eliminada": "Kiolezo kimefutwa",
+  "No se pudo eliminar la plantilla. No se realizaron cambios.": "Kiolezo hakikuweza kufutwa. Hakuna mabadiliko yaliyofanywa.",
+  "Esta plantilla no se puede editar": "Kiolezo hiki hakiwezi kuhaririwa",
+  "El estado actual de Meta permite únicamente verla.": "Hali ya sasa ya Meta inaruhusu kutazama tu.",
+  "Ver plantilla": "Tazama kiolezo"
 }

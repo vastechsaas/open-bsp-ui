@@ -18,18 +18,51 @@ export type TemplateEditorValues = {
 };
 
 export type TemplateEditorStep = 1 | 2 | 3;
+export type TemplateAction = "view" | "edit" | "delete";
+
+const EDITABLE_SUBMITTED_STATUSES = new Set([
+  "pending",
+  "approved",
+  "rejected",
+]);
+
+export function isSubmittedTemplateEditable(status: string) {
+  return EDITABLE_SUBMITTED_STATUSES.has(status.toLowerCase());
+}
+
+export function getTemplateActions(status: string): TemplateAction[] {
+  const normalizedStatus = status.toLowerCase();
+  if (normalizedStatus === "draft") return ["edit", "delete"];
+  if (isSubmittedTemplateEditable(normalizedStatus)) {
+    return ["view", "edit", "delete"];
+  }
+  return ["view"];
+}
+
+export function getTemplateEditorAccess(
+  status?: string | null,
+  editSubmitted = false,
+) {
+  const isSubmitted = !!status && status.toLowerCase() !== "draft";
+  return {
+    isSubmitted,
+    isReadOnly: isSubmitted && !editSubmitted,
+    lockIdentity: isSubmitted,
+  };
+}
 
 export function getInitialTemplateEditorStep(
   status?: string | null,
+  editSubmitted = false,
 ): TemplateEditorStep {
-  return status && status !== "draft" ? 3 : 1;
+  return status && status !== "draft" && !editSubmitted ? 3 : 1;
 }
 
 export function isTemplateWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   return (
-    /^\/templates(?:\/[^/]+)?$/.test(normalizedPath) ||
-    /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+)?$/.test(
+    /^\/templates(?:\/[^/]+(?:\/edit)?)?$/.test(normalizedPath) ||
+    /^\/integrations\/whatsapp\/[^/]+\/templates(?:\/[^/]+(?:\/edit)?)?$/.test(
       normalizedPath,
     )
   );

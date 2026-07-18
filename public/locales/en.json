@@ -590,5 +590,19 @@
   "Agregá un ejemplo para cada variable del cuerpo.": "Add a sample for every body variable.",
   "Agregá como máximo tres respuestas rápidas.": "Add no more than three quick replies.",
   "Las respuestas rápidas deben tener entre 1 y 25 caracteres.": "Quick replies must contain 1 to 25 characters.",
-  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "After submission, Meta will review the template. Its status will appear in the Template Manager."
+  "Al enviar, Meta revisará la plantilla. El estado se mostrará en el Template Manager.": "After submission, Meta will review the template. Its status will appear in the Template Manager.",
+  "Los cambios se guardaron en Meta, pero la sincronización sigue pendiente.": "Changes were saved to Meta, but synchronization is still pending.",
+  "Cambios guardados en Meta": "Changes saved to Meta",
+  "No se pudieron guardar los cambios en Meta": "Changes could not be saved to Meta",
+  "Editá la categoría y el contenido; la cuenta, el nombre y el idioma no cambian.": "Edit the category and content; the account, name, and language remain unchanged.",
+  "Guardando...": "Saving...",
+  "Guardar cambios en Meta": "Save changes to Meta",
+  "Eliminar plantilla permanentemente": "Permanently delete template",
+  "Esta acción eliminará permanentemente la plantilla": "This action will permanently delete the template",
+  "Cancelar": "Cancel",
+  "Plantilla eliminada": "Template deleted",
+  "No se pudo eliminar la plantilla. No se realizaron cambios.": "The template could not be deleted. No changes were made.",
+  "Esta plantilla no se puede editar": "This template cannot be edited",
+  "El estado actual de Meta permite únicamente verla.": "The current Meta status only allows viewing.",
+  "Ver plantilla": "View template"
 }

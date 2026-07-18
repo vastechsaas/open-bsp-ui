@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { message } from "antd";
+import { message, Modal } from "antd";
 import {
   Eye,
   LayoutTemplate,
@@ -8,6 +8,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Trash2,
 } from "lucide-react";
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import DataTablePagination from "@/components/DataTablePagination";
@@ -17,11 +18,17 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type TemplateListRow,
+  useDeleteSubmittedTemplate,
+  useDeleteTemplateDraft,
   useSyncTemplates,
   useTemplateRecordsPage,
 } from "@/queries/useTemplates";
-import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
+import {
+  clampDataTablePage,
+  DEFAULT_DATA_TABLE_PAGE_SIZE,
+} from "@/utils/DataTableUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
+import { getTemplateActions } from "@/utils/TemplateDraftUtils";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/templates/",
@@ -50,6 +57,8 @@ export function TemplatesIndex({
   const debouncedSearch = useDebouncedValue(search.trim());
   const { data: addresses } = useOrganizationsAddresses();
   const syncTemplates = useSyncTemplates();
+  const deleteDraft = useDeleteTemplateDraft();
+  const deleteSubmitted = useDeleteSubmittedTemplate();
   const whatsappAccounts = useMemo(
     () => addresses?.filter((address) => address.service === "whatsapp") || [],
     [addresses],
@@ -82,6 +91,12 @@ export function TemplatesIndex({
 
   useEffect(() => setPage(1), [search, account, category, status]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    const correctedPage = clampDataTablePage(page, total, pageSize);
+    if (page !== correctedPage) setPage(correctedPage);
+  }, [isLoading, page, pageSize, total]);
+
   const syncVisibleAccounts = async () => {
     const accountAddresses =
       account === "all"
@@ -104,11 +119,51 @@ export function TemplatesIndex({
     }
   };
 
-  const openTemplate = (template: TemplateListRow) =>
+  const viewTemplate = (template: TemplateListRow) =>
     void navigate({
       to: "/templates/$templateId",
       params: { templateId: template.id },
     });
+
+  const editTemplate = (template: TemplateListRow) =>
+    void navigate(
+      template.status === "draft"
+        ? {
+            to: "/templates/$templateId",
+            params: { templateId: template.id },
+          }
+        : {
+            to: "/templates/$templateId/edit",
+            params: { templateId: template.id },
+          },
+    );
+
+  const confirmDelete = (template: TemplateListRow) => {
+    Modal.confirm({
+      title: t("Eliminar plantilla permanentemente"),
+      content: `${t("Esta acción eliminará permanentemente la plantilla")}: ${template.name}`,
+      okText: t("Eliminar"),
+      cancelText: t("Cancelar"),
+      okButtonProps: { danger: true },
+      async onOk() {
+        try {
+          if (template.status === "draft") {
+            await deleteDraft.mutateAsync(template.id);
+          } else {
+            await deleteSubmitted.mutateAsync(template.id);
+          }
+          void message.success(t("Plantilla eliminada"));
+        } catch {
+          void message.error(
+            t("No se pudo eliminar la plantilla. No se realizaron cambios."),
+          );
+          throw new Error("Template deletion failed");
+        }
+      },
+    });
+  };
+
+  const isDeleting = deleteDraft.isPending || deleteSubmitted.isPending;
 
   return (
     <div className="h-full min-w-0 overflow-y-auto bg-background p-[16px] text-foreground md:p-[28px]">
@@ -276,7 +331,10 @@ export function TemplatesIndex({
                         <td className="px-[16px] py-[14px]">
                           <RowAction
                             template={template}
-                            onClick={() => openTemplate(template)}
+                            disabled={isDeleting}
+                            onView={() => viewTemplate(template)}
+                            onEdit={() => editTemplate(template)}
+                            onDelete={() => confirmDelete(template)}
                           />
                         </td>
                       </tr>
@@ -309,7 +367,10 @@ export function TemplatesIndex({
                       </span>
                       <RowAction
                         template={template}
-                        onClick={() => openTemplate(template)}
+                        disabled={isDeleting}
+                        onView={() => viewTemplate(template)}
+                        onEdit={() => editTemplate(template)}
+                        onDelete={() => confirmDelete(template)}
                       />
                     </div>
                   </article>
@@ -342,24 +403,75 @@ export function TemplatesIndex({
 
 function RowAction({
   template,
-  onClick,
+  disabled,
+  onView,
+  onEdit,
+  onDelete,
 }: {
   template: TemplateListRow;
-  onClick: () => void;
+  disabled: boolean;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const { translate: t } = useTranslation();
-  const Icon = template.status === "draft" ? Pencil : Eye;
+  const actions = getTemplateActions(template.status);
   return (
-    <div className="flex justify-end">
-      <button
-        type="button"
-        className="flex items-center gap-[6px] rounded-lg border border-border px-[10px] py-[7px] text-[12px] hover:bg-muted"
-        onClick={onClick}
-      >
-        <Icon className="h-[13px] w-[13px]" />
-        {template.status === "draft" ? t("Continuar") : t("Ver")}
-      </button>
+    <div className="flex flex-wrap justify-end gap-[6px]">
+      {actions.includes("view") && (
+        <ActionButton
+          label={t("Ver")}
+          icon={<Eye className="h-[13px] w-[13px]" />}
+          disabled={disabled}
+          onClick={onView}
+        />
+      )}
+      {actions.includes("edit") && (
+        <ActionButton
+          label={t("Editar")}
+          icon={<Pencil className="h-[13px] w-[13px]" />}
+          disabled={disabled}
+          onClick={onEdit}
+        />
+      )}
+      {actions.includes("delete") && (
+        <ActionButton
+          label={t("Eliminar")}
+          icon={<Trash2 className="h-[13px] w-[13px]" />}
+          disabled={disabled}
+          destructive
+          onClick={onDelete}
+        />
+      )}
     </div>
+  );
+}
+
+function ActionButton({
+  label,
+  icon,
+  disabled,
+  destructive = false,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  disabled: boolean;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      className={`flex items-center gap-[6px] rounded-lg border border-border px-[9px] py-[7px] text-[12px] hover:bg-muted disabled:opacity-50 ${destructive ? "text-destructive" : ""}`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {icon}
+      <span className="hidden 2xl:inline">{label}</span>
+    </button>
   );
 }
 
