@@ -21,8 +21,16 @@ export function clampDataTablePage(
   total: number,
   pageSize: number,
 ) {
-  return Math.min(
-    Math.max(1, page),
-    getDataTablePageCount(total, pageSize),
-  );
+  return Math.min(Math.max(1, page), getDataTablePageCount(total, pageSize));
+}
+
+export function getDataTablePageCorrection(
+  page: number,
+  total: number,
+  pageSize: number,
+  disabled: boolean,
+) {
+  if (disabled) return null;
+  const correctedPage = clampDataTablePage(page, total, pageSize);
+  return correctedPage === page ? null : correctedPage;
 }
