@@ -637,5 +637,11 @@
   "La cuenta de autenticación de la persona no será eliminada.": "Le compte d'authentification de la personne ne sera pas supprimé.",
   "Ya existe un miembro o una invitación para este correo.": "Un membre ou une invitation existe déjà pour cet e-mail.",
   "Asigná otro propietario antes de realizar esta acción.": "Attribuez un autre propriétaire avant d'effectuer cette action.",
-  "No se pudo completar la acción.": "L'action n'a pas pu être effectuée."
+  "No se pudo completar la acción.": "L'action n'a pas pu être effectuée.",
+  "Espacio de trabajo": "Espace de travail",
+  "Contraer navegación": "Réduire la navigation",
+  "Expandir navegación": "Développer la navigation",
+  "Navegación principal": "Navigation principale",
+  "Abrir menú de usuario": "Ouvrir le menu utilisateur",
+  "Organizaciones": "Organisations"
 }

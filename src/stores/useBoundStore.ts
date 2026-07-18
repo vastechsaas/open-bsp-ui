@@ -54,6 +54,7 @@ const useBoundStore = create<AppState>()(
           conversationQueueKey: state.ui.conversationQueueKey,
           activeOrgId: state.ui.activeOrgId,
           language: state.ui.language,
+          sidebarCollapsed: state.ui.sidebarCollapsed,
         },
       }),
     },
