@@ -55,6 +55,10 @@ export const queryKeys = {
   conversationQueues: {
     config: (orgId: NullableId) => [orgId, "conversation_queues"] as const,
   },
+  dashboard: {
+    metrics: (orgId: NullableId, days: number) =>
+      [orgId, "dashboard", days] as const,
+  },
   campaigns: {
     all: (orgId: NullableId) => [orgId, "campaigns"] as const,
     page: (orgId: NullableId, params: object) =>
