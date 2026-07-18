@@ -21,6 +21,7 @@ import { useResizable } from "@/hooks/useResizable";
 import StatsCenter from "@/components/stats/StatsCenter";
 import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
+import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -50,7 +51,9 @@ function AppLayout() {
   const pathname = location.pathname;
   const isStatsRoute = pathname.startsWith("/stats");
   const isWorkspaceRoute =
-    isCampaignWorkspacePath(pathname) || isTemplateWorkspacePath(pathname);
+    isCampaignWorkspacePath(pathname) ||
+    isTemplateWorkspacePath(pathname) ||
+    isWhatsAppManagerWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
 

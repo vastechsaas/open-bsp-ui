@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
+import { Route as AuthWhatsappManagerRouteImport } from './routes/_auth/whatsapp-manager'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
 import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
@@ -115,6 +116,11 @@ const LoginEmailRoute = LoginEmailRouteImport.update({
   id: '/login_/email',
   path: '/login/email',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthWhatsappManagerRoute = AuthWhatsappManagerRouteImport.update({
+  id: '/whatsapp-manager',
+  path: '/whatsapp-manager',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthStatsRoute = AuthStatsRouteImport.update({
   id: '/stats',
@@ -417,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/stats': typeof AuthStatsRouteWithChildren
+  '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -479,6 +486,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -544,6 +552,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
+  '/_auth/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -609,6 +618,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/stats'
+    | '/whatsapp-manager'
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/terms'
+    | '/whatsapp-manager'
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
@@ -735,6 +746,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_auth/stats'
+    | '/_auth/whatsapp-manager'
     | '/login_/email'
     | '/oauth/callback'
     | '/oauth/instagram'
@@ -871,6 +883,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/login/email'
       preLoaderRoute: typeof LoginEmailRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/whatsapp-manager': {
+      id: '/_auth/whatsapp-manager'
+      path: '/whatsapp-manager'
+      fullPath: '/whatsapp-manager'
+      preLoaderRoute: typeof AuthWhatsappManagerRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/stats': {
       id: '/_auth/stats'
@@ -1292,6 +1311,7 @@ const AuthTemplatesTemplateIdRouteWithChildren =
 
 interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
+  AuthWhatsappManagerRoute: typeof AuthWhatsappManagerRoute
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
   AuthCampaignsCampaignIdRoute: typeof AuthCampaignsCampaignIdRouteWithChildren
@@ -1340,6 +1360,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthStatsRoute: AuthStatsRouteWithChildren,
+  AuthWhatsappManagerRoute: AuthWhatsappManagerRoute,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
   AuthAgentsNewRoute: AuthAgentsNewRoute,
   AuthCampaignsCampaignIdRoute: AuthCampaignsCampaignIdRouteWithChildren,

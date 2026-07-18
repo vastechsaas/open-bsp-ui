@@ -604,5 +604,11 @@
   "No se pudo eliminar la plantilla. No se realizaron cambios.": "Não foi possível excluir o modelo. Nenhuma alteração foi feita.",
   "Esta plantilla no se puede editar": "Este modelo não pode ser editado",
   "El estado actual de Meta permite únicamente verla.": "O status atual da Meta permite apenas a visualização.",
-  "Ver plantilla": "Ver modelo"
+  "Ver plantilla": "Ver modelo",
+  "Gestor de WhatsApp": "Gerenciador do WhatsApp",
+  "No se pudo cargar la cuenta de WhatsApp": "Não foi possível carregar a conta do WhatsApp",
+  "Intentá nuevamente o revisá la configuración de WhatsApp.": "Tente novamente ou revise a configuração do WhatsApp.",
+  "No hay una cuenta de WhatsApp conectada": "Não há uma conta do WhatsApp conectada",
+  "Conectá WhatsApp para administrar tu perfil comercial.": "Conecte o WhatsApp para gerenciar seu perfil comercial.",
+  "Intentar nuevamente": "Tentar novamente"
 }
