@@ -63,13 +63,13 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
         }`}
       >
         <img
-          src="/logo.png"
-          alt="OpenBSP"
-          className={`${expanded ? "h-[30px] w-[30px]" : "h-[24px] w-[24px]"} shrink-0 object-contain`}
+          src={expanded ? "/SocialConnectLarge.png" : "/SocialConnectSmall.png"}
+          alt="Social Connect"
+          className={`${expanded ? "h-[38px] w-[38px]" : "h-[34px] w-[34px]"} shrink-0 rounded-md object-contain`}
         />
         {expanded && (
           <span className="truncate text-[16px] font-semibold tracking-tight text-sidebar-foreground">
-            OpenBSP
+            Social Connect
           </span>
         )}
         {canToggle && (
