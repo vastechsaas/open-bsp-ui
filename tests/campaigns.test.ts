@@ -105,6 +105,18 @@ void test("template variables preserve header and body positions", () => {
         type: "BODY",
         text: "Use {{1}} for {{2}}. Repeated: {{1}}",
       },
+      {
+        type: "BUTTONS",
+        buttons: [
+          { type: "QUICK_REPLY", text: "Help" },
+          {
+            type: "URL",
+            text: "View offer",
+            url: "https://example.com/offers/{{1}}",
+            example: ["https://example.com/offers/SUMMER"],
+          },
+        ],
+      },
     ],
   };
 
@@ -112,6 +124,7 @@ void test("template variables preserve header and body positions", () => {
     { key: "header.1", section: "header", index: 1 },
     { key: "body.1", section: "body", index: 1 },
     { key: "body.2", section: "body", index: 2 },
+    { key: "button.1.1", section: "button", index: 1, buttonIndex: 1 },
   ]);
 });
 

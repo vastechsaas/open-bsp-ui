@@ -1,4 +1,5 @@
 import type {
+  ButtonsComponent,
   MediaHeaderFormat,
   TemplateCategory,
   TemplateComponent,
@@ -6,6 +7,17 @@ import type {
 } from "@/supabase/types/whatsapp_template_types";
 
 export type TemplateHeaderFormat = "NONE" | "TEXT" | MediaHeaderFormat;
+
+export type TemplateButtonValue =
+  | { type: "QUICK_REPLY"; text: string }
+  | {
+      type: "URL";
+      text: string;
+      url: string;
+      mode: "STATIC" | "DYNAMIC";
+      example: string;
+    }
+  | { type: "PHONE_NUMBER"; text: string; phoneNumber: string };
 
 export type TemplateEditorValues = {
   organizationAddress: string;
@@ -18,7 +30,7 @@ export type TemplateEditorValues = {
   body: string;
   bodySamples: string[];
   footer: string;
-  quickReplies: string[];
+  buttons: TemplateButtonValue[];
 };
 
 export type TemplateEditorStep = 1 | 2 | 3;
@@ -53,6 +65,32 @@ export function getTemplateEditorAccess(
     isReadOnly: isSubmitted && !editSubmitted,
     lockIdentity: isSubmitted,
   };
+}
+
+export function getTemplateButtonValues(
+  component?: ButtonsComponent,
+): TemplateButtonValue[] {
+  return (
+    component?.buttons.map((button): TemplateButtonValue => {
+      if (button.type === "URL") {
+        return {
+          type: "URL",
+          text: button.text,
+          url: button.url,
+          mode: button.url.endsWith("{{1}}") ? "DYNAMIC" : "STATIC",
+          example: button.example?.[0] || "",
+        };
+      }
+      if (button.type === "PHONE_NUMBER") {
+        return {
+          type: "PHONE_NUMBER",
+          text: button.text,
+          phoneNumber: button.phone_number,
+        };
+      }
+      return { type: "QUICK_REPLY", text: button.text };
+    }) || []
+  );
 }
 
 export function getInitialTemplateEditorStep(
@@ -173,16 +211,77 @@ export function getTemplateContentErrors(values: TemplateEditorValues) {
   if (bodyIndexes.some((_, index) => !values.bodySamples[index]?.trim())) {
     errors.push("Agregá un ejemplo para cada variable del cuerpo.");
   }
-  if (values.quickReplies.length > 3)
-    errors.push("Agregá como máximo tres respuestas rápidas.");
-  if (values.quickReplies.some((reply) => !reply.trim() || reply.length > 25)) {
-    errors.push("Las respuestas rápidas deben tener entre 1 y 25 caracteres.");
+  if (values.buttons.length > 3)
+    errors.push("Agregá como máximo tres botones.");
+  if (
+    values.buttons.some(
+      (button) => !button.text.trim() || button.text.length > 25,
+    )
+  ) {
+    errors.push("El texto de cada botón debe tener entre 1 y 25 caracteres.");
+  }
+  if (
+    values.buttons.some((button) => {
+      if (button.type !== "URL") return false;
+      try {
+        const url = new URL(button.url.replace("{{1}}", "sample"));
+        const variables = button.url.match(/\{\{1\}\}/g)?.length || 0;
+        let exampleIsInvalid = false;
+        if (button.mode === "DYNAMIC") {
+          try {
+            const example = new URL(button.example);
+            exampleIsInvalid =
+              example.protocol !== "https:" ||
+              !example.hostname ||
+              button.example.includes("{{");
+          } catch {
+            exampleIsInvalid = true;
+          }
+        }
+        return (
+          button.url.length > 2000 ||
+          url.protocol !== "https:" ||
+          !url.hostname ||
+          variables > 1 ||
+          (button.mode === "STATIC" && variables !== 0) ||
+          (button.mode === "DYNAMIC" &&
+            (variables !== 1 ||
+              !button.url.endsWith("{{1}}") ||
+              exampleIsInvalid))
+        );
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    errors.push(
+      "Usá una URL HTTPS válida y agregá un ejemplo para las URL dinámicas.",
+    );
+  }
+  if (
+    values.buttons.some(
+      (button) =>
+        button.type === "PHONE_NUMBER" &&
+        !/^\+[1-9]\d{4,14}$/.test(button.phoneNumber),
+    )
+  ) {
+    errors.push(
+      "Usá un teléfono internacional válido, por ejemplo +15551234567.",
+    );
+  }
+  if (
+    values.category === "AUTHENTICATION" &&
+    values.buttons.some((button) => button.type !== "QUICK_REPLY")
+  ) {
+    errors.push("Las plantillas de autenticación no admiten botones CTA.");
   }
   if (
     values.category === "AUTHENTICATION" &&
     ["IMAGE", "VIDEO", "DOCUMENT"].includes(values.headerFormat)
   ) {
-    errors.push("Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.");
+    errors.push(
+      "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.",
+    );
   }
   return errors;
 }
@@ -279,13 +378,32 @@ export function buildTemplateDraftInput(
     components.push({ type: "FOOTER", text: values.footer.trim() });
   }
 
-  const quickReplies = values.quickReplies
-    .map((reply) => reply.trim())
-    .filter(Boolean);
-  if (quickReplies.length) {
+  const buttons = values.buttons
+    .filter((button) => button.text.trim())
+    .map((button) => {
+      if (button.type === "QUICK_REPLY") {
+        return { type: "QUICK_REPLY" as const, text: button.text.trim() };
+      }
+      if (button.type === "PHONE_NUMBER") {
+        return {
+          type: "PHONE_NUMBER" as const,
+          text: button.text.trim(),
+          phone_number: button.phoneNumber.trim(),
+        };
+      }
+      return {
+        type: "URL" as const,
+        text: button.text.trim(),
+        url: button.url.trim(),
+        ...(button.mode === "DYNAMIC"
+          ? { example: [button.example.trim()] as [string] }
+          : {}),
+      };
+    });
+  if (buttons.length) {
     components.push({
       type: "BUTTONS",
-      buttons: quickReplies.map((text) => ({ type: "QUICK_REPLY", text })),
+      buttons,
     });
   }
 

@@ -171,7 +171,9 @@ function ReviewCampaign() {
                       <span className="text-[12px] text-muted-foreground">
                         {variable.section === "header"
                           ? t("Encabezado")
-                          : t("Mensaje")}{" "}
+                          : variable.section === "button"
+                            ? t("URL dinámica")
+                            : t("Mensaje")}{" "}
                         {`{{${variable.index}}}`}
                       </span>
                       <span className="text-[12px] font-medium">
@@ -264,11 +266,15 @@ function ReviewCampaign() {
                 <TemplatePreview
                   template={template}
                   editMode
-                  media={mediaFormat ? {
-                    format: mediaFormat,
-                    url: mediaPreviewUrl,
-                    fileName: headerMedia?.file_name,
-                  } : undefined}
+                  media={
+                    mediaFormat
+                      ? {
+                          format: mediaFormat,
+                          url: mediaPreviewUrl,
+                          fileName: headerMedia?.file_name,
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </section>

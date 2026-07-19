@@ -18,6 +18,12 @@ import AvatarComponent from "@/components/Avatar";
 import { useAgent } from "@/queries/useAgents";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
+import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
+
+export type MessageActionButton = {
+  text: string;
+  type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+};
 
 const md = new Remarkable({
   breaks: true,
@@ -109,7 +115,7 @@ export function TextMessage({
   header?: string;
   body: string | Json;
   footer?: string;
-  buttons?: string[];
+  buttons?: Array<string | MessageActionButton>;
   timestamp?: string;
   status?: OutgoingStatus;
   onInput?: FormEventHandler<HTMLDivElement>;
@@ -225,14 +231,27 @@ export function TextMessage({
       </div>
 
       {/* Actions */}
-      {buttons?.map((text, idx) => (
-        <div
-          key={idx}
-          className="py-3 border-t border-border text-center text-primary"
-        >
-          {text}
-        </div>
-      ))}
+      {buttons?.map((button, idx) => {
+        const action =
+          typeof button === "string"
+            ? { text: button, type: "QUICK_REPLY" as const }
+            : button;
+        return (
+          <div
+            key={idx}
+            className="flex items-center justify-center gap-[7px] border-t border-border py-3 text-center text-primary"
+          >
+            {action.type === "URL" ? (
+              <ExternalLink className="h-[14px] w-[14px]" />
+            ) : action.type === "PHONE_NUMBER" ? (
+              <Phone className="h-[14px] w-[14px]" />
+            ) : (
+              <MessageCircleReply className="h-[14px] w-[14px]" />
+            )}
+            {action.text}
+          </div>
+        );
+      })}
     </>
   );
 }

@@ -324,17 +324,19 @@ export default function ChatFooter() {
     if (templateButtons?.buttons) {
       let idx = 0;
       for (const button of templateButtons.buttons) {
-        components.push({
-          type: "button",
-          sub_type: "quick_reply",
-          index: idx.toString(),
-          parameters: [
-            {
-              type: "payload",
-              payload: button.text.toLowerCase().replaceAll(" ", "_"),
-            },
-          ],
-        });
+        if (button.type === "QUICK_REPLY") {
+          components.push({
+            type: "button",
+            sub_type: "quick_reply",
+            index: idx.toString(),
+            parameters: [
+              {
+                type: "payload",
+                payload: button.text.toLowerCase().replaceAll(" ", "_"),
+              },
+            ],
+          });
+        }
         idx++;
       }
     }

@@ -7,9 +7,11 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleAlert,
+  Link,
+  MessageCircleReply,
+  Phone,
   Plus,
   Trash2,
-  X,
 } from "lucide-react";
 import CampaignFilterSelect from "./campaigns/CampaignFilterSelect";
 import TemplatePreview from "./TemplatePreview";
@@ -32,6 +34,7 @@ import {
   getTemplateContentErrors,
   getTemplateDetailsErrors,
   getTemplateEditorAccess,
+  getTemplateButtonValues,
   getInitialTemplateEditorStep,
   getTemplateMediaFileError,
   getTemplateVariableIndexes,
@@ -39,6 +42,7 @@ import {
   removeTemplateBodyVariable,
   type TemplateEditorStep,
   type TemplateEditorValues,
+  type TemplateButtonValue,
 } from "@/utils/TemplateDraftUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
@@ -580,6 +584,16 @@ function ContentStep({
   onMediaFileChange: (file?: File) => void;
 }) {
   const { translate: t } = useTranslation();
+  const [newButtonType, setNewButtonType] =
+    useState<TemplateButtonValue["type"]>("QUICK_REPLY");
+  useEffect(() => {
+    if (
+      values.category === "AUTHENTICATION" &&
+      newButtonType !== "QUICK_REPLY"
+    ) {
+      setNewButtonType("QUICK_REPLY");
+    }
+  }, [newButtonType, values.category]);
   const appendBodyVariable = () => {
     const next = bodyIndexes.length + 1;
     const suffix = values.body && !values.body.endsWith(" ") ? " " : "";
@@ -619,6 +633,26 @@ function ContentStep({
     }
     onMediaFileChange(undefined);
   };
+  const addButton = () => {
+    const button: TemplateButtonValue =
+      newButtonType === "URL"
+        ? {
+            type: "URL",
+            text: "",
+            url: "https://",
+            mode: "STATIC",
+            example: "",
+          }
+        : newButtonType === "PHONE_NUMBER"
+          ? { type: "PHONE_NUMBER", text: "", phoneNumber: "+" }
+          : { type: "QUICK_REPLY", text: "" };
+    update("buttons", [...values.buttons, button]);
+  };
+  const updateButton = (index: number, button: TemplateButtonValue) => {
+    const buttons = [...values.buttons];
+    buttons[index] = button;
+    update("buttons", buttons);
+  };
   return (
     <div className="space-y-[16px]">
       <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
@@ -649,60 +683,62 @@ function ContentStep({
             />
           </Field>
           {values.headerFormat === "TEXT" && (
-          <Field
-            label={`${t("Encabezado")} (${t("opcional")})`}
-            hint={`${values.header.length}/60`}
-          >
-            <div className="flex gap-[8px]">
-              <input
-                className="template-input"
-                value={values.header}
-                disabled={readOnly}
-                maxLength={60}
-                placeholder={t("Actualización de tu pedido")}
-                onChange={(event) => update("header", event.target.value)}
-              />
-              <button
-                type="button"
-                className="rounded-lg border border-border px-[11px] text-primary disabled:opacity-40"
-                disabled={
-                  readOnly || values.header.includes("{{1}}") || !values.header
-                }
-                onClick={() => update("header", `${values.header} {{1}}`)}
-                title={t("Agregar variable")}
-              >
-                <Plus className="h-[16px] w-[16px]" />
-              </button>
-            </div>
-          </Field>
-          )}
-          {values.headerFormat === "TEXT" &&
-            values.header.includes("{{1}}") && (
-            <Field label={`${t("Ejemplo para")} {{1}}`}>
+            <Field
+              label={`${t("Encabezado")} (${t("opcional")})`}
+              hint={`${values.header.length}/60`}
+            >
               <div className="flex gap-[8px]">
                 <input
                   className="template-input"
-                  value={values.headerSample}
+                  value={values.header}
                   disabled={readOnly}
-                  placeholder={t("Pedido #1234")}
-                  onChange={(event) =>
-                    update("headerSample", event.target.value)
-                  }
+                  maxLength={60}
+                  placeholder={t("Actualización de tu pedido")}
+                  onChange={(event) => update("header", event.target.value)}
                 />
-                {!readOnly && (
-                  <button
-                    type="button"
-                    className="rounded-lg border border-border px-[10px] text-muted-foreground hover:border-destructive/50 hover:text-destructive"
-                    onClick={removeHeaderVariable}
-                    aria-label={t("Eliminar variable")}
-                    title={t("Eliminar variable")}
-                  >
-                    <Trash2 className="h-[15px] w-[15px]" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="rounded-lg border border-border px-[11px] text-primary disabled:opacity-40"
+                  disabled={
+                    readOnly ||
+                    values.header.includes("{{1}}") ||
+                    !values.header
+                  }
+                  onClick={() => update("header", `${values.header} {{1}}`)}
+                  title={t("Agregar variable")}
+                >
+                  <Plus className="h-[16px] w-[16px]" />
+                </button>
               </div>
             </Field>
           )}
+          {values.headerFormat === "TEXT" &&
+            values.header.includes("{{1}}") && (
+              <Field label={`${t("Ejemplo para")} {{1}}`}>
+                <div className="flex gap-[8px]">
+                  <input
+                    className="template-input"
+                    value={values.headerSample}
+                    disabled={readOnly}
+                    placeholder={t("Pedido #1234")}
+                    onChange={(event) =>
+                      update("headerSample", event.target.value)
+                    }
+                  />
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      className="rounded-lg border border-border px-[10px] text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+                      onClick={removeHeaderVariable}
+                      aria-label={t("Eliminar variable")}
+                      title={t("Eliminar variable")}
+                    >
+                      <Trash2 className="h-[15px] w-[15px]" />
+                    </button>
+                  )}
+                </div>
+              </Field>
+            )}
           {isMediaHeaderFormat(values.headerFormat) && (
             <Field label={t("Archivo de muestra")}>
               <div className="rounded-xl border border-dashed border-border p-[14px]">
@@ -730,7 +766,9 @@ function ContentStep({
                   {!readOnly && (
                     <label className="cursor-pointer rounded-lg border border-border px-[13px] py-[8px] text-[12px] hover:bg-muted">
                       {t(
-                        mediaFile ? "Reemplazar archivo" : "Seleccionar archivo",
+                        mediaFile
+                          ? "Reemplazar archivo"
+                          : "Seleccionar archivo",
                       )}
                       <input
                         type="file"
@@ -821,57 +859,184 @@ function ContentStep({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-[16px] font-semibold">
-              {t("Respuestas rápidas")}
+              {t("Botones (opcional)")}
             </h2>
             <p className="mt-[3px] text-[12px] text-muted-foreground">
-              {t("Agregá hasta tres botones opcionales.")}
+              {t("Agregá hasta tres respuestas o acciones.")}
             </p>
           </div>
-          <button
-            type="button"
-            className="flex items-center gap-[5px] text-[12px] text-primary disabled:opacity-40"
-            disabled={readOnly || values.quickReplies.length >= 3}
-            onClick={() => update("quickReplies", [...values.quickReplies, ""])}
-          >
-            <Plus className="h-[14px] w-[14px]" />
-            {t("Agregar")}
-          </button>
+          {!readOnly && (
+            <div className="flex items-center gap-[8px]">
+              <CampaignFilterSelect
+                ariaLabel={t("Tipo de botón")}
+                className="min-w-[160px]"
+                value={newButtonType}
+                onChange={setNewButtonType}
+                options={[
+                  { value: "QUICK_REPLY", label: t("Respuesta rápida") },
+                  ...(values.category === "AUTHENTICATION"
+                    ? []
+                    : [
+                        {
+                          value: "URL" as const,
+                          label: t("Visitar sitio web"),
+                        },
+                        {
+                          value: "PHONE_NUMBER" as const,
+                          label: t("Llamar por teléfono"),
+                        },
+                      ]),
+                ]}
+              />
+              <button
+                type="button"
+                className="flex items-center gap-[5px] whitespace-nowrap text-[12px] text-primary disabled:opacity-40"
+                disabled={values.buttons.length >= 3}
+                onClick={addButton}
+              >
+                <Plus className="h-[14px] w-[14px]" />
+                {t("Agregar botón")}
+              </button>
+            </div>
+          )}
         </div>
         <div className="mt-[14px] space-y-[9px]">
-          {values.quickReplies.length === 0 && (
+          {values.buttons.length === 0 && (
             <div className="rounded-lg border border-dashed border-border p-[18px] text-center text-[12px] text-muted-foreground">
               {t("No hay botones agregados.")}
             </div>
           )}
-          {values.quickReplies.map((reply, index) => (
-            <div key={index} className="flex gap-[8px]">
-              <input
-                className="template-input"
-                value={reply}
-                disabled={readOnly}
-                maxLength={25}
-                placeholder={t("Confirmar")}
-                onChange={(event) => {
-                  const replies = [...values.quickReplies];
-                  replies[index] = event.target.value;
-                  update("quickReplies", replies);
-                }}
-              />
-              <button
-                type="button"
-                className="rounded-lg border border-border px-[10px] text-muted-foreground hover:text-destructive"
-                disabled={readOnly}
-                onClick={() =>
-                  update(
-                    "quickReplies",
-                    values.quickReplies.filter(
-                      (_, itemIndex) => itemIndex !== index,
-                    ),
-                  )
-                }
-              >
-                <X className="h-[15px] w-[15px]" />
-              </button>
+          {values.buttons.map((button, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-border bg-background/40 p-[14px]"
+            >
+              <div className="mb-[12px] flex items-center justify-between gap-[8px]">
+                <div className="flex items-center gap-[7px] text-[12px] font-medium">
+                  {button.type === "URL" ? (
+                    <Link className="h-[14px] w-[14px]" />
+                  ) : button.type === "PHONE_NUMBER" ? (
+                    <Phone className="h-[14px] w-[14px]" />
+                  ) : (
+                    <MessageCircleReply className="h-[14px] w-[14px]" />
+                  )}
+                  {button.type === "URL"
+                    ? t("Visitar sitio web")
+                    : button.type === "PHONE_NUMBER"
+                      ? t("Llamar por teléfono")
+                      : t("Respuesta rápida")}
+                </div>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border p-[8px] text-muted-foreground hover:text-destructive"
+                    onClick={() =>
+                      update(
+                        "buttons",
+                        values.buttons.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      )
+                    }
+                    aria-label={t("Eliminar botón")}
+                    title={t("Eliminar botón")}
+                  >
+                    <Trash2 className="h-[14px] w-[14px]" />
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-[12px] md:grid-cols-2">
+                <Field
+                  label={t("Texto del botón")}
+                  hint={`${button.text.length}/25`}
+                >
+                  <input
+                    className="template-input"
+                    value={button.text}
+                    disabled={readOnly}
+                    maxLength={25}
+                    placeholder={t("Confirmar")}
+                    onChange={(event) =>
+                      updateButton(index, {
+                        ...button,
+                        text: event.target.value,
+                      })
+                    }
+                  />
+                </Field>
+                {button.type === "PHONE_NUMBER" && (
+                  <Field label={t("Número de teléfono")}>
+                    <input
+                      className="template-input"
+                      value={button.phoneNumber}
+                      disabled={readOnly}
+                      placeholder="+15551234567"
+                      onChange={(event) =>
+                        updateButton(index, {
+                          ...button,
+                          phoneNumber: event.target.value,
+                        })
+                      }
+                    />
+                  </Field>
+                )}
+                {button.type === "URL" && (
+                  <>
+                    <Field label={t("Tipo de URL")}>
+                      <CampaignFilterSelect
+                        ariaLabel={t("Tipo de URL")}
+                        value={button.mode}
+                        disabled={readOnly}
+                        onChange={(mode) => {
+                          updateButton(index, {
+                            ...button,
+                            mode,
+                            url:
+                              mode === "DYNAMIC"
+                                ? `${button.url.replace(/\{\{1\}\}$/, "")}{{1}}`
+                                : button.url.replace(/\{\{1\}\}$/, ""),
+                            example: mode === "DYNAMIC" ? button.example : "",
+                          });
+                        }}
+                        options={[
+                          { value: "STATIC", label: t("Estática") },
+                          { value: "DYNAMIC", label: t("Dinámica") },
+                        ]}
+                      />
+                    </Field>
+                    <Field label={t("URL HTTPS")}>
+                      <input
+                        className="template-input"
+                        value={button.url}
+                        disabled={readOnly}
+                        placeholder="https://example.com/orders/{{1}}"
+                        onChange={(event) =>
+                          updateButton(index, {
+                            ...button,
+                            url: event.target.value,
+                          })
+                        }
+                      />
+                    </Field>
+                    {button.mode === "DYNAMIC" && (
+                      <Field label={t("URL de ejemplo")}>
+                        <input
+                          className="template-input"
+                          value={button.example}
+                          disabled={readOnly}
+                          placeholder="https://example.com/orders/ORD-2048"
+                          onChange={(event) =>
+                            updateButton(index, {
+                              ...button,
+                              example: event.target.value,
+                            })
+                          }
+                        />
+                      </Field>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -923,10 +1088,7 @@ function ReviewStep({
               getTemplateVariableIndexes(values.body).length,
           )}
         />
-        <Summary
-          label={t("Respuestas rápidas")}
-          value={String(values.quickReplies.length)}
-        />
+        <Summary label={t("Botones")} value={String(values.buttons.length)} />
       </dl>
       <div className="mt-[18px] rounded-lg border border-primary/30 bg-primary/5 p-[14px] text-[12px] text-muted-foreground">
         {t(
@@ -996,7 +1158,7 @@ function getInitialValues(
     body: body?.text || "",
     bodySamples: body?.example?.body_text?.[0] || [],
     footer: footer?.text || "",
-    quickReplies: buttons?.buttons.map((button) => button.text) || [],
+    buttons: getTemplateButtonValues(buttons),
   };
 }
 

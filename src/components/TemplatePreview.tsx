@@ -57,9 +57,8 @@ export default function TemplatePreview({
     ? components.find((c) => c.type === "BUTTONS")
     : buttMemo;
 
-  const textHead = head?.type === "HEADER" && head.format === "TEXT"
-    ? head
-    : undefined;
+  const textHead =
+    head?.type === "HEADER" && head.format === "TEXT" ? head : undefined;
   let headPlaceholders = textHead?.text;
   let bodyPlaceholders = body.text;
 
@@ -163,17 +162,19 @@ export default function TemplatePreview({
     if (buttons) {
       idx = 0;
       for (const button of buttons) {
-        components.push({
-          type: "button",
-          sub_type: "quick_reply",
-          index: idx.toString(),
-          parameters: [
-            {
-              type: "payload",
-              payload: button.text.toLowerCase().replaceAll(" ", "_"),
-            },
-          ],
-        });
+        if (button.type === "QUICK_REPLY") {
+          components.push({
+            type: "button",
+            sub_type: "quick_reply",
+            index: idx.toString(),
+            parameters: [
+              {
+                type: "payload",
+                payload: button.text.toLowerCase().replaceAll(" ", "_"),
+              },
+            ],
+          });
+        }
         idx++;
       }
     }
@@ -241,7 +242,10 @@ export default function TemplatePreview({
           header={headPlaceholders}
           body={bodyPlaceholders}
           footer={foot?.text}
-          buttons={buttons?.map((b) => b.text)}
+          buttons={buttons?.map((button) => ({
+            text: button.text,
+            type: button.type,
+          }))}
           direction="outgoing"
           onInput={onInputHandler}
         />
