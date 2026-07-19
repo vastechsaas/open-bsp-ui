@@ -1,4 +1,5 @@
 import type { TemplateData } from "@/supabase/client";
+import type { MediaHeaderFormat } from "@/supabase/types/whatsapp_template_types";
 
 export type CampaignCsvRecipient = {
   contact_address: string;
@@ -62,24 +63,42 @@ export function getCampaignReadiness({
   mapping,
   audienceCount,
   audienceUnavailable = false,
+  headerMedia,
+  mediaUnavailable = false,
 }: {
   template: TemplateData | null | undefined;
   mapping: Record<string, unknown>;
   audienceCount: number | null | undefined;
   audienceUnavailable?: boolean;
+  headerMedia?: { format?: string; media_id?: string } | null;
+  mediaUnavailable?: boolean;
 }): CampaignReadiness {
   if (audienceUnavailable) return "unavailable";
   if (audienceCount === undefined) return "loading";
+  const mediaFormat = getTemplateMediaHeaderFormat(template);
   if (
     !template ||
     template.status !== "APPROVED" ||
     !isTemplateMappingComplete(template, mapping) ||
     audienceCount === null ||
-    audienceCount <= 0
+    audienceCount <= 0 ||
+    (mediaFormat &&
+      (!headerMedia || headerMedia.format !== mediaFormat || !headerMedia.media_id))
+    || mediaUnavailable
   ) {
     return "needs_attention";
   }
   return "ready";
+}
+
+export function getTemplateMediaHeaderFormat(
+  template: TemplateData | null | undefined,
+): MediaHeaderFormat | null {
+  if (!template) return null;
+  const header = template.components.find((component) =>
+    component.type === "HEADER" && component.format !== "TEXT"
+  );
+  return header?.format ?? null;
 }
 
 function parseCsvRows(input: string) {

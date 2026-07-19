@@ -5,6 +5,7 @@ import {
   canStartCampaign,
   getCampaignReadiness,
   getTemplateVariables,
+  getTemplateMediaHeaderFormat,
   isCampaignWorkspacePath,
   isCampaignProcessing,
   parseCampaignCsv,
@@ -32,6 +33,44 @@ void test("campaign CSV parsing keeps recipients scoped data and variables", () 
       variables: { offer: "15%", city: "Lahore" },
     },
   ]);
+});
+
+void test("campaign media readiness requires matching Meta media metadata", () => {
+  const template: TemplateData = {
+    id: "template-media",
+    name: "campaign_media",
+    status: "APPROVED",
+    category: "MARKETING",
+    language: "en_US",
+    components: [
+      { type: "HEADER", format: "DOCUMENT" },
+      { type: "BODY", text: "See the offer" },
+    ],
+  };
+
+  assert.equal(getTemplateMediaHeaderFormat(template), "DOCUMENT");
+  assert.equal(
+    getCampaignReadiness({ template, mapping: {}, audienceCount: 2 }),
+    "needs_attention",
+  );
+  assert.equal(
+    getCampaignReadiness({
+      template,
+      mapping: {},
+      audienceCount: 2,
+      headerMedia: { format: "IMAGE", media_id: "wrong" },
+    }),
+    "needs_attention",
+  );
+  assert.equal(
+    getCampaignReadiness({
+      template,
+      mapping: {},
+      audienceCount: 2,
+      headerMedia: { format: "DOCUMENT", media_id: "meta-media-1" },
+    }),
+    "ready",
+  );
 });
 
 void test("campaign CSV parsing rejects missing and duplicate phone values", () => {

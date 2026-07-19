@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { message } from "antd";
-import { FileUp, Users } from "lucide-react";
+import { FileText, FileUp, ImageIcon, Users, Video } from "lucide-react";
 import Button from "@/components/Button";
 import FieldError from "@/components/FieldError";
 import SectionBody from "@/components/SectionBody";
@@ -28,8 +28,11 @@ import {
   type CampaignCsvRecipient,
   type CampaignSubmitIntent,
   getTemplateVariables,
+  getTemplateMediaHeaderFormat,
   parseCampaignCsv,
 } from "@/utils/CampaignUtils";
+import { getTemplateMediaFileError } from "@/utils/TemplateDraftUtils";
+import type { CampaignHeaderMedia } from "@/queries/useCampaigns";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
 type CampaignFormValues = {
@@ -88,6 +91,8 @@ export default function CampaignForm({
   const [externalDirty, setExternalDirty] = useState(false);
   const [submitIntent, setSubmitIntent] =
     useState<CampaignSubmitIntent>("save");
+  const [headerMediaFile, setHeaderMediaFile] = useState<File>();
+  const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState<string>();
 
   const {
     register,
@@ -137,6 +142,24 @@ export default function CampaignForm({
     approvedTemplates.find((template) => template.id === templateId) ||
     (storedTemplate?.id === templateId ? storedTemplate : undefined);
   const templateVariables = getTemplateVariables(selectedTemplate);
+  const mediaHeaderFormat = getTemplateMediaHeaderFormat(selectedTemplate);
+  const storedHeaderMedia = campaign?.header_media as CampaignHeaderMedia | null | undefined;
+  const storedMediaMatches = !!mediaHeaderFormat && storedHeaderMedia?.format === mediaHeaderFormat && !!storedHeaderMedia.media_id;
+  const mediaFileError = mediaHeaderFormat && !storedMediaMatches
+    ? getTemplateMediaFileError(mediaHeaderFormat, headerMediaFile)
+    : headerMediaFile
+      ? getTemplateMediaFileError(mediaHeaderFormat || "NONE", headerMediaFile)
+      : null;
+
+  useEffect(() => {
+    if (!headerMediaFile) {
+      setHeaderMediaPreviewUrl(undefined);
+      return;
+    }
+    const url = URL.createObjectURL(headerMediaFile);
+    setHeaderMediaPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [headerMediaFile]);
 
   const localAllContacts = useMemo(
     () =>
@@ -208,6 +231,7 @@ export default function CampaignForm({
     !organizationAddress ||
     !templateId ||
     !mappingIsComplete ||
+    !!mediaFileError ||
     (csvIsRequired && !csvRecipients.length);
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
@@ -255,6 +279,10 @@ export default function CampaignForm({
         created_by: campaign?.created_by || createdBy || null,
         template: selectedTemplate as unknown as Json,
         template_variable_mapping: mapping,
+        header_media: mediaHeaderFormat && storedMediaMatches
+          ? (storedHeaderMedia as unknown as Json)
+          : null,
+        headerMediaFile,
         audience_type: values.audience_type,
         csvRecipients,
         replaceCsvRecipients,
@@ -319,6 +347,7 @@ export default function CampaignForm({
               onValueChange={() => {
                 setValue("template_id", "", { shouldDirty: true });
                 setMapping({});
+                setHeaderMediaFile(undefined);
               }}
             />
             <div>
@@ -339,7 +368,11 @@ export default function CampaignForm({
                   value: template.id,
                   label: `${template.name} · ${template.language}`,
                 }))}
-                onValueChange={() => setMapping({})}
+                onValueChange={() => {
+                  setMapping({});
+                  setHeaderMediaFile(undefined);
+                  setExternalDirty(true);
+                }}
               />
               {organizationAddress && templatesError && (
                 <p className="mt-[6px] text-[12px] text-destructive">
@@ -350,6 +383,46 @@ export default function CampaignForm({
               )}
             </div>
           </div>
+
+          {mediaHeaderFormat && (
+            <label className="rounded-xl border border-dashed border-input p-[14px]">
+              <div className="flex items-center gap-[8px] text-[14px] font-medium">
+                {mediaHeaderFormat === "IMAGE" ? (
+                  <ImageIcon className="h-[19px] w-[19px] text-primary" />
+                ) : mediaHeaderFormat === "VIDEO" ? (
+                  <Video className="h-[19px] w-[19px] text-primary" />
+                ) : (
+                  <FileText className="h-[19px] w-[19px] text-primary" />
+                )}
+                {t("Archivo multimedia de la campaña")}
+              </div>
+              <p className="my-[7px] text-[12px] text-muted-foreground">
+                {storedMediaMatches && !headerMediaFile
+                  ? `${storedHeaderMedia.file_name} · ${t("guardado en Meta")}`
+                  : t("Este archivo se enviará a todos los destinatarios.")}
+              </p>
+              <input
+                type="file"
+                accept={
+                  mediaHeaderFormat === "IMAGE"
+                    ? "image/jpeg,image/png,.jpg,.jpeg,.png"
+                    : mediaHeaderFormat === "VIDEO"
+                      ? "video/mp4,.mp4"
+                      : "application/pdf,.pdf"
+                }
+                className="max-w-full text-[13px]"
+                onChange={(event) => {
+                  setHeaderMediaFile(event.target.files?.[0]);
+                  setExternalDirty(true);
+                }}
+              />
+              {mediaFileError && (
+                <div className="mt-[7px] text-[12px] text-destructive">
+                  {t(mediaFileError)}
+                </div>
+              )}
+            </label>
+          )}
         </section>
 
         <section className={cardClass}>
@@ -471,7 +544,15 @@ export default function CampaignForm({
           <section className={`${cardClass} overflow-hidden`}>
             <h2 className="font-medium">{t("Vista previa de la plantilla")}</h2>
             <div className="rounded-xl bg-chat py-[16px] min-h-[220px]">
-              <TemplatePreview template={selectedTemplate} editMode />
+              <TemplatePreview
+                template={selectedTemplate}
+                editMode
+                media={mediaHeaderFormat ? {
+                  format: mediaHeaderFormat,
+                  url: headerMediaPreviewUrl,
+                  fileName: headerMediaFile?.name || storedHeaderMedia?.file_name,
+                } : undefined}
+              />
             </div>
           </section>
         )}

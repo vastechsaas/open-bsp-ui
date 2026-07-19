@@ -689,5 +689,8 @@
   "La imagen debe ser JPEG o PNG.": "L'image doit être au format JPEG ou PNG.",
   "El video debe ser MP4.": "La vidéo doit être au format MP4.",
   "El documento debe ser PDF.": "Le document doit être un PDF.",
-  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Les modèles d'authentification ne prennent pas en charge les en-têtes multimédias."
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Les modèles d'authentification ne prennent pas en charge les en-têtes multimédias.",
+  "Archivo multimedia de la campaña": "Fichier multimédia de campagne",
+  "guardado en Meta": "stocké sur Meta",
+  "Este archivo se enviará a todos los destinatarios.": "Ce fichier sera envoyé à tous les destinataires."
 }
