@@ -673,5 +673,21 @@
   "Expandir navegación": "Expandir navegação",
   "Navegación principal": "Navegação principal",
   "Abrir menú de usuario": "Abrir menu do usuário",
-  "Organizaciones": "Organizações"
+  "Organizaciones": "Organizações",
+  "Tipo de encabezado": "Tipo de cabeçalho",
+  "Texto": "Texto",
+  "Imagen": "Imagem",
+  "Documento PDF": "Documento PDF",
+  "Archivo de muestra": "Arquivo de amostra",
+  "Muestra requerida antes de enviar": "Amostra necessária antes do envio",
+  "JPEG o PNG, hasta 5 MB": "JPEG ou PNG, até 5 MB",
+  "MP4, hasta 16 MB": "MP4, até 16 MB",
+  "PDF, hasta 50 MB": "PDF, até 50 MB",
+  "Seleccionar archivo": "Selecionar arquivo",
+  "Reemplazar archivo": "Substituir arquivo",
+  "SeleccionÃ¡ un archivo de muestra para el encabezado.": "Selecione um arquivo de amostra para o cabeçalho.",
+  "La imagen debe ser JPEG o PNG.": "A imagem deve ser JPEG ou PNG.",
+  "El video debe ser MP4.": "O vídeo deve ser MP4.",
+  "El documento debe ser PDF.": "O documento deve ser PDF.",
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Modelos de autenticação não aceitam cabeçalhos de mídia."
 }

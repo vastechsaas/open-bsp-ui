@@ -673,5 +673,21 @@
   "Expandir navegación": "Développer la navigation",
   "Navegación principal": "Navigation principale",
   "Abrir menú de usuario": "Ouvrir le menu utilisateur",
-  "Organizaciones": "Organisations"
+  "Organizaciones": "Organisations",
+  "Tipo de encabezado": "Type d'en-tête",
+  "Texto": "Texte",
+  "Imagen": "Image",
+  "Documento PDF": "Document PDF",
+  "Archivo de muestra": "Fichier d'exemple",
+  "Muestra requerida antes de enviar": "Exemple requis avant l'envoi",
+  "JPEG o PNG, hasta 5 MB": "JPEG ou PNG, jusqu'à 5 MB",
+  "MP4, hasta 16 MB": "MP4, jusqu'à 16 MB",
+  "PDF, hasta 50 MB": "PDF, jusqu'à 50 MB",
+  "Seleccionar archivo": "Sélectionner un fichier",
+  "Reemplazar archivo": "Remplacer le fichier",
+  "SeleccionÃ¡ un archivo de muestra para el encabezado.": "Sélectionnez un exemple pour l'en-tête.",
+  "La imagen debe ser JPEG o PNG.": "L'image doit être au format JPEG ou PNG.",
+  "El video debe ser MP4.": "La vidéo doit être au format MP4.",
+  "El documento debe ser PDF.": "Le document doit être un PDF.",
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Les modèles d'authentification ne prennent pas en charge les en-têtes multimédias."
 }

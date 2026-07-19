@@ -33,7 +33,9 @@ import {
   getTemplateDetailsErrors,
   getTemplateEditorAccess,
   getInitialTemplateEditorStep,
+  getTemplateMediaFileError,
   getTemplateVariableIndexes,
+  isMediaHeaderFormat,
   removeTemplateBodyVariable,
   type TemplateEditorStep,
   type TemplateEditorValues,
@@ -65,6 +67,8 @@ export default function TemplateEditor({
   const [savedDraftId, setSavedDraftId] = useState(
     existingTemplate?.status === "draft" ? existingTemplate.id : undefined,
   );
+  const [headerMediaFile, setHeaderMediaFile] = useState<File>();
+  const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState<string>();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const createDraft = useCreateTemplateDraft();
   const updateDraft = useUpdateTemplateDraft();
@@ -81,7 +85,14 @@ export default function TemplateEditor({
     editSubmittedTemplate.isPending;
   const detailsErrors = getTemplateDetailsErrors(values);
   const contentErrors = getTemplateContentErrors(values);
-  const readinessErrors = [...detailsErrors, ...contentErrors];
+  const mediaFileError = isReadOnly
+    ? null
+    : getTemplateMediaFileError(values.headerFormat, headerMediaFile);
+  const readinessErrors = [
+    ...detailsErrors,
+    ...contentErrors,
+    ...(mediaFileError ? [mediaFileError] : []),
+  ];
   const bodyIndexes = useMemo(
     () => getTemplateVariableIndexes(values.body),
     [values.body],
@@ -108,6 +119,26 @@ export default function TemplateEditor({
       };
     });
   }, [bodyIndexes]);
+
+  useEffect(() => {
+    if (!headerMediaFile) {
+      setHeaderMediaPreviewUrl(undefined);
+      return;
+    }
+    const url = URL.createObjectURL(headerMediaFile);
+    setHeaderMediaPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [headerMediaFile]);
+
+  useEffect(() => {
+    if (
+      values.category === "AUTHENTICATION" &&
+      isMediaHeaderFormat(values.headerFormat)
+    ) {
+      setValues((current) => ({ ...current, headerFormat: "NONE" }));
+      setHeaderMediaFile(undefined);
+    }
+  }, [values.category, values.headerFormat]);
 
   const update = <K extends keyof TemplateEditorValues>(
     key: K,
@@ -156,6 +187,7 @@ export default function TemplateEditor({
         draftId,
         organizationAddress: values.organizationAddress,
         template: buildTemplateDraftInput(values),
+        mediaFile: headerMediaFile,
       });
       void message.success(t("Plantilla enviada a Meta"));
       returnToList();
@@ -172,6 +204,7 @@ export default function TemplateEditor({
       const result = await editSubmittedTemplate.mutateAsync({
         templateId: existingTemplate.id,
         template: buildTemplateDraftInput(values),
+        mediaFile: headerMediaFile,
       });
       if (result.sync_pending) {
         void message.warning(
@@ -254,6 +287,10 @@ export default function TemplateEditor({
                 bodyIndexes={bodyIndexes}
                 bodyRef={bodyRef}
                 readOnly={isReadOnly}
+                mediaFile={headerMediaFile}
+                mediaPreviewUrl={headerMediaPreviewUrl}
+                mediaError={mediaFileError}
+                onMediaFileChange={setHeaderMediaFile}
               />
             )}
             {step === 3 && (
@@ -276,7 +313,19 @@ export default function TemplateEditor({
                 {t("Vista previa de WhatsApp")}
               </div>
               <div className="min-h-[260px] bg-chat py-[18px] [&>div]:!mx-[12px] [&>div>div>div]:!max-w-[92%]">
-                <TemplatePreview editMode template={previewTemplate} />
+                <TemplatePreview
+                  editMode
+                  template={previewTemplate}
+                  media={
+                    isMediaHeaderFormat(values.headerFormat)
+                      ? {
+                          format: values.headerFormat,
+                          url: headerMediaPreviewUrl,
+                          fileName: headerMediaFile?.name,
+                        }
+                      : undefined
+                  }
+                />
               </div>
             </section>
             <section className="rounded-xl border border-border bg-card p-[16px]">
@@ -518,9 +567,17 @@ function ContentStep({
   bodyIndexes,
   bodyRef,
   readOnly,
+  mediaFile,
+  mediaPreviewUrl,
+  mediaError,
+  onMediaFileChange,
 }: StepProps & {
   bodyIndexes: number[];
   bodyRef: React.RefObject<HTMLTextAreaElement | null>;
+  mediaFile?: File;
+  mediaPreviewUrl?: string;
+  mediaError?: string | null;
+  onMediaFileChange: (file?: File) => void;
 }) {
   const { translate: t } = useTranslation();
   const appendBodyVariable = () => {
@@ -548,6 +605,20 @@ function ContentStep({
     update("bodySamples", result.bodySamples);
     requestAnimationFrame(() => bodyRef.current?.focus());
   };
+  const mediaAccept =
+    values.headerFormat === "IMAGE"
+      ? "image/jpeg,image/png,.jpg,.jpeg,.png"
+      : values.headerFormat === "VIDEO"
+        ? "video/mp4,.mp4"
+        : "application/pdf,.pdf";
+  const updateHeaderFormat = (format: string) => {
+    update("headerFormat", format as TemplateEditorValues["headerFormat"]);
+    if (format !== "TEXT") {
+      update("header", "");
+      update("headerSample", "");
+    }
+    onMediaFileChange(undefined);
+  };
   return (
     <div className="space-y-[16px]">
       <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
@@ -558,6 +629,26 @@ function ContentStep({
           {t("Creá el mensaje y agregá ejemplos para cada variable.")}
         </p>
         <div className="mt-[22px] space-y-[18px]">
+          <Field label={`${t("Tipo de encabezado")} (${t("opcional")})`}>
+            <CampaignFilterSelect
+              ariaLabel={t("Tipo de encabezado")}
+              value={values.headerFormat}
+              disabled={readOnly}
+              onChange={updateHeaderFormat}
+              options={[
+                { value: "NONE", label: t("Ninguno") },
+                { value: "TEXT", label: t("Texto") },
+                ...(values.category === "AUTHENTICATION"
+                  ? []
+                  : [
+                      { value: "IMAGE", label: t("Imagen") },
+                      { value: "VIDEO", label: t("Video") },
+                      { value: "DOCUMENT", label: t("Documento PDF") },
+                    ]),
+              ]}
+            />
+          </Field>
+          {values.headerFormat === "TEXT" && (
           <Field
             label={`${t("Encabezado")} (${t("opcional")})`}
             hint={`${values.header.length}/60`}
@@ -584,7 +675,9 @@ function ContentStep({
               </button>
             </div>
           </Field>
-          {values.header.includes("{{1}}") && (
+          )}
+          {values.headerFormat === "TEXT" &&
+            values.header.includes("{{1}}") && (
             <Field label={`${t("Ejemplo para")} {{1}}`}>
               <div className="flex gap-[8px]">
                 <input
@@ -606,6 +699,54 @@ function ContentStep({
                   >
                     <Trash2 className="h-[15px] w-[15px]" />
                   </button>
+                )}
+              </div>
+            </Field>
+          )}
+          {isMediaHeaderFormat(values.headerFormat) && (
+            <Field label={t("Archivo de muestra")}>
+              <div className="rounded-xl border border-dashed border-border p-[14px]">
+                {mediaPreviewUrl && values.headerFormat === "IMAGE" && (
+                  <img
+                    src={mediaPreviewUrl}
+                    alt={mediaFile?.name || ""}
+                    className="mb-[12px] max-h-[190px] w-full rounded-lg object-contain"
+                  />
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-[10px]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium">
+                      {mediaFile?.name ||
+                        t("Muestra requerida antes de enviar")}
+                    </p>
+                    <p className="mt-[2px] text-[11px] text-muted-foreground">
+                      {values.headerFormat === "IMAGE"
+                        ? t("JPEG o PNG, hasta 5 MB")
+                        : values.headerFormat === "VIDEO"
+                          ? t("MP4, hasta 16 MB")
+                          : t("PDF, hasta 50 MB")}
+                    </p>
+                  </div>
+                  {!readOnly && (
+                    <label className="cursor-pointer rounded-lg border border-border px-[13px] py-[8px] text-[12px] hover:bg-muted">
+                      {t(
+                        mediaFile ? "Reemplazar archivo" : "Seleccionar archivo",
+                      )}
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept={mediaAccept}
+                        onChange={(event) =>
+                          onMediaFileChange(event.target.files?.[0])
+                        }
+                      />
+                    </label>
+                  )}
+                </div>
+                {mediaError && !readOnly && (
+                  <p className="mt-[9px] text-[12px] text-destructive">
+                    {t(mediaError)}
+                  </p>
                 )}
               </div>
             </Field>
@@ -772,6 +913,10 @@ function ReviewStep({
         <Summary label={t("Categoría")} value={values.category.toLowerCase()} />
         <Summary label={t("Idioma")} value={values.language} />
         <Summary
+          label={t("Encabezado")}
+          value={values.headerFormat.toLowerCase()}
+        />
+        <Summary
           label={t("Variables")}
           value={String(
             getTemplateVariableIndexes(values.header).length +
@@ -844,8 +989,10 @@ function getInitialValues(
     category:
       (existingTemplate?.category?.toUpperCase() as TemplateCategory) ||
       "UTILITY",
-    header: header?.text || "",
-    headerSample: header?.example?.header_text?.[0] || "",
+    headerFormat: header?.format || "NONE",
+    header: header?.format === "TEXT" ? header.text : "",
+    headerSample:
+      header?.format === "TEXT" ? header.example?.header_text?.[0] || "" : "",
     body: body?.text || "",
     bodySamples: body?.example?.body_text?.[0] || [],
     footer: footer?.text || "",

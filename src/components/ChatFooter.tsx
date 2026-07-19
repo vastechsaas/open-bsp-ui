@@ -152,6 +152,10 @@ export default function ChatFooter() {
   const templateHead = templateDraft?.components.find(
     (c) => c.type === "HEADER",
   );
+  const templateTextHead =
+    templateHead?.type === "HEADER" && templateHead.format === "TEXT"
+      ? templateHead
+      : undefined;
   const templateFoot = templateDraft?.components.find(
     (c) => c.type === "FOOTER",
   );
@@ -160,11 +164,12 @@ export default function ChatFooter() {
   );
 
   const bodyExamples = templateBody?.example?.body_text[0] || [];
-  const headExamples = templateHead?.example?.header_text || [];
+  const headExamples = templateTextHead?.example?.header_text || [];
 
   // Count how many variables are in the template body/header
   const bodyVarCount = (templateBody?.text.match(/\{\{\d+\}\}/g) || []).length;
-  const headVarCount = (templateHead?.text?.match(/\{\{\d+\}\}/g) || []).length;
+  const headVarCount = (templateTextHead?.text.match(/\{\{\d+\}\}/g) || [])
+    .length;
 
   const allVarsFilled =
     templateDraft &&
@@ -283,7 +288,7 @@ export default function ChatFooter() {
 
     // Build rendered text
     let bodyContent = templateBody.text;
-    let headContent = templateHead?.text;
+    let headContent = templateTextHead?.text;
     const components: TemplateMessage["template"]["components"] = [];
 
     if (headVarValues.length && headVarCount > 0) {
@@ -384,8 +389,8 @@ export default function ChatFooter() {
     const parts: (string | { varIndex: number; isHeader: boolean })[] = [];
 
     // Render header if present
-    if (templateHead?.text && headVarCount > 0) {
-      const headerSegments = templateHead.text.split(/(\{\{\d+\}\})/);
+    if (templateTextHead?.text && headVarCount > 0) {
+      const headerSegments = templateTextHead.text.split(/(\{\{\d+\}\})/);
       let headerIdx = 0;
       for (const seg of headerSegments) {
         const match = seg.match(/^\{\{(\d+)\}\}$/);
@@ -397,8 +402,8 @@ export default function ChatFooter() {
         }
       }
       parts.push("\n");
-    } else if (templateHead?.text) {
-      parts.push(templateHead.text + "\n");
+    } else if (templateTextHead?.text) {
+      parts.push(templateTextHead.text + "\n");
     }
 
     // Render body
