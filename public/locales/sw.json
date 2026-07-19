@@ -689,5 +689,8 @@
   "La imagen debe ser JPEG o PNG.": "Picha lazima iwe JPEG au PNG.",
   "El video debe ser MP4.": "Video lazima iwe MP4.",
   "El documento debe ser PDF.": "Hati lazima iwe PDF.",
-  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Violezo vya uthibitishaji havitumii vichwa vya midia."
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Violezo vya uthibitishaji havitumii vichwa vya midia.",
+  "Archivo multimedia de la campaña": "Faili ya midia ya kampeni",
+  "guardado en Meta": "imehifadhiwa Meta",
+  "Este archivo se enviará a todos los destinatarios.": "Faili hii itatumwa kwa wapokeaji wote."
 }

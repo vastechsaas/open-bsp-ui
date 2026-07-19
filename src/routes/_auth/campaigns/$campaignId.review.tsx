@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
 import { AlertCircle, CheckCircle2, LoaderCircle, Users } from "lucide-react";
@@ -11,13 +11,16 @@ import {
   useCampaign,
   useCampaignAudienceCount,
   useCampaignAudiencePreview,
+  useCampaignMediaPreview,
   useStartCampaign,
+  type CampaignHeaderMedia,
 } from "@/queries/useCampaigns";
 import type { Json, TemplateData } from "@/supabase/client";
 import {
   canStartCampaign,
   getCampaignReadiness,
   getTemplateVariables,
+  getTemplateMediaHeaderFormat,
   isCampaignProcessing,
 } from "@/utils/CampaignUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
@@ -48,6 +51,18 @@ function ReviewCampaign() {
     isError: countError,
   } = useCampaignAudienceCount(campaignId);
   const { data: preview } = useCampaignAudiencePreview(campaignId);
+  const mediaPreview = useCampaignMediaPreview(campaign);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string>();
+
+  useEffect(() => {
+    if (!mediaPreview.data) {
+      setMediaPreviewUrl(undefined);
+      return;
+    }
+    const url = URL.createObjectURL(mediaPreview.data);
+    setMediaPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [mediaPreview.data]);
 
   if (isLoading) {
     return (
@@ -67,6 +82,8 @@ function ReviewCampaign() {
 
   const template = campaign.template as unknown as TemplateData;
   const mapping = asRecord(campaign.template_variable_mapping);
+  const headerMedia = campaign.header_media as CampaignHeaderMedia | null;
+  const mediaFormat = getTemplateMediaHeaderFormat(template);
   const variables = getTemplateVariables(template);
   const audienceLabels: Record<CampaignAudienceType, string> = {
     all_contacts: t("Todos los contactos"),
@@ -78,6 +95,8 @@ function ReviewCampaign() {
     audienceCount: countLoading ? undefined : audienceCount,
     template,
     audienceUnavailable: countError,
+    headerMedia,
+    mediaUnavailable: !!mediaFormat && mediaPreview.isError,
   });
   const ready = readiness === "ready";
   const canRun = canStartCampaign(campaign.status, readiness);
@@ -242,7 +261,15 @@ function ReviewCampaign() {
                 {t("Vista previa de la plantilla")}
               </h2>
               <div className="rounded-xl bg-chat py-[16px] min-h-[240px]">
-                <TemplatePreview template={template} editMode />
+                <TemplatePreview
+                  template={template}
+                  editMode
+                  media={mediaFormat ? {
+                    format: mediaFormat,
+                    url: mediaPreviewUrl,
+                    fileName: headerMedia?.file_name,
+                  } : undefined}
+                />
               </div>
             </section>
 
