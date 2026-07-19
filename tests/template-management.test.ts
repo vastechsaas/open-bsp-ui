@@ -9,6 +9,7 @@ import {
   getTemplateContentErrors,
   getTemplateVariableIndexes,
   isTemplateWorkspacePath,
+  removeTemplateBodyVariable,
   type TemplateEditorValues,
 } from "../src/utils/TemplateDraftUtils.ts";
 
@@ -140,6 +141,70 @@ void test("template variable indexes are unique and ordered", () => {
   assert.deepEqual(
     getTemplateVariableIndexes("Hello {{2}}, {{1}} and {{2}}"),
     [1, 2],
+  );
+});
+
+void test("the only template variable can be removed with its sample", () => {
+  assert.deepEqual(removeTemplateBodyVariable("Order {{1}}", ["#1234"], 1), {
+    body: "Order",
+    bodySamples: [],
+  });
+});
+
+void test("removing the last body variable preserves earlier samples", () => {
+  assert.deepEqual(
+    removeTemplateBodyVariable(
+      "Hello {{1}}, order {{2}} is ready.",
+      ["Alice", "#1234"],
+      2,
+    ),
+    {
+      body: "Hello {{1}}, order is ready.",
+      bodySamples: ["Alice"],
+    },
+  );
+});
+
+void test("removing a middle variable renumbers later variables and samples", () => {
+  assert.deepEqual(
+    removeTemplateBodyVariable(
+      "Hello {{1}}, order {{2}} arrives {{3}}.",
+      ["Alice", "#1234", "tomorrow"],
+      2,
+    ),
+    {
+      body: "Hello {{1}}, order arrives {{2}}.",
+      bodySamples: ["Alice", "tomorrow"],
+    },
+  );
+});
+
+void test("removing a repeated variable removes every occurrence", () => {
+  assert.deepEqual(
+    removeTemplateBodyVariable(
+      "Code {{2}} is the same as {{2}} for {{1}}.",
+      ["Alice", "8492"],
+      2,
+    ),
+    {
+      body: "Code is the same as for {{1}}.",
+      bodySamples: ["Alice"],
+    },
+  );
+});
+
+void test("variable removal controls are hidden in read-only mode", () => {
+  const editor = readFileSync(
+    new URL("../src/components/TemplateEditor.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    editor,
+    /\{!readOnly && \([\s\S]*?aria-label=\{t\("Eliminar variable"\)\}/,
+  );
+  assert.match(
+    editor,
+    /\{!readOnly && \([\s\S]*?removeBodyVariable\(variable\)/,
   );
 });
 

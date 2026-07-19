@@ -76,6 +76,40 @@ export function getTemplateVariableIndexes(text: string) {
   return [...indexes].sort((left, right) => left - right);
 }
 
+export function removeTemplateBodyVariable(
+  body: string,
+  bodySamples: string[],
+  variableIndex: number,
+) {
+  const indexes = getTemplateVariableIndexes(body);
+  const sampleIndex = indexes.indexOf(variableIndex);
+  if (sampleIndex === -1) return { body, bodySamples: [...bodySamples] };
+
+  const selectedVariable = `\\{\\{\\s*${variableIndex}\\s*\\}\\}`;
+  const remainingBody = body
+    .replace(
+      new RegExp(`[ \\t]*${selectedVariable}[ \\t]*(?=[,.;:!?])`, "g"),
+      "",
+    )
+    .replace(
+      new RegExp(`([ \\t]*)${selectedVariable}([ \\t]*)`, "g"),
+      (_, leftSpacing: string, rightSpacing: string) =>
+        leftSpacing && rightSpacing ? " " : "",
+    );
+  const renumberedBody = remainingBody.replace(
+    /\{\{\s*(\d+)\s*\}\}/g,
+    (_, rawIndex: string) => {
+      const index = Number(rawIndex);
+      return `{{${index > variableIndex ? index - 1 : index}}}`;
+    },
+  );
+
+  return {
+    body: renumberedBody,
+    bodySamples: bodySamples.filter((_, index) => index !== sampleIndex),
+  };
+}
+
 function variablesAreSequential(indexes: number[]) {
   return indexes.every((index, position) => index === position + 1);
 }
