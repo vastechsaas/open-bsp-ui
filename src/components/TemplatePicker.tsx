@@ -23,6 +23,13 @@ export default function TemplatePicker() {
       !template.components.some(
         (component) =>
           component.type === "HEADER" && component.format !== "TEXT",
+      ) &&
+      !template.components.some(
+        (component) =>
+          component.type === "BUTTONS" &&
+          component.buttons.some(
+            (button) => button.type === "URL" && button.url.endsWith("{{1}}"),
+          ),
       ),
   );
 

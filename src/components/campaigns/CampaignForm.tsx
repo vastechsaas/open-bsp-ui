@@ -143,13 +143,23 @@ export default function CampaignForm({
     (storedTemplate?.id === templateId ? storedTemplate : undefined);
   const templateVariables = getTemplateVariables(selectedTemplate);
   const mediaHeaderFormat = getTemplateMediaHeaderFormat(selectedTemplate);
-  const storedHeaderMedia = campaign?.header_media as CampaignHeaderMedia | null | undefined;
-  const storedMediaMatches = !!mediaHeaderFormat && storedHeaderMedia?.format === mediaHeaderFormat && !!storedHeaderMedia.media_id;
-  const mediaFileError = mediaHeaderFormat && !storedMediaMatches
-    ? getTemplateMediaFileError(mediaHeaderFormat, headerMediaFile)
-    : headerMediaFile
-      ? getTemplateMediaFileError(mediaHeaderFormat || "NONE", headerMediaFile)
-      : null;
+  const storedHeaderMedia = campaign?.header_media as
+    | CampaignHeaderMedia
+    | null
+    | undefined;
+  const storedMediaMatches =
+    !!mediaHeaderFormat &&
+    storedHeaderMedia?.format === mediaHeaderFormat &&
+    !!storedHeaderMedia.media_id;
+  const mediaFileError =
+    mediaHeaderFormat && !storedMediaMatches
+      ? getTemplateMediaFileError(mediaHeaderFormat, headerMediaFile)
+      : headerMediaFile
+        ? getTemplateMediaFileError(
+            mediaHeaderFormat || "NONE",
+            headerMediaFile,
+          )
+        : null;
 
   useEffect(() => {
     if (!headerMediaFile) {
@@ -279,9 +289,10 @@ export default function CampaignForm({
         created_by: campaign?.created_by || createdBy || null,
         template: selectedTemplate as unknown as Json,
         template_variable_mapping: mapping,
-        header_media: mediaHeaderFormat && storedMediaMatches
-          ? (storedHeaderMedia as unknown as Json)
-          : null,
+        header_media:
+          mediaHeaderFormat && storedMediaMatches
+            ? (storedHeaderMedia as unknown as Json)
+            : null,
         headerMediaFile,
         audience_type: values.audience_type,
         csvRecipients,
@@ -512,7 +523,9 @@ export default function CampaignForm({
                   <div className="label">
                     {variable.section === "header"
                       ? t("Encabezado")
-                      : t("Mensaje")}{" "}
+                      : variable.section === "button"
+                        ? t("URL dinámica")
+                        : t("Mensaje")}{" "}
                     {`{{${variable.index}}}`}
                   </div>
                   <select
@@ -547,11 +560,16 @@ export default function CampaignForm({
               <TemplatePreview
                 template={selectedTemplate}
                 editMode
-                media={mediaHeaderFormat ? {
-                  format: mediaHeaderFormat,
-                  url: headerMediaPreviewUrl,
-                  fileName: headerMediaFile?.name || storedHeaderMedia?.file_name,
-                } : undefined}
+                media={
+                  mediaHeaderFormat
+                    ? {
+                        format: mediaHeaderFormat,
+                        url: headerMediaPreviewUrl,
+                        fileName:
+                          headerMediaFile?.name || storedHeaderMedia?.file_name,
+                      }
+                    : undefined
+                }
               />
             </div>
           </section>

@@ -14,8 +14,9 @@ export type ParsedCampaignCsv = {
 
 export type TemplateVariable = {
   key: string;
-  section: "header" | "body";
+  section: "header" | "body" | "button";
   index: number;
+  buttonIndex?: number;
 };
 
 export type CampaignSubmitIntent = "save" | "review";
@@ -83,8 +84,10 @@ export function getCampaignReadiness({
     audienceCount === null ||
     audienceCount <= 0 ||
     (mediaFormat &&
-      (!headerMedia || headerMedia.format !== mediaFormat || !headerMedia.media_id))
-    || mediaUnavailable
+      (!headerMedia ||
+        headerMedia.format !== mediaFormat ||
+        !headerMedia.media_id)) ||
+    mediaUnavailable
   ) {
     return "needs_attention";
   }
@@ -95,8 +98,8 @@ export function getTemplateMediaHeaderFormat(
   template: TemplateData | null | undefined,
 ): MediaHeaderFormat | null {
   if (!template) return null;
-  const header = template.components.find((component) =>
-    component.type === "HEADER" && component.format !== "TEXT"
+  const header = template.components.find(
+    (component) => component.type === "HEADER" && component.format !== "TEXT",
   );
   return header?.format ?? null;
 }
@@ -223,7 +226,21 @@ export function getTemplateVariables(
 ): TemplateVariable[] {
   if (!template) return [];
 
-  return template.components.flatMap((component) => {
+  return template.components.flatMap((component): TemplateVariable[] => {
+    if (component.type === "BUTTONS") {
+      return component.buttons.flatMap((button, buttonIndex) =>
+        button.type === "URL" && button.url.endsWith("{{1}}")
+          ? [
+              {
+                key: `button.${buttonIndex}.1`,
+                section: "button" as const,
+                index: 1,
+                buttonIndex,
+              },
+            ]
+          : [],
+      );
+    }
     if (component.type !== "HEADER" && component.type !== "BODY") return [];
     if (component.type === "HEADER" && component.format !== "TEXT") return [];
     const matches = [...component.text.matchAll(/{{\s*(\d+)\s*}}/g)];

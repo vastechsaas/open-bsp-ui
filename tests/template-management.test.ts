@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   buildTemplateDraftInput,
   getTemplateEditorAccess,
+  getTemplateButtonValues,
   getTemplateActions,
   getInitialTemplateEditorStep,
   getTemplateMediaFileError,
@@ -87,7 +88,7 @@ const readyTemplate: TemplateEditorValues = {
   body: "Hello {{1}}, your order is ready.",
   bodySamples: ["Alice"],
   footer: "Reply for help",
-  quickReplies: ["Confirm"],
+  buttons: [{ type: "QUICK_REPLY", text: "Confirm" }],
 };
 
 void test("template manager labels exist in every supported locale", () => {
@@ -234,6 +235,134 @@ void test("template payload includes samples and quick replies", () => {
       type: "BUTTONS",
       buttons: [{ type: "QUICK_REPLY", text: "Confirm" }],
     },
+  );
+});
+
+void test("template payload preserves static, dynamic, and phone CTA buttons", () => {
+  const input = buildTemplateDraftInput({
+    ...readyTemplate,
+    buttons: [
+      {
+        type: "URL",
+        text: "Track order",
+        url: "https://example.com/orders/{{1}}",
+        mode: "DYNAMIC",
+        example: "https://example.com/orders/ORD-2048",
+      },
+      {
+        type: "URL",
+        text: "Help center",
+        url: "https://example.com/help",
+        mode: "STATIC",
+        example: "",
+      },
+      {
+        type: "PHONE_NUMBER",
+        text: "Call us",
+        phoneNumber: "+15551234567",
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    input.components.find((item) => item.type === "BUTTONS"),
+    {
+      type: "BUTTONS",
+      buttons: [
+        {
+          type: "URL",
+          text: "Track order",
+          url: "https://example.com/orders/{{1}}",
+          example: ["https://example.com/orders/ORD-2048"],
+        },
+        {
+          type: "URL",
+          text: "Help center",
+          url: "https://example.com/help",
+        },
+        {
+          type: "PHONE_NUMBER",
+          text: "Call us",
+          phone_number: "+15551234567",
+        },
+      ],
+    },
+  );
+});
+
+void test("CTA buttons hydrate for draft, submitted edit, and read-only views", () => {
+  assert.deepEqual(
+    getTemplateButtonValues({
+      type: "BUTTONS",
+      buttons: [
+        { type: "QUICK_REPLY", text: "Confirm" },
+        {
+          type: "URL",
+          text: "Track",
+          url: "https://example.com/{{1}}",
+          example: ["https://example.com/ORD-2048"],
+        },
+        { type: "PHONE_NUMBER", text: "Call", phone_number: "+15551234567" },
+      ],
+    }),
+    [
+      { type: "QUICK_REPLY", text: "Confirm" },
+      {
+        type: "URL",
+        text: "Track",
+        url: "https://example.com/{{1}}",
+        mode: "DYNAMIC",
+        example: "https://example.com/ORD-2048",
+      },
+      { type: "PHONE_NUMBER", text: "Call", phoneNumber: "+15551234567" },
+    ],
+  );
+});
+
+void test("direct conversations exclude dynamic CTA templates and serialize only quick replies", () => {
+  const picker = readFileSync(
+    new URL("../src/components/TemplatePicker.tsx", import.meta.url),
+    "utf8",
+  );
+  const footer = readFileSync(
+    new URL("../src/components/ChatFooter.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    picker,
+    /button\.type === "URL" && button\.url\.endsWith\("\{\{1\}\}"\)/,
+  );
+  assert.match(footer, /if \(button\.type === "QUICK_REPLY"\)/);
+});
+
+void test("CTA validation rejects malformed runtime values", () => {
+  assert.match(
+    getTemplateContentErrors({
+      ...readyTemplate,
+      buttons: [
+        {
+          type: "URL",
+          text: "Open",
+          url: "http://example.com/{{1}}",
+          mode: "DYNAMIC",
+          example: "",
+        },
+      ],
+    }).join(" "),
+    /HTTPS/,
+  );
+  assert.match(
+    getTemplateContentErrors({
+      ...readyTemplate,
+      buttons: [
+        {
+          type: "PHONE_NUMBER",
+          text: "Call",
+          phoneNumber: "555-1234",
+        },
+      ],
+    }).join(" "),
+    /internacional/,
   );
 });
 
