@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleAlert,
   Plus,
+  Trash2,
   X,
 } from "lucide-react";
 import CampaignFilterSelect from "./campaigns/CampaignFilterSelect";
@@ -33,6 +34,7 @@ import {
   getTemplateEditorAccess,
   getInitialTemplateEditorStep,
   getTemplateVariableIndexes,
+  removeTemplateBodyVariable,
   type TemplateEditorStep,
   type TemplateEditorValues,
 } from "@/utils/TemplateDraftUtils";
@@ -527,6 +529,25 @@ function ContentStep({
     update("body", `${values.body}${suffix}{{${next}}}`);
     requestAnimationFrame(() => bodyRef.current?.focus());
   };
+  const removeHeaderVariable = () => {
+    const result = removeTemplateBodyVariable(
+      values.header,
+      [values.headerSample],
+      1,
+    );
+    update("header", result.body);
+    update("headerSample", "");
+  };
+  const removeBodyVariable = (variableIndex: number) => {
+    const result = removeTemplateBodyVariable(
+      values.body,
+      values.bodySamples,
+      variableIndex,
+    );
+    update("body", result.body);
+    update("bodySamples", result.bodySamples);
+    requestAnimationFrame(() => bodyRef.current?.focus());
+  };
   return (
     <div className="space-y-[16px]">
       <section className="rounded-xl border border-border bg-card p-[18px] md:p-[24px]">
@@ -565,13 +586,28 @@ function ContentStep({
           </Field>
           {values.header.includes("{{1}}") && (
             <Field label={`${t("Ejemplo para")} {{1}}`}>
-              <input
-                className="template-input"
-                value={values.headerSample}
-                disabled={readOnly}
-                placeholder={t("Pedido #1234")}
-                onChange={(event) => update("headerSample", event.target.value)}
-              />
+              <div className="flex gap-[8px]">
+                <input
+                  className="template-input"
+                  value={values.headerSample}
+                  disabled={readOnly}
+                  placeholder={t("Pedido #1234")}
+                  onChange={(event) =>
+                    update("headerSample", event.target.value)
+                  }
+                />
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border px-[10px] text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+                    onClick={removeHeaderVariable}
+                    aria-label={t("Eliminar variable")}
+                    title={t("Eliminar variable")}
+                  >
+                    <Trash2 className="h-[15px] w-[15px]" />
+                  </button>
+                )}
+              </div>
             </Field>
           )}
           <Field label={t("Cuerpo")} hint={`${values.body.length}/1024`}>
@@ -599,17 +635,30 @@ function ContentStep({
               key={variable}
               label={`${t("Ejemplo para")} {{${variable}}}`}
             >
-              <input
-                className="template-input"
-                value={values.bodySamples[index] || ""}
-                disabled={readOnly}
-                placeholder={t("Ejemplo: Juan, #1234...")}
-                onChange={(event) => {
-                  const samples = [...values.bodySamples];
-                  samples[index] = event.target.value;
-                  update("bodySamples", samples);
-                }}
-              />
+              <div className="flex gap-[8px]">
+                <input
+                  className="template-input"
+                  value={values.bodySamples[index] || ""}
+                  disabled={readOnly}
+                  placeholder={t("Ejemplo: Juan, #1234...")}
+                  onChange={(event) => {
+                    const samples = [...values.bodySamples];
+                    samples[index] = event.target.value;
+                    update("bodySamples", samples);
+                  }}
+                />
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border px-[10px] text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+                    onClick={() => removeBodyVariable(variable)}
+                    aria-label={`${t("Eliminar variable")} {{${variable}}}`}
+                    title={t("Eliminar variable")}
+                  >
+                    <Trash2 className="h-[15px] w-[15px]" />
+                  </button>
+                )}
+              </div>
             </Field>
           ))}
           <Field
