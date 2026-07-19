@@ -206,6 +206,7 @@ export function getTemplateVariables(
 
   return template.components.flatMap((component) => {
     if (component.type !== "HEADER" && component.type !== "BODY") return [];
+    if (component.type === "HEADER" && component.format !== "TEXT") return [];
     const matches = [...component.text.matchAll(/{{\s*(\d+)\s*}}/g)];
     const indexes = [...new Set(matches.map((match) => Number(match[1])))];
     const section = component.type === "HEADER" ? "header" : "body";

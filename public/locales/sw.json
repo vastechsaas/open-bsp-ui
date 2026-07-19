@@ -673,5 +673,21 @@
   "Expandir navegación": "Panua urambazaji",
   "Navegación principal": "Urambazaji mkuu",
   "Abrir menú de usuario": "Fungua menyu ya mtumiaji",
-  "Organizaciones": "Mashirika"
+  "Organizaciones": "Mashirika",
+  "Tipo de encabezado": "Aina ya kichwa",
+  "Texto": "Maandishi",
+  "Imagen": "Picha",
+  "Documento PDF": "Hati ya PDF",
+  "Archivo de muestra": "Faili ya mfano",
+  "Muestra requerida antes de enviar": "Mfano unahitajika kabla ya kutuma",
+  "JPEG o PNG, hasta 5 MB": "JPEG au PNG, hadi MB 5",
+  "MP4, hasta 16 MB": "MP4, hadi MB 16",
+  "PDF, hasta 50 MB": "PDF, hadi MB 50",
+  "Seleccionar archivo": "Chagua faili",
+  "Reemplazar archivo": "Badilisha faili",
+  "SeleccionÃ¡ un archivo de muestra para el encabezado.": "Chagua faili ya mfano kwa kichwa.",
+  "La imagen debe ser JPEG o PNG.": "Picha lazima iwe JPEG au PNG.",
+  "El video debe ser MP4.": "Video lazima iwe MP4.",
+  "El documento debe ser PDF.": "Hati lazima iwe PDF.",
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Violezo vya uthibitishaji havitumii vichwa vya midia."
 }

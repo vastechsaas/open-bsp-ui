@@ -1,14 +1,18 @@
 import type {
+  MediaHeaderFormat,
   TemplateCategory,
   TemplateComponent,
   TemplateDraftInput,
 } from "@/supabase/types/whatsapp_template_types";
+
+export type TemplateHeaderFormat = "NONE" | "TEXT" | MediaHeaderFormat;
 
 export type TemplateEditorValues = {
   organizationAddress: string;
   name: string;
   language: string;
   category: TemplateCategory;
+  headerFormat: TemplateHeaderFormat;
   header: string;
   headerSample: string;
   body: string;
@@ -130,21 +134,31 @@ export function getTemplateDetailsErrors(values: TemplateEditorValues) {
 
 export function getTemplateContentErrors(values: TemplateEditorValues) {
   const errors: string[] = [];
-  const headerIndexes = getTemplateVariableIndexes(values.header);
+  const headerIndexes =
+    values.headerFormat === "TEXT"
+      ? getTemplateVariableIndexes(values.header)
+      : [];
   const bodyIndexes = getTemplateVariableIndexes(values.body);
   const trimmedBody = values.body.trim();
 
   if (!trimmedBody) errors.push("Agregá el cuerpo del mensaje.");
-  if (values.header.length > 60)
+  if (values.headerFormat === "TEXT" && values.header.length > 60)
     errors.push("Mantené el encabezado dentro de 60 caracteres.");
   if (values.body.length > 1024)
     errors.push("Mantené el cuerpo dentro de 1.024 caracteres.");
   if (values.footer.length > 60)
     errors.push("Mantené el pie dentro de 60 caracteres.");
-  if (!variablesAreSequential(headerIndexes) || headerIndexes.length > 1) {
+  if (
+    values.headerFormat === "TEXT" &&
+    (!variablesAreSequential(headerIndexes) || headerIndexes.length > 1)
+  ) {
     errors.push("El encabezado solo puede usar {{1}}.");
   }
-  if (headerIndexes.length && !values.headerSample.trim()) {
+  if (
+    values.headerFormat === "TEXT" &&
+    headerIndexes.length &&
+    !values.headerSample.trim()
+  ) {
     errors.push("Agregá un ejemplo para la variable del encabezado.");
   }
   if (!variablesAreSequential(bodyIndexes)) {
@@ -164,7 +178,63 @@ export function getTemplateContentErrors(values: TemplateEditorValues) {
   if (values.quickReplies.some((reply) => !reply.trim() || reply.length > 25)) {
     errors.push("Las respuestas rápidas deben tener entre 1 y 25 caracteres.");
   }
+  if (
+    values.category === "AUTHENTICATION" &&
+    ["IMAGE", "VIDEO", "DOCUMENT"].includes(values.headerFormat)
+  ) {
+    errors.push("Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.");
+  }
   return errors;
+}
+
+const MEDIA_FILE_RULES = {
+  IMAGE: {
+    types: ["image/jpeg", "image/png"],
+    extensions: ["jpg", "jpeg", "png"],
+    maxSize: 5 * 1024 * 1024,
+  },
+  VIDEO: {
+    types: ["video/mp4"],
+    extensions: ["mp4"],
+    maxSize: 16 * 1024 * 1024,
+  },
+  DOCUMENT: {
+    types: ["application/pdf"],
+    extensions: ["pdf"],
+    maxSize: 50 * 1024 * 1024,
+  },
+} as const;
+
+export function isMediaHeaderFormat(
+  format: TemplateHeaderFormat,
+): format is MediaHeaderFormat {
+  return format === "IMAGE" || format === "VIDEO" || format === "DOCUMENT";
+}
+
+export function getTemplateMediaFileError(
+  format: TemplateHeaderFormat,
+  file?: File,
+) {
+  if (!isMediaHeaderFormat(format)) return null;
+  if (!file) return "SeleccionÃ¡ un archivo de muestra para el encabezado.";
+
+  const rule = MEDIA_FILE_RULES[format];
+  const extension = file.name.toLowerCase().split(".").pop() || "";
+  if (
+    !(rule.types as readonly string[]).includes(file.type) ||
+    !(rule.extensions as readonly string[]).includes(extension)
+  ) {
+    return format === "IMAGE"
+      ? "La imagen debe ser JPEG o PNG."
+      : format === "VIDEO"
+        ? "El video debe ser MP4."
+        : "El documento debe ser PDF.";
+  }
+  if (file.size > rule.maxSize) {
+    const maxSize = { IMAGE: 5, VIDEO: 16, DOCUMENT: 50 }[format];
+    return `El archivo debe pesar ${maxSize} MB o menos.`;
+  }
+  return null;
 }
 
 export function buildTemplateDraftInput(
@@ -174,7 +244,7 @@ export function buildTemplateDraftInput(
   const bodyIndexes = getTemplateVariableIndexes(values.body);
   const components: TemplateComponent[] = [];
 
-  if (values.header.trim()) {
+  if (values.headerFormat === "TEXT" && values.header.trim()) {
     components.push({
       type: "HEADER",
       format: "TEXT",
@@ -183,6 +253,10 @@ export function buildTemplateDraftInput(
         ? { example: { header_text: [values.headerSample.trim()] } }
         : {}),
     });
+  }
+
+  if (isMediaHeaderFormat(values.headerFormat)) {
+    components.push({ type: "HEADER", format: values.headerFormat });
   }
 
   components.push({

@@ -673,5 +673,21 @@
   "Expandir navegación": "Expand navigation",
   "Navegación principal": "Main navigation",
   "Abrir menú de usuario": "Open user menu",
-  "Organizaciones": "Organizations"
+  "Organizaciones": "Organizations",
+  "Tipo de encabezado": "Header type",
+  "Texto": "Text",
+  "Imagen": "Image",
+  "Documento PDF": "PDF document",
+  "Archivo de muestra": "Sample file",
+  "Muestra requerida antes de enviar": "Sample required before submission",
+  "JPEG o PNG, hasta 5 MB": "JPEG or PNG, up to 5 MB",
+  "MP4, hasta 16 MB": "MP4, up to 16 MB",
+  "PDF, hasta 50 MB": "PDF, up to 50 MB",
+  "Seleccionar archivo": "Select file",
+  "Reemplazar archivo": "Replace file",
+  "SeleccionÃ¡ un archivo de muestra para el encabezado.": "Select a sample file for the header.",
+  "La imagen debe ser JPEG o PNG.": "The image must be JPEG or PNG.",
+  "El video debe ser MP4.": "The video must be MP4.",
+  "El documento debe ser PDF.": "The document must be a PDF.",
+  "Las plantillas de autenticaciÃ³n no admiten encabezados multimedia.": "Authentication templates do not support media headers."
 }

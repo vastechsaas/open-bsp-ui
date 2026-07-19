@@ -6,6 +6,7 @@ import {
   getTemplateEditorAccess,
   getTemplateActions,
   getInitialTemplateEditorStep,
+  getTemplateMediaFileError,
   getTemplateContentErrors,
   getTemplateVariableIndexes,
   isTemplateWorkspacePath,
@@ -80,6 +81,7 @@ const readyTemplate: TemplateEditorValues = {
   name: "order_update",
   language: "en",
   category: "UTILITY",
+  headerFormat: "TEXT",
   header: "Order {{1}}",
   headerSample: "#1234",
   body: "Hello {{1}}, your order is ready.",
@@ -232,5 +234,35 @@ void test("template payload includes samples and quick replies", () => {
       type: "BUTTONS",
       buttons: [{ type: "QUICK_REPLY", text: "Confirm" }],
     },
+  );
+});
+
+void test("media drafts retain only the selected header format", () => {
+  const input = buildTemplateDraftInput({
+    ...readyTemplate,
+    headerFormat: "DOCUMENT",
+    header: "",
+    headerSample: "",
+  });
+  assert.deepEqual(input.components[0], {
+    type: "HEADER",
+    format: "DOCUMENT",
+  });
+});
+
+void test("media samples validate type, extension, and size", () => {
+  const validPdf = new File([new Uint8Array([1])], "statement.pdf", {
+    type: "application/pdf",
+  });
+  assert.equal(getTemplateMediaFileError("DOCUMENT", validPdf), null);
+  assert.match(getTemplateMediaFileError("DOCUMENT") || "", /muestra/);
+  assert.match(
+    getTemplateMediaFileError(
+      "DOCUMENT",
+      new File([new Uint8Array([1])], "statement.txt", {
+        type: "application/pdf",
+      }),
+    ) || "",
+    /PDF/,
   );
 });

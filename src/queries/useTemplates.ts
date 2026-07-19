@@ -220,6 +220,18 @@ type TemplateDraftVariables = {
   template: TemplateDraftInput;
 };
 
+function buildTemplateMultipart(
+  organizationId: string,
+  template: TemplateDraftInput,
+  mediaFile?: File,
+) {
+  const form = new FormData();
+  form.append("organization_id", organizationId);
+  form.append("template", JSON.stringify(template));
+  if (mediaFile) form.append("file", mediaFile, mediaFile.name);
+  return form;
+}
+
 export type SubmittedTemplateEditResult = {
   template: TemplateRecord;
   sync_pending: boolean;
@@ -288,18 +300,21 @@ export function useSubmitTemplateDraft() {
 
   return useMutation({
     mutationFn: async (
-      variables: TemplateDraftVariables & { draftId: string },
+      variables: TemplateDraftVariables & {
+        draftId: string;
+        mediaFile?: File;
+      },
     ) => {
-      const { data, error } = await invokeTemplateFunction<TemplateRecord>(
-        "whatsapp-management/template-drafts/submit",
-        "POST",
-        {
-          organization_id: activeOrgId,
-          organization_address: variables.organizationAddress,
-          draft_id: variables.draftId,
-          template: variables.template,
-        },
+      const body = buildTemplateMultipart(
+        activeOrgId!,
+        variables.template,
+        variables.mediaFile,
       );
+      body.append("draft_id", variables.draftId);
+      const { data, error } = (await supabase.functions.invoke(
+        "whatsapp-management/template-drafts/submit",
+        { method: "POST", body },
+      )) as unknown as { data: TemplateRecord | null; error: Error | null };
       if (error) throw error;
       return data!;
     },
@@ -332,16 +347,22 @@ export function useEditSubmittedTemplate() {
     mutationFn: async ({
       templateId,
       template,
+      mediaFile,
     }: {
       templateId: string;
       template: TemplateDraftInput;
+      mediaFile?: File;
     }) => {
-      const { data, error } =
-        await invokeTemplateFunction<SubmittedTemplateEditResult>(
-          `whatsapp-management/templates/${templateId}`,
-          "PATCH",
-          { organization_id: activeOrgId, template },
-        );
+      const { data, error } = (await supabase.functions.invoke(
+        `whatsapp-management/templates/${templateId}`,
+        {
+          method: "PATCH",
+          body: buildTemplateMultipart(activeOrgId!, template, mediaFile),
+        },
+      )) as unknown as {
+        data: SubmittedTemplateEditResult | null;
+        error: Error | null;
+      };
       if (error) throw error;
       return data!;
     },
