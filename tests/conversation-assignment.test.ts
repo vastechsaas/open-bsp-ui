@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   getConversationAssigneeName,
   getConversationAssignmentAction,
@@ -279,4 +280,24 @@ void test("backend conversation queue config controls visible tab labels and ord
     queues.map((queue) => queue.label),
     ["All (active)", "Pending", "Spam"],
   );
+});
+
+void test("empty conversation queue message is translated in every supported locale", () => {
+  const expected = {
+    en: "No conversations in",
+    pt: "Não há conversas em",
+    fr: "Aucune conversation dans",
+    sw: "Hakuna mazungumzo katika",
+  };
+
+  for (const [language, translation] of Object.entries(expected)) {
+    const translations = JSON.parse(
+      readFileSync(
+        new URL(`../public/locales/${language}.json`, import.meta.url),
+        "utf8",
+      ),
+    ) as Record<string, string>;
+
+    assert.equal(translations["No hay conversaciones en"], translation);
+  }
 });
