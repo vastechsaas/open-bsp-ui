@@ -102,6 +102,7 @@ void test("dashboard labels exist in every supported locale", () => {
     "Contactos nuevos",
     "Actividad de contactos",
     "Carga de conversaciones",
+    "Sin asignar",
     "Actividad de mensajería",
     "Resumen del equipo",
   ];
