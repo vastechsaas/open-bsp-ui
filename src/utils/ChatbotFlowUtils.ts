@@ -28,6 +28,11 @@ export function isChatbotWorkspacePath(pathname: string) {
   );
 }
 
+export function isChatbotEditorPath(pathname: string) {
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+  return normalizedPath.startsWith("/chatbots/");
+}
+
 export function getChatbotFlowStatusLabel(status: string) {
   if (status === "active") return "Activo";
   if (status === "archived") return "Archivado";

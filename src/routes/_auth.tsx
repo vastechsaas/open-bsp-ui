@@ -20,7 +20,10 @@ import { useResizable } from "@/hooks/useResizable";
 // import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
 import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
-import { isChatbotWorkspacePath } from "@/utils/ChatbotFlowUtils";
+import {
+  isChatbotEditorPath,
+  isChatbotWorkspacePath,
+} from "@/utils/ChatbotFlowUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
@@ -57,6 +60,7 @@ function AppLayout() {
   const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);
   const canToggleSidebar = viewportWidth >= SIDEBAR_DESKTOP_BREAKPOINT;
   const isStatsRoute = pathname.startsWith("/stats");
+  const isFullscreenWorkspaceRoute = isChatbotEditorPath(pathname);
   const isWorkspaceRoute =
     isDashboardWorkspacePath(pathname) ||
     isCampaignWorkspacePath(pathname) ||
@@ -105,11 +109,13 @@ function AppLayout() {
   console.log("active conv", activeConvId);
 
   const showCenterPanel = activeConvId || isStatsRoute || isWorkspaceRoute;
-  const gridTemplateColumns = isWorkspaceRoute
-    ? `${menuWidth}px 1fr`
-    : effectivePanelWidth !== null
-      ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
-      : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
+  const gridTemplateColumns = isFullscreenWorkspaceRoute
+    ? "1fr"
+    : isWorkspaceRoute
+      ? `${menuWidth}px 1fr`
+      : effectivePanelWidth !== null
+        ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
+        : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
 
   return (
     <div
@@ -117,7 +123,15 @@ function AppLayout() {
       style={viewportWidth >= 768 ? { gridTemplateColumns } : undefined}
     >
       {/* Menu - Fixed width */}
-      <div className={showCenterPanel ? "hidden md:flex" : "flex"}>
+      <div
+        className={
+          isFullscreenWorkspaceRoute
+            ? "hidden"
+            : showCenterPanel
+              ? "hidden md:flex"
+              : "flex"
+        }
+      >
         <Menu
           expanded={sidebarExpanded}
           canToggle={canToggleSidebar}
