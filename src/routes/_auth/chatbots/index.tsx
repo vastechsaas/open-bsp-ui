@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  Sparkles,
   UserRound,
   Workflow,
   X,
@@ -137,34 +136,27 @@ function ChatbotFlowList() {
   return (
     <div className="h-full min-w-0 overflow-y-auto bg-background p-[16px] text-foreground md:p-[28px]">
       <div className="mx-auto max-w-[1500px]">
-        <header className="relative mb-[22px] overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/12 via-background to-background px-[18px] py-[20px] md:px-[24px] md:py-[24px]">
-          <div className="pointer-events-none absolute -right-[55px] -top-[70px] h-[190px] w-[190px] rounded-full border border-primary/20 bg-primary/5" />
-          <div className="relative flex flex-col gap-[18px] sm:flex-row sm:items-end">
-            <div className="min-w-0">
-              <div className="mb-[8px] flex items-center gap-[7px] text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                <Sparkles className="h-[14px] w-[14px]" />
-                {t("Chatbot Builder")}
-              </div>
-              <h1 className="text-[25px] font-semibold tracking-tight md:text-[29px]">
-                {t("Flujos de chatbot")}
-              </h1>
-              <p className="mt-[5px] max-w-[680px] text-[13px] leading-relaxed text-muted-foreground">
-                {t(
-                  "Diseñá, organizá y prepará los recorridos automatizados de tus conversaciones.",
-                )}
-              </p>
-            </div>
-            {canManage && (
-              <button
-                type="button"
-                className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px] sm:ml-auto"
-                onClick={() => setNameDialog({ mode: "create" })}
-              >
-                <Plus className="h-[17px] w-[17px]" />
-                {t("Nuevo chatbot")}
-              </button>
-            )}
+        <header className="mb-[22px] flex flex-col gap-[16px] sm:flex-row sm:items-center">
+          <div>
+            <h1 className="text-[24px] font-semibold">
+              {t("Flujos de chatbot")}
+            </h1>
+            <p className="mt-[4px] text-[13px] text-muted-foreground">
+              {t(
+                "Diseñá, organizá y prepará los recorridos automatizados de tus conversaciones.",
+              )}
+            </p>
           </div>
+          {canManage && (
+            <button
+              type="button"
+              className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px] sm:ml-auto"
+              onClick={() => setNameDialog({ mode: "create" })}
+            >
+              <Plus className="h-[17px] w-[17px]" />
+              {t("Nuevo chatbot")}
+            </button>
+          )}
         </header>
 
         <section className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
