@@ -20,6 +20,7 @@ import { useResizable } from "@/hooks/useResizable";
 // import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
 import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
+import { isChatbotWorkspacePath } from "@/utils/ChatbotFlowUtils";
 import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
@@ -59,6 +60,7 @@ function AppLayout() {
   const isWorkspaceRoute =
     isDashboardWorkspacePath(pathname) ||
     isCampaignWorkspacePath(pathname) ||
+    isChatbotWorkspacePath(pathname) ||
     isTemplateWorkspacePath(pathname) ||
     isWhatsAppManagerWorkspacePath(pathname) ||
     isTeamMembersWorkspacePath(pathname);

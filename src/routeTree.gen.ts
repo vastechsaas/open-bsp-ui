@@ -28,6 +28,7 @@ import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings/i
 import { Route as AuthIntegrationsIndexRouteImport } from './routes/_auth/integrations/index'
 import { Route as AuthConversationsIndexRouteImport } from './routes/_auth/conversations/index'
 import { Route as AuthContactsIndexRouteImport } from './routes/_auth/contacts/index'
+import { Route as AuthChatbotsIndexRouteImport } from './routes/_auth/chatbots/index'
 import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns/index'
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
@@ -167,6 +168,11 @@ const AuthConversationsIndexRoute = AuthConversationsIndexRouteImport.update({
 const AuthContactsIndexRoute = AuthContactsIndexRouteImport.update({
   id: '/contacts/',
   path: '/contacts/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthChatbotsIndexRoute = AuthChatbotsIndexRouteImport.update({
+  id: '/chatbots/',
+  path: '/chatbots/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthCampaignsIndexRoute = AuthCampaignsIndexRouteImport.update({
@@ -457,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
+  '/chatbots': typeof AuthChatbotsIndexRoute
   '/contacts': typeof AuthContactsIndexRoute
   '/conversations': typeof AuthConversationsIndexRoute
   '/integrations': typeof AuthIntegrationsIndexRoute
@@ -522,6 +529,7 @@ export interface FileRoutesByTo {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
+  '/chatbots': typeof AuthChatbotsIndexRoute
   '/contacts': typeof AuthContactsIndexRoute
   '/conversations': typeof AuthConversationsIndexRoute
   '/integrations': typeof AuthIntegrationsIndexRoute
@@ -590,6 +598,7 @@ export interface FileRoutesById {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
   '/_auth/campaigns/': typeof AuthCampaignsIndexRoute
+  '/_auth/chatbots/': typeof AuthChatbotsIndexRoute
   '/_auth/contacts/': typeof AuthContactsIndexRoute
   '/_auth/conversations/': typeof AuthConversationsIndexRoute
   '/_auth/integrations/': typeof AuthIntegrationsIndexRoute
@@ -658,6 +667,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/agents'
     | '/campaigns'
+    | '/chatbots'
     | '/contacts'
     | '/conversations'
     | '/integrations'
@@ -723,6 +733,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/agents'
     | '/campaigns'
+    | '/chatbots'
     | '/contacts'
     | '/conversations'
     | '/integrations'
@@ -790,6 +801,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/_auth/agents/'
     | '/_auth/campaigns/'
+    | '/_auth/chatbots/'
     | '/_auth/contacts/'
     | '/_auth/conversations/'
     | '/_auth/integrations/'
@@ -976,6 +988,13 @@ declare module '@tanstack/react-router' {
       path: '/contacts'
       fullPath: '/contacts'
       preLoaderRoute: typeof AuthContactsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/chatbots/': {
+      id: '/_auth/chatbots/'
+      path: '/chatbots'
+      fullPath: '/chatbots'
+      preLoaderRoute: typeof AuthChatbotsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/campaigns/': {
@@ -1363,6 +1382,7 @@ interface AuthRouteChildren {
   AuthTemplatesNewRoute: typeof AuthTemplatesNewRoute
   AuthAgentsIndexRoute: typeof AuthAgentsIndexRoute
   AuthCampaignsIndexRoute: typeof AuthCampaignsIndexRoute
+  AuthChatbotsIndexRoute: typeof AuthChatbotsIndexRoute
   AuthContactsIndexRoute: typeof AuthContactsIndexRoute
   AuthConversationsIndexRoute: typeof AuthConversationsIndexRoute
   AuthIntegrationsIndexRoute: typeof AuthIntegrationsIndexRoute
@@ -1415,6 +1435,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthTemplatesNewRoute: AuthTemplatesNewRoute,
   AuthAgentsIndexRoute: AuthAgentsIndexRoute,
   AuthCampaignsIndexRoute: AuthCampaignsIndexRoute,
+  AuthChatbotsIndexRoute: AuthChatbotsIndexRoute,
   AuthContactsIndexRoute: AuthContactsIndexRoute,
   AuthConversationsIndexRoute: AuthConversationsIndexRoute,
   AuthIntegrationsIndexRoute: AuthIntegrationsIndexRoute,
