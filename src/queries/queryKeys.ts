@@ -68,6 +68,11 @@ export const queryKeys = {
     audience: (orgId: NullableId, id: NullableId) =>
       [orgId, "campaigns", id, "audience"] as const,
   },
+  chatbotFlows: {
+    all: (orgId: NullableId) => [orgId, "chatbot_flows"] as const,
+    page: (orgId: NullableId, params: object) =>
+      [orgId, "chatbot_flows", "page", params] as const,
+  },
   members: {
     all: (orgId: NullableId) => [orgId, "members"] as const,
     page: (orgId: NullableId, params: object) =>

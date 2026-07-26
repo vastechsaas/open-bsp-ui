@@ -17,6 +17,7 @@ import {
   Settings,
   Unplug,
   UsersRound,
+  Workflow,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
@@ -145,6 +146,15 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
             expanded={expanded}
           >
             <Megaphone className="h-[21px] w-[21px] stroke-[2]" />
+          </LinkButton>
+
+          <LinkButton
+            to="/chatbots"
+            title={t("Chatbots")}
+            isActive={pathname.startsWith("/chatbots")}
+            expanded={expanded}
+          >
+            <Workflow className="h-[21px] w-[21px] stroke-[2]" />
           </LinkButton>
 
           <LinkButton
