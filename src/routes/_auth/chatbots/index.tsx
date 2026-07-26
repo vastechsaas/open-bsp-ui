@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { message } from "antd";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Archive,
   ArchiveRestore,
@@ -8,6 +8,7 @@ import {
   Clock3,
   Copy,
   GitBranch,
+  PencilLine,
   Plus,
   Search,
   ShieldCheck,
@@ -52,6 +53,7 @@ type LifecycleDialogState = {
 
 function ChatbotFlowList() {
   const { translate: t } = useTranslation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
@@ -93,8 +95,14 @@ function ChatbotFlowList() {
 
     try {
       if (nameDialog.mode === "create") {
-        await createFlow.mutateAsync({ name });
+        const created = await createFlow.mutateAsync({ name });
         void message.success(t("Chatbot creado"));
+        setNameDialog(null);
+        await navigate({
+          to: "/chatbots/$flowId",
+          params: { flowId: created.flow_id },
+        });
+        return;
       } else {
         await duplicateFlow.mutateAsync({
           flowId: nameDialog.flow.id,
@@ -255,6 +263,12 @@ function ChatbotFlowList() {
                         disabled={
                           nameMutationPending || lifecycleMutationPending
                         }
+                        onOpen={() =>
+                          void navigate({
+                            to: "/chatbots/$flowId",
+                            params: { flowId: flow.id },
+                          })
+                        }
                         onDuplicate={() =>
                           setNameDialog({ mode: "duplicate", flow })
                         }
@@ -274,6 +288,12 @@ function ChatbotFlowList() {
                     flow={flow}
                     canManage={canManage}
                     disabled={nameMutationPending || lifecycleMutationPending}
+                    onOpen={() =>
+                      void navigate({
+                        to: "/chatbots/$flowId",
+                        params: { flowId: flow.id },
+                      })
+                    }
                     onDuplicate={() =>
                       setNameDialog({ mode: "duplicate", flow })
                     }
@@ -364,6 +384,7 @@ function FlowTableRow({
   flow,
   canManage,
   disabled,
+  onOpen,
   onDuplicate,
   onLifecycle,
 }: FlowActionsProps & { flow: ChatbotFlowListRow }) {
@@ -377,9 +398,19 @@ function FlowTableRow({
             <Workflow className="h-[18px] w-[18px] text-primary" />
           </div>
           <div className="min-w-0">
-            <div className="max-w-[320px] truncate text-[13px] font-medium">
-              {flow.name}
-            </div>
+            {canManage ? (
+              <button
+                type="button"
+                className="block max-w-[320px] truncate text-left text-[13px] font-medium hover:text-primary"
+                onClick={onOpen}
+              >
+                {flow.name}
+              </button>
+            ) : (
+              <div className="max-w-[320px] truncate text-[13px] font-medium">
+                {flow.name}
+              </div>
+            )}
             <div className="mt-[2px] flex items-center gap-[5px] text-[11px] text-muted-foreground">
               <GitBranch className="h-[12px] w-[12px]" />
               {flow.has_unpublished_changes
@@ -414,6 +445,7 @@ function FlowTableRow({
           flow={flow}
           canManage={canManage}
           disabled={disabled}
+          onOpen={onOpen}
           onDuplicate={onDuplicate}
           onLifecycle={onLifecycle}
         />
@@ -426,6 +458,7 @@ function FlowCard({
   flow,
   canManage,
   disabled,
+  onOpen,
   onDuplicate,
   onLifecycle,
 }: FlowActionsProps & { flow: ChatbotFlowListRow }) {
@@ -438,7 +471,17 @@ function FlowCard({
           <Workflow className="h-[19px] w-[19px] text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-medium">{flow.name}</div>
+          {canManage ? (
+            <button
+              type="button"
+              className="block max-w-full truncate text-left text-[14px] font-medium hover:text-primary"
+              onClick={onOpen}
+            >
+              {flow.name}
+            </button>
+          ) : (
+            <div className="truncate text-[14px] font-medium">{flow.name}</div>
+          )}
           <div className="mt-[3px] text-[11px] text-muted-foreground">
             {flow.has_unpublished_changes
               ? t("Cambios sin publicar")
@@ -473,6 +516,7 @@ function FlowCard({
           flow={flow}
           canManage={canManage}
           disabled={disabled}
+          onOpen={onOpen}
           onDuplicate={onDuplicate}
           onLifecycle={onLifecycle}
         />
@@ -484,6 +528,7 @@ function FlowCard({
 type FlowActionsProps = {
   canManage: boolean;
   disabled: boolean;
+  onOpen: () => void;
   onDuplicate: () => void;
   onLifecycle: (action: "archive" | "restore") => void;
 };
@@ -492,6 +537,7 @@ function FlowActionButtons({
   flow,
   canManage,
   disabled,
+  onOpen,
   onDuplicate,
   onLifecycle,
 }: FlowActionsProps & { flow: ChatbotFlowListRow }) {
@@ -508,6 +554,16 @@ function FlowActionButtons({
   const isArchived = flow.status === "archived";
   return (
     <div className="flex justify-end gap-[7px]">
+      <button
+        type="button"
+        title={t("Abrir editor")}
+        aria-label={`${t("Abrir editor")} ${flow.name}`}
+        className="flex h-[34px] items-center gap-[6px] rounded-lg border border-primary/35 px-[9px] text-[11px] text-primary hover:bg-primary/10"
+        onClick={onOpen}
+      >
+        <PencilLine className="h-[14px] w-[14px]" />
+        <span className="hidden 2xl:inline">{t("Abrir")}</span>
+      </button>
       <button
         type="button"
         title={t("Duplicar")}

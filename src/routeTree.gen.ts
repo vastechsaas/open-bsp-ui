@@ -42,6 +42,7 @@ import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes
 import { Route as AuthConversationsNewRouteImport } from './routes/_auth/conversations/new'
 import { Route as AuthContactsNewRouteImport } from './routes/_auth/contacts/new'
 import { Route as AuthContactsContactIdRouteImport } from './routes/_auth/contacts/$contactId'
+import { Route as AuthChatbotsFlowIdRouteImport } from './routes/_auth/chatbots/$flowId'
 import { Route as AuthCampaignsNewRouteImport } from './routes/_auth/campaigns/new'
 import { Route as AuthCampaignsCampaignIdRouteImport } from './routes/_auth/campaigns/$campaignId'
 import { Route as AuthAgentsNewRouteImport } from './routes/_auth/agents/new'
@@ -240,6 +241,11 @@ const AuthContactsNewRoute = AuthContactsNewRouteImport.update({
 const AuthContactsContactIdRoute = AuthContactsContactIdRouteImport.update({
   id: '/contacts/$contactId',
   path: '/contacts/$contactId',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthChatbotsFlowIdRoute = AuthChatbotsFlowIdRouteImport.update({
+  id: '/chatbots/$flowId',
+  path: '/chatbots/$flowId',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthCampaignsNewRoute = AuthCampaignsNewRouteImport.update({
@@ -450,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/agents/new': typeof AuthAgentsNewRoute
   '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/campaigns/new': typeof AuthCampaignsNewRoute
+  '/chatbots/$flowId': typeof AuthChatbotsFlowIdRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
@@ -516,6 +523,7 @@ export interface FileRoutesByTo {
   '/agents/new': typeof AuthAgentsNewRoute
   '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/campaigns/new': typeof AuthCampaignsNewRoute
+  '/chatbots/$flowId': typeof AuthChatbotsFlowIdRoute
   '/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
@@ -585,6 +593,7 @@ export interface FileRoutesById {
   '/_auth/agents/new': typeof AuthAgentsNewRoute
   '/_auth/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRouteWithChildren
   '/_auth/campaigns/new': typeof AuthCampaignsNewRoute
+  '/_auth/chatbots/$flowId': typeof AuthChatbotsFlowIdRoute
   '/_auth/contacts/$contactId': typeof AuthContactsContactIdRoute
   '/_auth/contacts/new': typeof AuthContactsNewRoute
   '/_auth/conversations/new': typeof AuthConversationsNewRoute
@@ -654,6 +663,7 @@ export interface FileRouteTypes {
     | '/agents/new'
     | '/campaigns/$campaignId'
     | '/campaigns/new'
+    | '/chatbots/$flowId'
     | '/contacts/$contactId'
     | '/contacts/new'
     | '/conversations/new'
@@ -720,6 +730,7 @@ export interface FileRouteTypes {
     | '/agents/new'
     | '/campaigns/$campaignId'
     | '/campaigns/new'
+    | '/chatbots/$flowId'
     | '/contacts/$contactId'
     | '/contacts/new'
     | '/conversations/new'
@@ -788,6 +799,7 @@ export interface FileRouteTypes {
     | '/_auth/agents/new'
     | '/_auth/campaigns/$campaignId'
     | '/_auth/campaigns/new'
+    | '/_auth/chatbots/$flowId'
     | '/_auth/contacts/$contactId'
     | '/_auth/contacts/new'
     | '/_auth/conversations/new'
@@ -1088,6 +1100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthContactsContactIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/chatbots/$flowId': {
+      id: '/_auth/chatbots/$flowId'
+      path: '/chatbots/$flowId'
+      fullPath: '/chatbots/$flowId'
+      preLoaderRoute: typeof AuthChatbotsFlowIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/campaigns/new': {
       id: '/_auth/campaigns/new'
       path: '/campaigns/new'
@@ -1374,6 +1393,7 @@ interface AuthRouteChildren {
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
   AuthCampaignsCampaignIdRoute: typeof AuthCampaignsCampaignIdRouteWithChildren
   AuthCampaignsNewRoute: typeof AuthCampaignsNewRoute
+  AuthChatbotsFlowIdRoute: typeof AuthChatbotsFlowIdRoute
   AuthContactsContactIdRoute: typeof AuthContactsContactIdRoute
   AuthContactsNewRoute: typeof AuthContactsNewRoute
   AuthConversationsNewRoute: typeof AuthConversationsNewRoute
@@ -1426,6 +1446,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAgentsNewRoute: AuthAgentsNewRoute,
   AuthCampaignsCampaignIdRoute: AuthCampaignsCampaignIdRouteWithChildren,
   AuthCampaignsNewRoute: AuthCampaignsNewRoute,
+  AuthChatbotsFlowIdRoute: AuthChatbotsFlowIdRoute,
   AuthContactsContactIdRoute: AuthContactsContactIdRoute,
   AuthContactsNewRoute: AuthContactsNewRoute,
   AuthConversationsNewRoute: AuthConversationsNewRoute,
