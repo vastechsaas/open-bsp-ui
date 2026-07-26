@@ -4,12 +4,16 @@ import { readFileSync } from "node:fs";
 import {
   addChatbotConditionBranch,
   chatbotConditionOperators,
+  ChatbotDraftConflictError,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  createChatbotManagementError,
   createChatbotNode,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
   getChatbotConditionEdgeLabel,
+  getChatbotDraftSaveStatus,
+  getChatbotEditorGraphFingerprint,
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
@@ -19,6 +23,7 @@ import {
   normalizeChatbotEditorGraph,
   removeChatbotNode,
   removeChatbotConditionBranch,
+  serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
@@ -137,6 +142,171 @@ void test("chatbot editor graph normalization rejects malformed graph data", () 
       viewport: { x: 0, y: 0, zoom: 0 },
     }),
     { nodes: [], edges: [], viewport: undefined },
+  );
+});
+
+void test("draft serialization persists stable graph data and the viewport", () => {
+  const input = updateChatbotCollectInputConfig(
+    createChatbotNode("collect_input", { x: 12.345678, y: 90 }, "input"),
+    {
+      prompt: "Which city?",
+      variable: "customer_city",
+      required: true,
+      min_length: undefined,
+    },
+  );
+  input.selected = true;
+  input.measured = { width: 220, height: 100 };
+
+  const graph = serializeChatbotEditorGraph({
+    nodes: [input],
+    edges: [
+      {
+        id: "input-end",
+        source: "input",
+        target: "end",
+        selected: true,
+        data: { kind: "default" },
+      },
+    ],
+    viewport: { x: 10.123456, y: -4.987654, zoom: 0.876543 },
+  });
+
+  assert.deepEqual(graph.nodes[0], {
+    id: "input",
+    type: "chatbotNode",
+    position: { x: 12.3457, y: 90 },
+    deletable: true,
+    data: {
+      node_type: "collect_input",
+      nodeType: "collect_input",
+      label: "Recopilar respuesta",
+      config: {
+        prompt: "Which city?",
+        variable: "customer_city",
+        required: true,
+      },
+    },
+  });
+  assert.deepEqual(graph.edges[0], {
+    id: "input-end",
+    source: "input",
+    target: "end",
+    sourceHandle: null,
+    targetHandle: null,
+    type: "smoothstep",
+    animated: false,
+    data: { kind: "default" },
+  });
+  assert.deepEqual(graph.viewport, {
+    x: 10.1235,
+    y: -4.9877,
+    zoom: 0.8765,
+  });
+});
+
+void test("draft fingerprints ignore selection but detect authored and viewport changes", () => {
+  const message = createChatbotNode(
+    "send_message",
+    { x: 100, y: 100 },
+    "message",
+  );
+  const base = {
+    nodes: [message],
+    edges: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+  };
+  const selected = {
+    ...base,
+    nodes: [{ ...message, selected: true }],
+  };
+  const moved = {
+    ...base,
+    nodes: [{ ...message, position: { x: 140, y: 100 } }],
+  };
+  const panned = {
+    ...base,
+    viewport: { x: 20, y: 0, zoom: 1 },
+  };
+
+  assert.equal(
+    getChatbotEditorGraphFingerprint(base),
+    getChatbotEditorGraphFingerprint(selected),
+  );
+  assert.notEqual(
+    getChatbotEditorGraphFingerprint(base),
+    getChatbotEditorGraphFingerprint(moved),
+  );
+  assert.notEqual(
+    getChatbotEditorGraphFingerprint(base),
+    getChatbotEditorGraphFingerprint(panned),
+  );
+});
+
+void test("draft save status prioritizes active saves and concurrency conflicts", () => {
+  assert.equal(
+    getChatbotDraftSaveStatus({
+      dirty: true,
+      saving: true,
+      failed: true,
+      conflict: true,
+    }),
+    "saving",
+  );
+  assert.equal(
+    getChatbotDraftSaveStatus({
+      dirty: true,
+      saving: false,
+      failed: true,
+      conflict: true,
+    }),
+    "conflict",
+  );
+  assert.equal(
+    getChatbotDraftSaveStatus({
+      dirty: true,
+      saving: false,
+      failed: true,
+      conflict: false,
+    }),
+    "error",
+  );
+  assert.equal(
+    getChatbotDraftSaveStatus({
+      dirty: true,
+      saving: false,
+      failed: false,
+      conflict: false,
+    }),
+    "dirty",
+  );
+  assert.equal(
+    getChatbotDraftSaveStatus({
+      dirty: false,
+      saving: false,
+      failed: false,
+      conflict: false,
+    }),
+    "saved",
+  );
+
+  const conflict = new ChatbotDraftConflictError(
+    "Draft changed",
+    "2026-07-26T12:00:00.000Z",
+  );
+  assert.equal(conflict.name, "ChatbotDraftConflictError");
+  assert.equal(conflict.currentUpdatedAt, "2026-07-26T12:00:00.000Z");
+
+  const responseConflict = createChatbotManagementError(409, {
+    message: "Draft changed remotely",
+    current_updated_at: "2026-07-26T13:00:00.000Z",
+  });
+  assert.ok(responseConflict instanceof ChatbotDraftConflictError);
+  assert.equal(responseConflict.message, "Draft changed remotely");
+  assert.equal(responseConflict.currentUpdatedAt, "2026-07-26T13:00:00.000Z");
+  assert.equal(
+    createChatbotManagementError(500, { message: "Save failed" }).message,
+    "Save failed",
   );
 });
 
@@ -522,6 +692,18 @@ void test("input and condition editor labels exist in every supported locale", (
     "Contiene",
     "Comienza con",
     "Termina con",
+    "Guardar",
+    "Guardado",
+    "Cambios sin guardar",
+    "Conflicto de edición",
+    "Error al guardar",
+    "Recargar borrador del servidor",
+    "¿Salir sin guardar?",
+    "¿Descartar cambios locales?",
+    "Seguir editando",
+    "Salir sin guardar",
+    "Descartar y recargar",
+    "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

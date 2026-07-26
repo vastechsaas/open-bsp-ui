@@ -843,5 +843,21 @@
   "Distinto de": "Does not equal",
   "Contiene": "Contains",
   "Comienza con": "Starts with",
-  "Termina con": "Ends with"
+  "Termina con": "Ends with",
+  "Guardar": "Save",
+  "Guardado": "Saved",
+  "Cambios sin guardar": "Unsaved changes",
+  "Conflicto de edición": "Editing conflict",
+  "Error al guardar": "Save failed",
+  "Otra persona guardó cambios en este borrador. Recargalo antes de continuar.": "Someone else saved changes to this draft. Reload it before continuing.",
+  "No se pudo guardar el borrador. Revisá tu conexión e intentá nuevamente.": "The draft could not be saved. Check your connection and try again.",
+  "Recargar borrador del servidor": "Reload server draft",
+  "¿Salir sin guardar?": "Leave without saving?",
+  "¿Descartar cambios locales?": "Discard local changes?",
+  "Los cambios sin guardar se perderán si salís del editor.": "Unsaved changes will be lost if you leave the editor.",
+  "Se reemplazará el lienzo actual con el último borrador guardado en el servidor.": "The current canvas will be replaced with the latest draft saved on the server.",
+  "Seguir editando": "Keep editing",
+  "Salir sin guardar": "Leave without saving",
+  "Descartar y recargar": "Discard and reload",
+  "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.": "Start is unique and protected. Save the draft to keep your changes."
 }

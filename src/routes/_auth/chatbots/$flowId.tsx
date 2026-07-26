@@ -1,5 +1,9 @@
-import { useCallback, useState, type DragEvent } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useMemo, useState, type DragEvent } from "react";
+import {
+  createFileRoute,
+  useBlocker,
+  useNavigate,
+} from "@tanstack/react-router";
 import {
   addEdge,
   Background,
@@ -29,6 +33,7 @@ import {
   PanelRight,
   Play,
   RefreshCw,
+  Save,
   Copy,
   GripVertical,
   LockKeyhole,
@@ -44,9 +49,11 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import {
   type ChatbotFlowEditorData,
   useChatbotFlowDraft,
+  useSaveChatbotFlowDraft,
 } from "@/queries/useChatbotFlows";
 import {
   addChatbotConditionBranch,
+  ChatbotDraftConflictError,
   CHATBOT_INPUT_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
   chatbotConditionOperators,
@@ -55,6 +62,8 @@ import {
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
   getChatbotConditionEdgeLabel,
+  getChatbotDraftSaveStatus,
+  getChatbotEditorGraphFingerprint,
   isValidChatbotConnection,
   normalizeChatbotEditorGraph,
   removeChatbotConditionBranch,
@@ -63,6 +72,7 @@ import {
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
@@ -81,6 +91,7 @@ function ChatbotFlowEditor() {
   const { flowId } = Route.useParams();
   const navigate = useNavigate();
   const { translate: t } = useTranslation();
+  const [workspaceRevision, setWorkspaceRevision] = useState(0);
   const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
   const canManage =
     currentAgent?.extra?.role === "owner" ||
@@ -88,6 +99,12 @@ function ChatbotFlowEditor() {
   const draftQuery = useChatbotFlowDraft(flowId, canManage);
 
   const goBack = () => navigate({ to: "/chatbots" });
+  const reloadDraft = async () => {
+    const result = await draftQuery.refetch();
+    if (!result.error) {
+      setWorkspaceRevision((current) => current + 1);
+    }
+  };
 
   if (agentLoading) {
     return <EditorLoading label={t("Cargando editor")} />;
@@ -128,11 +145,11 @@ function ChatbotFlowEditor() {
   return (
     <ReactFlowProvider>
       <FlowEditorWorkspace
-        key={`${draftQuery.data.draft.id}:${draftQuery.data.draft.updated_at}`}
+        key={`${draftQuery.data.draft.id}:${workspaceRevision}`}
         editor={draftQuery.data}
         graph={normalizeChatbotEditorGraph(draftQuery.data.draft.editor_graph)}
         onBack={() => void goBack()}
-        onRefresh={() => void draftQuery.refetch()}
+        onRefresh={reloadDraft}
         refreshing={draftQuery.isFetching}
       />
     </ReactFlowProvider>
@@ -149,20 +166,95 @@ function FlowEditorWorkspace({
   editor: ChatbotFlowEditorData;
   graph: ChatbotEditorGraph;
   onBack: () => void;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
   refreshing: boolean;
 }) {
   const { translate: t } = useTranslation();
   const initialGraph = ensureChatbotStartNode(graph);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(graph.edges);
+  const [viewport, setViewport] = useState(graph.viewport);
+  const [expectedUpdatedAt, setExpectedUpdatedAt] = useState(
+    editor.draft.updated_at,
+  );
+  const [savedFingerprint, setSavedFingerprint] = useState(() =>
+    getChatbotEditorGraphFingerprint(graph),
+  );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [pendingProtectedAction, setPendingProtectedAction] = useState<
+    "back" | "reload" | null
+  >(null);
+  const saveDraft = useSaveChatbotFlowDraft();
   const { fitView, screenToFlowPosition } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const availableVariables = selectedNode
     ? getAvailableChatbotVariables(selectedNode.id, nodes, edges)
     : [];
+  const editorGraph = useMemo(
+    () => serializeChatbotEditorGraph({ nodes, edges, viewport }),
+    [edges, nodes, viewport],
+  );
+  const currentFingerprint = useMemo(
+    () => getChatbotEditorGraphFingerprint(editorGraph),
+    [editorGraph],
+  );
+  const dirty = currentFingerprint !== savedFingerprint;
+  const conflict = saveDraft.error instanceof ChatbotDraftConflictError;
+  const saveStatus = getChatbotDraftSaveStatus({
+    dirty,
+    saving: saveDraft.isPending,
+    failed: saveDraft.isError,
+    conflict,
+  });
+  const shouldBlockNavigation = useCallback(() => dirty, [dirty]);
+  const navigationBlocker = useBlocker({
+    shouldBlockFn: shouldBlockNavigation,
+    enableBeforeUnload: dirty,
+    disabled: !dirty,
+    withResolver: true,
+  });
+
+  const saveEditorGraph = async () => {
+    if (!dirty || saveDraft.isPending) return;
+    try {
+      const savedDraft = await saveDraft.mutateAsync({
+        flowId: editor.flow.id,
+        versionId: editor.draft.id,
+        expectedUpdatedAt,
+        editorGraph,
+      });
+      setExpectedUpdatedAt(savedDraft.updated_at);
+      setSavedFingerprint(currentFingerprint);
+    } catch {
+      // The mutation state renders the actionable save error.
+    }
+  };
+
+  const runProtectedAction = async (action: "back" | "reload") => {
+    setPendingProtectedAction(null);
+    if (action === "back") {
+      if (navigationBlocker.status === "blocked") {
+        navigationBlocker.proceed();
+      } else {
+        onBack();
+      }
+      return;
+    }
+    await onRefresh();
+  };
+
+  const requestProtectedAction = (action: "back" | "reload") => {
+    if (action === "back") {
+      onBack();
+      return;
+    }
+    if (dirty) {
+      setPendingProtectedAction(action);
+      return;
+    }
+    void runProtectedAction(action);
+  };
 
   const addNode = useCallback(
     (type: ChatbotCoreNodeType, position?: XYPosition) => {
@@ -406,7 +498,7 @@ function FlowEditorWorkspace({
           title={t("Volver a chatbots")}
           aria-label={t("Volver a chatbots")}
           className="flex h-[36px] w-[36px] items-center justify-center rounded-lg border border-border hover:bg-muted"
-          onClick={onBack}
+          onClick={() => requestProtectedAction("back")}
         >
           <ArrowLeft className="h-[17px] w-[17px]" />
         </button>
@@ -419,7 +511,7 @@ function FlowEditorWorkspace({
               {t("Borrador")} v{editor.draft.version}
             </span>
             <span aria-hidden="true">•</span>
-            <span>{t("Estructura local")}</span>
+            <SaveStatusLabel status={saveStatus} />
           </div>
         </div>
         <div className="flex items-center gap-[7px]">
@@ -463,15 +555,56 @@ function FlowEditorWorkspace({
             aria-label={t("Recargar borrador")}
             disabled={refreshing}
             className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted disabled:opacity-50"
-            onClick={onRefresh}
+            onClick={() => requestProtectedAction("reload")}
           >
             <RefreshCw
               className={`h-[15px] w-[15px] ${refreshing ? "animate-spin" : ""}`}
             />
             <span className="hidden sm:inline">{t("Recargar")}</span>
           </button>
+          <button
+            type="button"
+            title={t("Guardar borrador")}
+            aria-label={t("Guardar borrador")}
+            disabled={!dirty || saveDraft.isPending || conflict}
+            className="primary flex h-[36px] min-w-[96px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => void saveEditorGraph()}
+          >
+            {saveDraft.isPending ? (
+              <RefreshCw className="h-[15px] w-[15px] animate-spin" />
+            ) : (
+              <Save className="h-[15px] w-[15px]" />
+            )}
+            <span>{saveDraft.isPending ? t("Guardando…") : t("Guardar")}</span>
+          </button>
         </div>
       </header>
+
+      {(saveStatus === "error" || saveStatus === "conflict") && (
+        <div
+          role="alert"
+          className="flex shrink-0 flex-wrap items-center gap-[8px] border-b border-destructive/30 bg-destructive/8 px-[14px] py-[8px] text-[11px] text-destructive md:px-[18px]"
+        >
+          <span className="min-w-0 flex-1">
+            {saveStatus === "conflict"
+              ? t(
+                  "Otra persona guardó cambios en este borrador. Recargalo antes de continuar.",
+                )
+              : t(
+                  "No se pudo guardar el borrador. Revisá tu conexión e intentá nuevamente.",
+                )}
+          </span>
+          {saveStatus === "conflict" && (
+            <button
+              type="button"
+              className="rounded-full border border-destructive/35 px-[10px] py-[5px] font-medium hover:bg-destructive/10"
+              onClick={() => requestProtectedAction("reload")}
+            >
+              {t("Recargar borrador del servidor")}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {mobilePanel && (
@@ -515,6 +648,7 @@ function FlowEditorWorkspace({
               }
             }}
             onPaneClick={() => setSelectedNodeId(null)}
+            onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
             defaultViewport={graph.viewport}
             fitView={!graph.viewport && nodes.length > 0}
             minZoom={0.25}
@@ -581,6 +715,19 @@ function FlowEditorWorkspace({
           onDelete={deleteNode}
         />
       </div>
+      <UnsavedChangesDialog
+        action={
+          pendingProtectedAction ??
+          (navigationBlocker.status === "blocked" ? "back" : null)
+        }
+        onClose={() => {
+          setPendingProtectedAction(null);
+          if (navigationBlocker.status === "blocked") {
+            navigationBlocker.reset();
+          }
+        }}
+        onConfirm={(action) => void runProtectedAction(action)}
+      />
     </div>
   );
 }
@@ -692,7 +839,7 @@ function NodeLibrary({
       <div className="mt-auto flex gap-[7px] border-t border-border p-[12px] text-[10px] leading-relaxed text-muted-foreground">
         <Info className="mt-[1px] h-[13px] w-[13px] shrink-0 text-primary" />
         {t(
-          "Inicio es único y está protegido. Los cambios permanecen locales hasta habilitar el guardado.",
+          "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
         )}
       </div>
     </aside>
@@ -1187,6 +1334,95 @@ function getConditionOperatorLabel(
   if (operator === "contains") return t("Contiene");
   if (operator === "starts_with") return t("Comienza con");
   return t("Termina con");
+}
+
+function SaveStatusLabel({
+  status,
+}: {
+  status: ReturnType<typeof getChatbotDraftSaveStatus>;
+}) {
+  const { translate: t } = useTranslation();
+  const label =
+    status === "saving"
+      ? t("Guardando…")
+      : status === "conflict"
+        ? t("Conflicto de edición")
+        : status === "error"
+          ? t("Error al guardar")
+          : status === "dirty"
+            ? t("Cambios sin guardar")
+            : t("Guardado");
+
+  return (
+    <span
+      className={
+        status === "saved"
+          ? "text-emerald-500"
+          : status === "dirty"
+            ? "text-amber-500"
+            : status === "saving"
+              ? "text-primary"
+              : "text-destructive"
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
+function UnsavedChangesDialog({
+  action,
+  onClose,
+  onConfirm,
+}: {
+  action: "back" | "reload" | null;
+  onClose: () => void;
+  onConfirm: (action: "back" | "reload") => void;
+}) {
+  const { translate: t } = useTranslation();
+  if (!action) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-[16px] backdrop-blur-[2px]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chatbot-unsaved-dialog-title"
+        className="w-full max-w-[440px] rounded-2xl border border-border bg-popover p-[20px] text-popover-foreground shadow-2xl"
+      >
+        <h2 id="chatbot-unsaved-dialog-title" className="font-semibold">
+          {action === "back"
+            ? t("¿Salir sin guardar?")
+            : t("¿Descartar cambios locales?")}
+        </h2>
+        <p className="mt-[6px] text-[13px] leading-relaxed text-muted-foreground">
+          {action === "back"
+            ? t("Los cambios sin guardar se perderán si salís del editor.")
+            : t(
+                "Se reemplazará el lienzo actual con el último borrador guardado en el servidor.",
+              )}
+        </p>
+        <div className="mt-[20px] flex justify-end gap-[8px]">
+          <button
+            type="button"
+            className="rounded-full border border-border px-[16px] py-[8px] text-[13px] hover:bg-muted"
+            onClick={onClose}
+          >
+            {t("Seguir editando")}
+          </button>
+          <button
+            type="button"
+            className="destructive px-[16px] py-[8px] text-[13px]"
+            onClick={() => onConfirm(action)}
+          >
+            {action === "back"
+              ? t("Salir sin guardar")
+              : t("Descartar y recargar")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function EditorLoading({ label }: { label: string }) {
