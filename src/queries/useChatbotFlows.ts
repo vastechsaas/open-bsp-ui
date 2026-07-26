@@ -6,6 +6,7 @@ import {
   createChatbotManagementError,
   type ChatbotEditorGraph,
   type ChatbotFlowStatus,
+  type ChatbotFlowValidationResult,
 } from "@/utils/ChatbotFlowUtils";
 import type {
   DataTablePage,
@@ -23,6 +24,18 @@ export type ChatbotFlowDraft = Pick<
   | "version"
   | "status"
   | "editor_graph"
+  | "created_at"
+  | "updated_at"
+>;
+
+export type ChatbotFlowVersion = Pick<
+  Database["public"]["Tables"]["chatbot_flow_versions"]["Row"],
+  | "id"
+  | "flow_id"
+  | "version"
+  | "status"
+  | "editor_graph"
+  | "published_at"
   | "created_at"
   | "updated_at"
 >;
@@ -67,6 +80,27 @@ type SaveChatbotFlowDraftInput = {
   versionId: string;
   expectedUpdatedAt: string;
   editorGraph: ChatbotEditorGraph;
+};
+
+type ValidateChatbotFlowInput = {
+  flowId: string;
+  editorGraph: ChatbotEditorGraph;
+};
+
+type PublishChatbotFlowInput = {
+  flowId: string;
+  versionId: string;
+  expectedUpdatedAt: string;
+};
+
+export type ChatbotFlowPublishResponse = {
+  valid: true;
+  outcome: "published";
+  published_version_id: string;
+  published_version: number;
+  draft_id: string;
+  draft_version: number;
+  draft_updated_at: string;
 };
 
 async function normalizeChatbotManagementError(error: unknown) {
@@ -168,6 +202,81 @@ export function useSaveChatbotFlowDraft() {
         queryKey: [orgId, "chatbot_flows", "page"],
       });
     },
+  });
+}
+
+export function useValidateChatbotFlow() {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({ flowId, editorGraph }: ValidateChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<ChatbotFlowValidationResult>(
+        `flows/${flowId}/validate`,
+        {
+          organization_id: orgId,
+          editor_graph: editorGraph,
+        },
+      );
+    },
+  });
+}
+
+export function usePublishChatbotFlow() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      versionId,
+      expectedUpdatedAt,
+    }: PublishChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<ChatbotFlowPublishResponse>(
+        `flows/${flowId}/publish`,
+        {
+          organization_id: orgId,
+          version_id: versionId,
+          expected_updated_at: expectedUpdatedAt,
+        },
+      );
+    },
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chatbotFlows.draft(orgId, variables.flowId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.chatbotFlows.versions(orgId, variables.flowId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [orgId, "chatbot_flows", "page"],
+        }),
+      ]);
+    },
+  });
+}
+
+export function useChatbotFlowVersions(flowId: string, enabled = true) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery<ChatbotFlowVersion[]>({
+    queryKey: queryKeys.chatbotFlows.versions(orgId, flowId),
+    queryFn: async () => {
+      const result = await supabase
+        .from("chatbot_flow_versions")
+        .select(
+          "id, flow_id, version, status, editor_graph, published_at, created_at, updated_at",
+        )
+        .eq("organization_id", orgId!)
+        .eq("flow_id", flowId)
+        .order("version", { ascending: false })
+        .throwOnError();
+
+      return result.data;
+    },
+    enabled: !!orgId && !!flowId && enabled,
   });
 }
 

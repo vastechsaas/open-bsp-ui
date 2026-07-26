@@ -25,6 +25,7 @@ import {
   Braces,
   Boxes,
   CircleStop,
+  FileClock,
   GitBranch,
   Info,
   MessageSquareText,
@@ -33,7 +34,9 @@ import {
   PanelRight,
   Play,
   RefreshCw,
+  Rocket,
   Save,
+  ShieldCheck,
   Copy,
   GripVertical,
   LockKeyhole,
@@ -42,18 +45,29 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  PublishChatbotDialog,
+  ValidationResultsDialog,
+  VersionHistoryPanel,
+  VersionPreviewDialog,
+} from "@/components/chatbots/ChatbotFlowPublication";
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
   type ChatbotFlowEditorData,
+  type ChatbotFlowVersion,
   useChatbotFlowDraft,
+  useChatbotFlowVersions,
+  usePublishChatbotFlow,
   useSaveChatbotFlowDraft,
+  useValidateChatbotFlow,
 } from "@/queries/useChatbotFlows";
 import {
   addChatbotConditionBranch,
   ChatbotDraftConflictError,
+  ChatbotPublishValidationError,
   CHATBOT_INPUT_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
   chatbotConditionOperators,
@@ -64,6 +78,7 @@ import {
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorValidationFingerprint,
   isValidChatbotConnection,
   normalizeChatbotEditorGraph,
   removeChatbotConditionBranch,
@@ -72,6 +87,7 @@ import {
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotConditionBranch,
@@ -92,6 +108,9 @@ function ChatbotFlowEditor() {
   const navigate = useNavigate();
   const { translate: t } = useTranslation();
   const [workspaceRevision, setWorkspaceRevision] = useState(0);
+  const [lastPublishedVersion, setLastPublishedVersion] = useState<
+    number | null
+  >(null);
   const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
   const canManage =
     currentAgent?.extra?.role === "owner" ||
@@ -151,6 +170,9 @@ function ChatbotFlowEditor() {
         onBack={() => void goBack()}
         onRefresh={reloadDraft}
         refreshing={draftQuery.isFetching}
+        lastPublishedVersion={lastPublishedVersion}
+        onPublished={setLastPublishedVersion}
+        onDismissPublished={() => setLastPublishedVersion(null)}
       />
     </ReactFlowProvider>
   );
@@ -162,12 +184,18 @@ function FlowEditorWorkspace({
   onBack,
   onRefresh,
   refreshing,
+  lastPublishedVersion,
+  onPublished,
+  onDismissPublished,
 }: {
   editor: ChatbotFlowEditorData;
   graph: ChatbotEditorGraph;
   onBack: () => void;
   onRefresh: () => Promise<void>;
   refreshing: boolean;
+  lastPublishedVersion: number | null;
+  onPublished: (version: number) => void;
+  onDismissPublished: () => void;
 }) {
   const { translate: t } = useTranslation();
   const initialGraph = ensureChatbotStartNode(graph);
@@ -185,8 +213,20 @@ function FlowEditorWorkspace({
   const [pendingProtectedAction, setPendingProtectedAction] = useState<
     "back" | "reload" | null
   >(null);
+  const [validationSnapshot, setValidationSnapshot] = useState<{
+    fingerprint: string;
+    result: ChatbotFlowValidationResult;
+  } | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [previewVersion, setPreviewVersion] =
+    useState<ChatbotFlowVersion | null>(null);
   const saveDraft = useSaveChatbotFlowDraft();
-  const { fitView, screenToFlowPosition } = useReactFlow();
+  const validateDraft = useValidateChatbotFlow();
+  const publishDraft = usePublishChatbotFlow();
+  const versionsQuery = useChatbotFlowVersions(editor.flow.id, versionsOpen);
+  const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const availableVariables = selectedNode
     ? getAvailableChatbotVariables(selectedNode.id, nodes, edges)
@@ -199,8 +239,14 @@ function FlowEditorWorkspace({
     () => getChatbotEditorGraphFingerprint(editorGraph),
     [editorGraph],
   );
+  const currentValidationFingerprint = useMemo(
+    () => getChatbotEditorValidationFingerprint(editorGraph),
+    [editorGraph],
+  );
   const dirty = currentFingerprint !== savedFingerprint;
-  const conflict = saveDraft.error instanceof ChatbotDraftConflictError;
+  const conflict =
+    saveDraft.error instanceof ChatbotDraftConflictError ||
+    publishDraft.error instanceof ChatbotDraftConflictError;
   const saveStatus = getChatbotDraftSaveStatus({
     dirty,
     saving: saveDraft.isPending,
@@ -214,6 +260,22 @@ function FlowEditorWorkspace({
     disabled: !dirty,
     withResolver: true,
   });
+  const validationResult =
+    publishDraft.error instanceof ChatbotPublishValidationError
+      ? {
+          valid: false as const,
+          issues: publishDraft.error.issues,
+        }
+      : (validationSnapshot?.result ?? null);
+  const validationIsStale =
+    validationSnapshot !== null &&
+    validationSnapshot.fingerprint !== currentValidationFingerprint;
+  const publishDisabled =
+    dirty ||
+    saveDraft.isPending ||
+    publishDraft.isPending ||
+    conflict ||
+    editor.flow.status === "archived";
 
   const saveEditorGraph = async () => {
     if (!dirty || saveDraft.isPending) return;
@@ -228,6 +290,55 @@ function FlowEditorWorkspace({
       setSavedFingerprint(currentFingerprint);
     } catch {
       // The mutation state renders the actionable save error.
+    }
+  };
+
+  const validateEditorGraph = async () => {
+    try {
+      const result = await validateDraft.mutateAsync({
+        flowId: editor.flow.id,
+        editorGraph,
+      });
+      setValidationSnapshot({
+        fingerprint: currentValidationFingerprint,
+        result,
+      });
+      setValidationDialogOpen(true);
+    } catch {
+      // The mutation state renders the validation request failure.
+    }
+  };
+
+  const focusValidationNode = (nodeId: string) => {
+    const node = nodes.find((candidate) => candidate.id === nodeId);
+    if (!node) return;
+    setSelectedNodeId(nodeId);
+    setMobilePanel(null);
+    void setCenter(node.position.x + 110, node.position.y + 48, {
+      zoom: 1.15,
+      duration: 300,
+    });
+  };
+
+  const publishEditorDraft = async () => {
+    try {
+      const result = await publishDraft.mutateAsync({
+        flowId: editor.flow.id,
+        versionId: editor.draft.id,
+        expectedUpdatedAt,
+      });
+      onPublished(result.published_version);
+      setPublishDialogOpen(false);
+      setValidationSnapshot(null);
+    } catch (error) {
+      setPublishDialogOpen(false);
+      if (error instanceof ChatbotPublishValidationError) {
+        setValidationSnapshot({
+          fingerprint: currentValidationFingerprint,
+          result: { valid: false, issues: error.issues },
+        });
+        setValidationDialogOpen(true);
+      }
     }
   };
 
@@ -491,7 +602,7 @@ function FlowEditorWorkspace({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
+    <div className="relative flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="flex shrink-0 flex-wrap items-center gap-[10px] border-b border-border px-[12px] py-[10px] md:px-[18px]">
         <button
           type="button"
@@ -551,6 +662,33 @@ function FlowEditorWorkspace({
           </button>
           <button
             type="button"
+            title={t("Versiones")}
+            aria-label={t("Versiones")}
+            className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted"
+            onClick={() => setVersionsOpen(true)}
+          >
+            <FileClock className="h-[15px] w-[15px]" />
+            <span className="hidden xl:inline">{t("Versiones")}</span>
+          </button>
+          <button
+            type="button"
+            title={t("Validar flujo")}
+            aria-label={t("Validar flujo")}
+            disabled={validateDraft.isPending}
+            className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted disabled:opacity-50"
+            onClick={() => void validateEditorGraph()}
+          >
+            {validateDraft.isPending ? (
+              <RefreshCw className="h-[15px] w-[15px] animate-spin" />
+            ) : (
+              <ShieldCheck className="h-[15px] w-[15px]" />
+            )}
+            <span className="hidden xl:inline">
+              {validateDraft.isPending ? t("Validando…") : t("Validar")}
+            </span>
+          </button>
+          <button
+            type="button"
             title={t("Recargar borrador")}
             aria-label={t("Recargar borrador")}
             disabled={refreshing}
@@ -576,6 +714,25 @@ function FlowEditorWorkspace({
               <Save className="h-[15px] w-[15px]" />
             )}
             <span>{saveDraft.isPending ? t("Guardando…") : t("Guardar")}</span>
+          </button>
+          <button
+            type="button"
+            title={
+              dirty
+                ? t("Guardá los cambios antes de publicar")
+                : t("Publicar flujo")
+            }
+            aria-label={t("Publicar flujo")}
+            disabled={publishDisabled}
+            className="primary flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => setPublishDialogOpen(true)}
+          >
+            {publishDraft.isPending ? (
+              <RefreshCw className="h-[15px] w-[15px] animate-spin" />
+            ) : (
+              <Rocket className="h-[15px] w-[15px]" />
+            )}
+            <span className="hidden sm:inline">{t("Publicar")}</span>
           </button>
         </div>
       </header>
@@ -603,6 +760,82 @@ function FlowEditorWorkspace({
               {t("Recargar borrador del servidor")}
             </button>
           )}
+        </div>
+      )}
+
+      {validateDraft.isError && (
+        <div
+          role="alert"
+          className="flex shrink-0 items-center gap-[8px] border-b border-destructive/30 bg-destructive/8 px-[14px] py-[8px] text-[11px] text-destructive md:px-[18px]"
+        >
+          <span className="min-w-0 flex-1">
+            {t(
+              "No se pudo validar el flujo. Revisá tu conexión e intentá nuevamente.",
+            )}
+          </span>
+          <button
+            type="button"
+            className="rounded-full border border-destructive/35 px-[10px] py-[5px] font-medium hover:bg-destructive/10"
+            onClick={() => void validateEditorGraph()}
+          >
+            {t("Reintentar")}
+          </button>
+        </div>
+      )}
+
+      {publishDraft.isError &&
+        !(publishDraft.error instanceof ChatbotDraftConflictError) &&
+        !(publishDraft.error instanceof ChatbotPublishValidationError) && (
+          <div
+            role="alert"
+            className="shrink-0 border-b border-destructive/30 bg-destructive/8 px-[14px] py-[8px] text-[11px] text-destructive md:px-[18px]"
+          >
+            {t(
+              "No se pudo publicar el flujo. Revisá tu conexión e intentá nuevamente.",
+            )}
+          </div>
+        )}
+
+      {lastPublishedVersion !== null && (
+        <div className="flex shrink-0 items-center gap-[8px] border-b border-emerald-500/25 bg-emerald-500/8 px-[14px] py-[8px] text-[11px] text-emerald-600 dark:text-emerald-400 md:px-[18px]">
+          <span className="min-w-0 flex-1">
+            {t("La versión se publicó correctamente.")} v{lastPublishedVersion}.{" "}
+            {t("Ya podés continuar editando el siguiente borrador.")}
+          </span>
+          <button
+            type="button"
+            title={t("Cerrar")}
+            aria-label={t("Cerrar")}
+            className="flex h-[24px] w-[24px] items-center justify-center rounded-md hover:bg-emerald-500/10"
+            onClick={onDismissPublished}
+          >
+            <X className="h-[13px] w-[13px]" />
+          </button>
+        </div>
+      )}
+
+      {validationSnapshot && (
+        <div
+          className={`flex shrink-0 flex-wrap items-center gap-[8px] border-b px-[14px] py-[7px] text-[11px] md:px-[18px] ${
+            validationSnapshot.result.valid
+              ? "border-emerald-500/25 bg-emerald-500/8 text-emerald-600 dark:text-emerald-400"
+              : "border-destructive/25 bg-destructive/8 text-destructive"
+          }`}
+        >
+          <span className="min-w-0 flex-1">
+            {validationSnapshot.result.valid
+              ? validationIsStale
+                ? t("El flujo cambió después de la última validación.")
+                : t("El flujo está validado y listo para publicar.")
+              : t("El flujo tiene problemas que deben corregirse.")}
+          </span>
+          <button
+            type="button"
+            className="rounded-full border border-current/25 px-[10px] py-[4px] font-medium hover:bg-background/25"
+            onClick={() => setValidationDialogOpen(true)}
+          >
+            {t("Ver resultado")}
+          </button>
         </div>
       )}
 
@@ -727,6 +960,32 @@ function FlowEditorWorkspace({
           }
         }}
         onConfirm={(action) => void runProtectedAction(action)}
+      />
+      <ValidationResultsDialog
+        result={validationDialogOpen ? validationResult : null}
+        stale={validationIsStale}
+        onClose={() => setValidationDialogOpen(false)}
+        onFocusNode={focusValidationNode}
+      />
+      <PublishChatbotDialog
+        open={publishDialogOpen}
+        draftVersion={editor.draft.version}
+        pending={publishDraft.isPending}
+        onClose={() => setPublishDialogOpen(false)}
+        onConfirm={() => void publishEditorDraft()}
+      />
+      <VersionHistoryPanel
+        open={versionsOpen}
+        versions={versionsQuery.data ?? []}
+        loading={versionsQuery.isLoading}
+        error={versionsQuery.isError}
+        onClose={() => setVersionsOpen(false)}
+        onRetry={() => void versionsQuery.refetch()}
+        onPreview={(version) => setPreviewVersion(version)}
+      />
+      <VersionPreviewDialog
+        version={previewVersion}
+        onClose={() => setPreviewVersion(null)}
       />
     </div>
   );
