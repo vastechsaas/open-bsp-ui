@@ -794,5 +794,19 @@
   "Seleccioná un nodo": "Select a node",
   "Sus datos básicos aparecerán en este panel.": "Its basic information will appear in this panel.",
   "Inicio": "Start",
-  "Fin": "End"
+  "Fin": "End",
+  "Agregá tu primer paso": "Add your first step",
+  "Arrastrá Enviar mensaje o Fin desde la biblioteca y conectalo con Inicio.": "Drag Send message or End from the library and connect it to Start.",
+  "Punto de entrada único": "Single entry point",
+  "Envía un mensaje de texto": "Sends a text message",
+  "Finaliza la conversación": "Ends the conversation",
+  "Arrastrá un nodo al lienzo o hacé clic para agregarlo.": "Drag a node onto the canvas or click to add it.",
+  "Inicio es único y está protegido. Los cambios permanecen locales hasta habilitar el guardado.": "Start is unique and protected. Changes remain local until saving is enabled.",
+  "Mensaje requerido": "Message required",
+  "Texto del mensaje": "Message text",
+  "Escribí el mensaje que recibirá el contacto": "Write the message the contact will receive",
+  "El mensaje es obligatorio": "The message is required",
+  "Mensaje listo": "Message ready",
+  "Inicio recibe la conversación y debe conectarse con un único paso siguiente.": "Start receives the conversation and must connect to exactly one next step.",
+  "Fin completa la conversación y no permite conexiones salientes.": "End completes the conversation and does not allow outgoing connections."
 }

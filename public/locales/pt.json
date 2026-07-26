@@ -794,5 +794,19 @@
   "Seleccioná un nodo": "Selecione um nó",
   "Sus datos básicos aparecerán en este panel.": "As informações básicas aparecerão neste painel.",
   "Inicio": "Início",
-  "Fin": "Fim"
+  "Fin": "Fim",
+  "Agregá tu primer paso": "Adicione sua primeira etapa",
+  "Arrastrá Enviar mensaje o Fin desde la biblioteca y conectalo con Inicio.": "Arraste Enviar mensagem ou Fim da biblioteca e conecte-o ao Início.",
+  "Punto de entrada único": "Ponto de entrada único",
+  "Envía un mensaje de texto": "Envia uma mensagem de texto",
+  "Finaliza la conversación": "Encerra a conversa",
+  "Arrastrá un nodo al lienzo o hacé clic para agregarlo.": "Arraste um nó para a tela ou clique para adicioná-lo.",
+  "Inicio es único y está protegido. Los cambios permanecen locales hasta habilitar el guardado.": "O Início é único e protegido. As alterações permanecem locais até o salvamento ser ativado.",
+  "Mensaje requerido": "Mensagem obrigatória",
+  "Texto del mensaje": "Texto da mensagem",
+  "Escribí el mensaje que recibirá el contacto": "Escreva a mensagem que o contato receberá",
+  "El mensaje es obligatorio": "A mensagem é obrigatória",
+  "Mensaje listo": "Mensagem pronta",
+  "Inicio recibe la conversación y debe conectarse con un único paso siguiente.": "O Início recebe a conversa e deve se conectar a uma única próxima etapa.",
+  "Fin completa la conversación y no permite conexiones salientes.": "O Fim encerra a conversa e não permite conexões de saída."
 }

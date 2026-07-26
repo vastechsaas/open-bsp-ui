@@ -794,5 +794,19 @@
   "Seleccioná un nodo": "Chagua nodi",
   "Sus datos básicos aparecerán en este panel.": "Taarifa zake za msingi zitaonekana kwenye paneli hii.",
   "Inicio": "Anza",
-  "Fin": "Mwisho"
+  "Fin": "Mwisho",
+  "Agregá tu primer paso": "Ongeza hatua yako ya kwanza",
+  "Arrastrá Enviar mensaje o Fin desde la biblioteca y conectalo con Inicio.": "Buruta Tuma ujumbe au Mwisho kutoka maktabani na uiunganishe na Anza.",
+  "Punto de entrada único": "Sehemu moja ya kuanzia",
+  "Envía un mensaje de texto": "Hutuma ujumbe wa maandishi",
+  "Finaliza la conversación": "Humaliza mazungumzo",
+  "Arrastrá un nodo al lienzo o hacé clic para agregarlo.": "Buruta nodi kwenye turubai au bofya ili kuiongeza.",
+  "Inicio es único y está protegido. Los cambios permanecen locales hasta habilitar el guardado.": "Anza ni ya kipekee na imelindwa. Mabadiliko hubaki hapa hadi kuhifadhi kuwezeshwe.",
+  "Mensaje requerido": "Ujumbe unahitajika",
+  "Texto del mensaje": "Maandishi ya ujumbe",
+  "Escribí el mensaje que recibirá el contacto": "Andika ujumbe ambao mwasiliani atapokea",
+  "El mensaje es obligatorio": "Ujumbe unahitajika",
+  "Mensaje listo": "Ujumbe uko tayari",
+  "Inicio recibe la conversación y debe conectarse con un único paso siguiente.": "Anza hupokea mazungumzo na lazima iunganishwe na hatua moja inayofuata.",
+  "Fin completa la conversación y no permite conexiones salientes.": "Mwisho hukamilisha mazungumzo na hairuhusu miunganisho inayotoka."
 }

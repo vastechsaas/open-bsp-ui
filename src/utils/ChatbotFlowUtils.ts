@@ -1,6 +1,25 @@
-import type { Edge, Node, Viewport } from "@xyflow/react";
+import type { Edge, Node, Viewport, XYPosition } from "@xyflow/react";
 
 export type ChatbotFlowStatus = "active" | "archived";
+export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
+
+export type ChatbotCoreNodeType = "start" | "send_message" | "end";
+
+export type ChatbotNodeConfig = {
+  text?: string;
+  [key: string]: unknown;
+};
+
+export type ChatbotNodeData = {
+  node_type: string;
+  nodeType: string;
+  label: string;
+  config: ChatbotNodeConfig;
+  [key: string]: unknown;
+};
+
+export type ChatbotFlowNode = Node<ChatbotNodeData>;
+export type ChatbotFlowEdge = Edge<{ kind: string; [key: string]: unknown }>;
 
 export function isChatbotWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
@@ -33,8 +52,8 @@ export function getChatbotFlowVersionSummary({
 }
 
 export type ChatbotEditorGraph = {
-  nodes: Node[];
-  edges: Edge[];
+  nodes: ChatbotFlowNode[];
+  edges: ChatbotFlowEdge[];
   viewport?: Viewport;
 };
 
@@ -46,6 +65,182 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
+  START: "start",
+  MESSAGE: "send_message",
+  SEND_MESSAGE: "send_message",
+  END: "end",
+};
+
+export function normalizeChatbotNodeType(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const trimmedValue = value.trim();
+  return legacyNodeTypes[trimmedValue.toUpperCase()] ?? trimmedValue;
+}
+
+export function isChatbotCoreNodeType(
+  value: unknown,
+): value is ChatbotCoreNodeType {
+  return value === "start" || value === "send_message" || value === "end";
+}
+
+export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
+  if (type === "start") return "Inicio";
+  if (type === "send_message") return "Enviar mensaje";
+  return "Fin";
+}
+
+function createStableNodeId(type: ChatbotCoreNodeType) {
+  return `${type}-${crypto.randomUUID()}`;
+}
+
+export function createChatbotNode(
+  type: ChatbotCoreNodeType,
+  position: XYPosition,
+  id = createStableNodeId(type),
+): ChatbotFlowNode {
+  return {
+    id,
+    type: "chatbotNode",
+    position,
+    deletable: type !== "start",
+    data: {
+      node_type: type,
+      nodeType: type,
+      label: getChatbotNodeDefaultLabel(type),
+      config: type === "send_message" ? { text: "" } : {},
+    },
+  };
+}
+
+export function ensureChatbotStartNode(
+  graph: ChatbotEditorGraph,
+): ChatbotEditorGraph {
+  if (graph.nodes.some((node) => node.data.node_type === "start")) {
+    return graph;
+  }
+
+  return {
+    ...graph,
+    nodes: [
+      createChatbotNode("start", { x: 80, y: 160 }, "start-1"),
+      ...graph.nodes,
+    ],
+  };
+}
+
+export function updateChatbotMessageText(
+  node: ChatbotFlowNode,
+  text: string,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "send_message") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: {
+        ...node.data.config,
+        text: text.slice(0, CHATBOT_MESSAGE_MAX_LENGTH),
+      },
+    },
+  };
+}
+
+export function duplicateChatbotNode(
+  node: ChatbotFlowNode,
+  id = createStableNodeId(
+    isChatbotCoreNodeType(node.data.node_type)
+      ? node.data.node_type
+      : "send_message",
+  ),
+): ChatbotFlowNode | null {
+  if (node.data.node_type === "start") return null;
+
+  return {
+    ...node,
+    id,
+    selected: false,
+    position: {
+      x: node.position.x + 36,
+      y: node.position.y + 36,
+    },
+    data: {
+      ...node.data,
+      config: { ...node.data.config },
+    },
+  };
+}
+
+export function removeChatbotNode(
+  graph: ChatbotEditorGraph,
+  nodeId: string,
+): ChatbotEditorGraph {
+  const node = graph.nodes.find((candidate) => candidate.id === nodeId);
+  if (!node || node.data.node_type === "start") return graph;
+
+  return {
+    ...graph,
+    nodes: graph.nodes.filter((candidate) => candidate.id !== nodeId),
+    edges: graph.edges.filter(
+      (edge) => edge.source !== nodeId && edge.target !== nodeId,
+    ),
+  };
+}
+
+function wouldCreateCycle(
+  source: string,
+  target: string,
+  edges: ReadonlyArray<Edge>,
+) {
+  const outgoing = new Map<string, string[]>();
+  edges.forEach((edge) => {
+    const targets = outgoing.get(edge.source) ?? [];
+    targets.push(edge.target);
+    outgoing.set(edge.source, targets);
+  });
+
+  const pending = [target];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const nodeId = pending.shift()!;
+    if (nodeId === source) return true;
+    if (visited.has(nodeId)) continue;
+    visited.add(nodeId);
+    pending.push(...(outgoing.get(nodeId) ?? []));
+  }
+  return false;
+}
+
+export function isValidChatbotConnection(
+  connection: { source: string | null; target: string | null },
+  nodes: ReadonlyArray<ChatbotFlowNode>,
+  edges: ReadonlyArray<Edge>,
+) {
+  const { source, target } = connection;
+  if (!source || !target || source === target) return false;
+
+  const sourceNode = nodes.find((node) => node.id === source);
+  const targetNode = nodes.find((node) => node.id === target);
+  if (!sourceNode || !targetNode) return false;
+  if (sourceNode.data.node_type === "end") return false;
+  if (targetNode.data.node_type === "start") return false;
+
+  if (
+    (sourceNode.data.node_type === "start" ||
+      sourceNode.data.node_type === "send_message") &&
+    edges.some((edge) => edge.source === source)
+  ) {
+    return false;
+  }
+
+  if (edges.some((edge) => edge.source === source && edge.target === target)) {
+    return false;
+  }
+
+  return !wouldCreateCycle(source, target, edges);
+}
+
 export function normalizeChatbotEditorGraph(
   value: unknown,
 ): ChatbotEditorGraph {
@@ -54,7 +249,7 @@ export function normalizeChatbotEditorGraph(
   const seenNodeIds = new Set<string>();
   const nodes = (Array.isArray(value.nodes) ? value.nodes : [])
     .filter(isRecord)
-    .flatMap((node): Node[] => {
+    .flatMap((node): ChatbotFlowNode[] => {
       if (
         typeof node.id !== "string" ||
         seenNodeIds.has(node.id) ||
@@ -68,26 +263,36 @@ export function normalizeChatbotEditorGraph(
       seenNodeIds.add(node.id);
       const sourceData = isRecord(node.data) ? node.data : {};
       const nodeType =
-        typeof sourceData.nodeType === "string"
-          ? sourceData.nodeType
-          : typeof node.type === "string"
-            ? node.type
-            : "NODE";
+        normalizeChatbotNodeType(sourceData.node_type) ??
+        normalizeChatbotNodeType(sourceData.nodeType) ??
+        normalizeChatbotNodeType(node.type) ??
+        "node";
       const label =
         typeof sourceData.label === "string"
           ? sourceData.label
-          : nodeType === "default"
-            ? node.id
-            : nodeType;
+          : isChatbotCoreNodeType(nodeType)
+            ? getChatbotNodeDefaultLabel(nodeType)
+            : node.id;
+      const config = isRecord(sourceData.config)
+        ? { ...sourceData.config }
+        : {};
+      const usesCoreRenderer = isChatbotCoreNodeType(nodeType);
 
       return [
         {
           id: node.id,
-          type: "default",
+          type: usesCoreRenderer ? "chatbotNode" : "default",
           position: { x: node.position.x, y: node.position.y },
-          data: { ...sourceData, label, nodeType },
+          data: {
+            ...sourceData,
+            node_type: nodeType,
+            nodeType,
+            label,
+            config,
+          },
           draggable: node.draggable !== false,
           selectable: node.selectable !== false,
+          deletable: nodeType === "start" ? false : node.deletable !== false,
         },
       ];
     });
@@ -96,7 +301,7 @@ export function normalizeChatbotEditorGraph(
   const seenEdgeIds = new Set<string>();
   const edges = (Array.isArray(value.edges) ? value.edges : [])
     .filter(isRecord)
-    .flatMap((edge): Edge[] => {
+    .flatMap((edge): ChatbotFlowEdge[] => {
       if (
         typeof edge.id !== "string" ||
         seenEdgeIds.has(edge.id) ||
@@ -119,6 +324,14 @@ export function normalizeChatbotEditorGraph(
           targetHandle:
             typeof edge.targetHandle === "string" ? edge.targetHandle : null,
           animated: edge.animated === true,
+          type: typeof edge.type === "string" ? edge.type : "smoothstep",
+          data: {
+            ...(isRecord(edge.data) ? edge.data : {}),
+            kind:
+              isRecord(edge.data) && typeof edge.data.kind === "string"
+                ? edge.data.kind
+                : "default",
+          },
         },
       ];
     });
