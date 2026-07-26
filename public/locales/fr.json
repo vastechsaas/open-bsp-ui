@@ -843,5 +843,21 @@
   "Distinto de": "Différent de",
   "Contiene": "Contient",
   "Comienza con": "Commence par",
-  "Termina con": "Se termine par"
+  "Termina con": "Se termine par",
+  "Guardar": "Enregistrer",
+  "Guardado": "Enregistré",
+  "Cambios sin guardar": "Modifications non enregistrées",
+  "Conflicto de edición": "Conflit de modification",
+  "Error al guardar": "Échec de l’enregistrement",
+  "Otra persona guardó cambios en este borrador. Recargalo antes de continuar.": "Une autre personne a enregistré des modifications dans ce brouillon. Rechargez-le avant de continuer.",
+  "No se pudo guardar el borrador. Revisá tu conexión e intentá nuevamente.": "Impossible d’enregistrer le brouillon. Vérifiez votre connexion et réessayez.",
+  "Recargar borrador del servidor": "Recharger le brouillon du serveur",
+  "¿Salir sin guardar?": "Quitter sans enregistrer ?",
+  "¿Descartar cambios locales?": "Ignorer les modifications locales ?",
+  "Los cambios sin guardar se perderán si salís del editor.": "Les modifications non enregistrées seront perdues si vous quittez l’éditeur.",
+  "Se reemplazará el lienzo actual con el último borrador guardado en el servidor.": "Le canevas actuel sera remplacé par le dernier brouillon enregistré sur le serveur.",
+  "Seguir editando": "Continuer à modifier",
+  "Salir sin guardar": "Quitter sans enregistrer",
+  "Descartar y recargar": "Ignorer et recharger",
+  "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.": "Début est unique et protégé. Enregistrez le brouillon pour conserver vos modifications."
 }

@@ -843,5 +843,21 @@
   "Distinto de": "Diferente de",
   "Contiene": "Contém",
   "Comienza con": "Começa com",
-  "Termina con": "Termina com"
+  "Termina con": "Termina com",
+  "Guardar": "Salvar",
+  "Guardado": "Salvo",
+  "Cambios sin guardar": "Alterações não salvas",
+  "Conflicto de edición": "Conflito de edição",
+  "Error al guardar": "Falha ao salvar",
+  "Otra persona guardó cambios en este borrador. Recargalo antes de continuar.": "Outra pessoa salvou alterações neste rascunho. Recarregue-o antes de continuar.",
+  "No se pudo guardar el borrador. Revisá tu conexión e intentá nuevamente.": "Não foi possível salvar o rascunho. Verifique sua conexão e tente novamente.",
+  "Recargar borrador del servidor": "Recarregar rascunho do servidor",
+  "¿Salir sin guardar?": "Sair sem salvar?",
+  "¿Descartar cambios locales?": "Descartar alterações locais?",
+  "Los cambios sin guardar se perderán si salís del editor.": "As alterações não salvas serão perdidas se você sair do editor.",
+  "Se reemplazará el lienzo actual con el último borrador guardado en el servidor.": "A tela atual será substituída pelo último rascunho salvo no servidor.",
+  "Seguir editando": "Continuar editando",
+  "Salir sin guardar": "Sair sem salvar",
+  "Descartar y recargar": "Descartar e recarregar",
+  "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.": "O Início é único e protegido. Salve o rascunho para manter suas alterações."
 }

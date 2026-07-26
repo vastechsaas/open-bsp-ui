@@ -843,5 +843,21 @@
   "Distinto de": "Si sawa na",
   "Contiene": "Ina",
   "Comienza con": "Huanza na",
-  "Termina con": "Huisha na"
+  "Termina con": "Huisha na",
+  "Guardar": "Hifadhi",
+  "Guardado": "Imehifadhiwa",
+  "Cambios sin guardar": "Mabadiliko ambayo hayajahifadhiwa",
+  "Conflicto de edición": "Mgongano wa uhariri",
+  "Error al guardar": "Imeshindwa kuhifadhi",
+  "Otra persona guardó cambios en este borrador. Recargalo antes de continuar.": "Mtu mwingine amehifadhi mabadiliko kwenye rasimu hii. Ipakie upya kabla ya kuendelea.",
+  "No se pudo guardar el borrador. Revisá tu conexión e intentá nuevamente.": "Rasimu haikuweza kuhifadhiwa. Kagua muunganisho wako na ujaribu tena.",
+  "Recargar borrador del servidor": "Pakia upya rasimu ya seva",
+  "¿Salir sin guardar?": "Uondoke bila kuhifadhi?",
+  "¿Descartar cambios locales?": "Ufute mabadiliko ya hapa?",
+  "Los cambios sin guardar se perderán si salís del editor.": "Mabadiliko ambayo hayajahifadhiwa yatapotea ukiondoka kwenye kihariri.",
+  "Se reemplazará el lienzo actual con el último borrador guardado en el servidor.": "Turubai ya sasa itabadilishwa na rasimu ya mwisho iliyohifadhiwa kwenye seva.",
+  "Seguir editando": "Endelea kuhariri",
+  "Salir sin guardar": "Ondoka bila kuhifadhi",
+  "Descartar y recargar": "Futa na upakie upya",
+  "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.": "Anza ni ya kipekee na imelindwa. Hifadhi rasimu ili kuhifadhi mabadiliko yako."
 }

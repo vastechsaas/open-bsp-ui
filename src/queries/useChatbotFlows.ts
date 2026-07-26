@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { type Database, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
-import type { ChatbotFlowStatus } from "@/utils/ChatbotFlowUtils";
+import {
+  createChatbotManagementError,
+  type ChatbotEditorGraph,
+  type ChatbotFlowStatus,
+} from "@/utils/ChatbotFlowUtils";
 import type {
   DataTablePage,
   DataTablePageParams,
@@ -57,10 +62,34 @@ type DuplicateChatbotFlowInput = {
   name: string;
 };
 
+type SaveChatbotFlowDraftInput = {
+  flowId: string;
+  versionId: string;
+  expectedUpdatedAt: string;
+  editorGraph: ChatbotEditorGraph;
+};
+
+async function normalizeChatbotManagementError(error: unknown) {
+  if (error instanceof FunctionsHttpError) {
+    const response = error.context as Response | undefined;
+    let payload: unknown;
+    try {
+      payload = await response?.clone().json();
+    } catch {
+      // Keep the generic Edge Function error when no JSON body is available.
+    }
+    return createChatbotManagementError(response?.status, payload);
+  }
+
+  return error instanceof Error
+    ? error
+    : new Error("Chatbot management request failed");
+}
+
 async function invokeChatbotManagement<T>(
   path: string,
   body?: Record<string, unknown>,
-  method: "GET" | "POST" = "POST",
+  method: "GET" | "POST" | "PUT" = "POST",
 ) {
   const { data, error } = await supabase.functions.invoke<T>(
     `chatbot-management/${path}`,
@@ -70,9 +99,8 @@ async function invokeChatbotManagement<T>(
     },
   );
 
-  if (error || !data) {
-    throw error || new Error("Chatbot management request failed");
-  }
+  if (error) throw await normalizeChatbotManagementError(error);
+  if (!data) throw new Error("Chatbot management request failed");
 
   return data;
 }
@@ -105,6 +133,41 @@ export function useChatbotFlowDraft(flowId: string, enabled = true) {
       return { flow: flowResult.data, draft };
     },
     enabled: !!orgId && !!flowId && enabled,
+  });
+}
+
+export function useSaveChatbotFlowDraft() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      versionId,
+      expectedUpdatedAt,
+      editorGraph,
+    }: SaveChatbotFlowDraftInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<ChatbotFlowDraft>(
+        `flows/${flowId}/draft`,
+        {
+          organization_id: orgId,
+          version_id: versionId,
+          expected_updated_at: expectedUpdatedAt,
+          editor_graph: editorGraph,
+        },
+        "PUT",
+      );
+    },
+    onSuccess: async (draft, variables) => {
+      queryClient.setQueryData<ChatbotFlowEditorData>(
+        queryKeys.chatbotFlows.draft(orgId, variables.flowId),
+        (current) => (current ? { ...current, draft } : current),
+      );
+      await queryClient.invalidateQueries({
+        queryKey: [orgId, "chatbot_flows", "page"],
+      });
+    },
   });
 }
 

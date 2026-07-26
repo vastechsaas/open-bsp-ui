@@ -92,12 +92,137 @@ export type ChatbotEditorGraph = {
   viewport?: Viewport;
 };
 
+export type ChatbotDraftSaveStatus =
+  | "saved"
+  | "dirty"
+  | "saving"
+  | "error"
+  | "conflict";
+
+export class ChatbotDraftConflictError extends Error {
+  currentUpdatedAt: string | null;
+
+  constructor(message: string, currentUpdatedAt?: string | null) {
+    super(message);
+    this.name = "ChatbotDraftConflictError";
+    this.currentUpdatedAt = currentUpdatedAt ?? null;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+export function createChatbotManagementError(
+  status: number | undefined,
+  payload: unknown,
+) {
+  const body = isRecord(payload) ? payload : {};
+  const message =
+    typeof body.message === "string"
+      ? body.message
+      : "Chatbot management request failed";
+  if (status === 409) {
+    return new ChatbotDraftConflictError(
+      message,
+      typeof body.current_updated_at === "string"
+        ? body.current_updated_at
+        : null,
+    );
+  }
+  return new Error(message);
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function roundGraphNumber(value: number) {
+  return Math.round(value * 10_000) / 10_000;
+}
+
+function omitUndefinedValues(value: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  );
+}
+
+export function serializeChatbotEditorGraph(
+  graph: ChatbotEditorGraph,
+): ChatbotEditorGraph {
+  return {
+    nodes: graph.nodes.map((node) => ({
+      id: node.id,
+      type: node.type ?? "chatbotNode",
+      position: {
+        x: roundGraphNumber(node.position.x),
+        y: roundGraphNumber(node.position.y),
+      },
+      deletable: node.data.node_type !== "start",
+      data: {
+        node_type: node.data.node_type,
+        nodeType: node.data.node_type,
+        label: node.data.label,
+        config: omitUndefinedValues(node.data.config),
+        ...(node.data.branches
+          ? {
+              branches: node.data.branches.map((branch) => ({
+                id: branch.id,
+                operator: branch.operator,
+                value: branch.value,
+              })),
+            }
+          : {}),
+      },
+    })),
+    edges: graph.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle ?? null,
+      targetHandle: edge.targetHandle ?? null,
+      type: edge.type ?? "smoothstep",
+      animated: edge.animated === true,
+      data:
+        edge.data?.kind === "condition"
+          ? {
+              kind: "condition",
+              operator: edge.data.operator ?? "equals",
+              value: edge.data.value ?? "",
+            }
+          : { kind: "default" },
+    })),
+    ...(graph.viewport
+      ? {
+          viewport: {
+            x: roundGraphNumber(graph.viewport.x),
+            y: roundGraphNumber(graph.viewport.y),
+            zoom: roundGraphNumber(graph.viewport.zoom),
+          },
+        }
+      : {}),
+  };
+}
+
+export function getChatbotEditorGraphFingerprint(graph: ChatbotEditorGraph) {
+  return JSON.stringify(serializeChatbotEditorGraph(graph));
+}
+
+export function getChatbotDraftSaveStatus({
+  dirty,
+  saving,
+  failed,
+  conflict,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  failed: boolean;
+  conflict: boolean;
+}): ChatbotDraftSaveStatus {
+  if (saving) return "saving";
+  if (conflict) return "conflict";
+  if (failed) return "error";
+  return dirty ? "dirty" : "saved";
 }
 
 const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
