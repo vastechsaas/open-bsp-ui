@@ -8,6 +8,7 @@ import {
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
+  isChatbotEditorPath,
   isValidChatbotConnection,
   isChatbotWorkspacePath,
   normalizeChatbotEditorGraph,
@@ -23,6 +24,20 @@ void test("chatbot listing uses the full workspace layout", () => {
     true,
   );
   assert.equal(isChatbotWorkspacePath("/campaigns"), false);
+});
+
+void test("only chatbot editor routes remove the global application sidebar", () => {
+  assert.equal(isChatbotEditorPath("/chatbots"), false);
+  assert.equal(isChatbotEditorPath("/chatbots/"), false);
+  assert.equal(
+    isChatbotEditorPath("/chatbots/8f511a7e-e073-4a82-9468-a511f497b75d"),
+    true,
+  );
+  assert.equal(
+    isChatbotEditorPath("/chatbots/8f511a7e-e073-4a82-9468-a511f497b75d/"),
+    true,
+  );
+  assert.equal(isChatbotEditorPath("/campaigns/example"), false);
 });
 
 void test("chatbot status labels are stable for listing badges", () => {
