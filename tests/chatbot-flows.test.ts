@@ -1,10 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
+  addChatbotConditionBranch,
+  chatbotConditionOperators,
   CHATBOT_MESSAGE_MAX_LENGTH,
   createChatbotNode,
   duplicateChatbotNode,
   ensureChatbotStartNode,
+  getAvailableChatbotVariables,
+  getChatbotConditionEdgeLabel,
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
@@ -13,6 +18,10 @@ import {
   isChatbotWorkspacePath,
   normalizeChatbotEditorGraph,
   removeChatbotNode,
+  removeChatbotConditionBranch,
+  updateChatbotCollectInputConfig,
+  updateChatbotConditionBranch,
+  updateChatbotConditionVariable,
   updateChatbotMessageText,
 } from "../src/utils/ChatbotFlowUtils.ts";
 
@@ -160,6 +169,89 @@ void test("core chatbot nodes use the compiler-compatible data contract", () => 
   assert.equal(end.data.node_type, "end");
 });
 
+void test("input and condition nodes use the exact compiler-compatible contract", () => {
+  const input = createChatbotNode(
+    "collect_input",
+    { x: 120, y: 220 },
+    "input-1",
+  );
+  const condition = createChatbotNode(
+    "condition",
+    { x: 420, y: 220 },
+    "condition-1",
+  );
+
+  assert.deepEqual(input.data.config, {
+    prompt: "",
+    variable: "",
+    required: true,
+  });
+  assert.deepEqual(condition.data.config, { variable: "" });
+  assert.equal(condition.data.branches?.length, 1);
+  assert.deepEqual(chatbotConditionOperators, [
+    "equals",
+    "not_equals",
+    "contains",
+    "starts_with",
+    "ends_with",
+  ]);
+});
+
+void test("input and condition inspector updates preserve node contracts", () => {
+  const input = updateChatbotCollectInputConfig(
+    createChatbotNode("collect_input", { x: 0, y: 0 }, "input"),
+    {
+      prompt: "Which city?",
+      variable: "customer_city",
+      required: false,
+      min_length: 2,
+      max_length: 80,
+    },
+  );
+  let condition = updateChatbotConditionVariable(
+    createChatbotNode("condition", { x: 200, y: 0 }, "condition"),
+    "customer_city",
+  );
+  const firstBranch = condition.data.branches?.[0];
+  assert.ok(firstBranch);
+  condition = updateChatbotConditionBranch(condition, firstBranch.id, {
+    operator: "contains",
+    value: "karachi",
+  });
+  condition = addChatbotConditionBranch(condition, {
+    id: "second-branch",
+    operator: "not_equals",
+    value: "lahore",
+  });
+
+  assert.deepEqual(input.data.config, {
+    prompt: "Which city?",
+    variable: "customer_city",
+    required: false,
+    min_length: 2,
+    max_length: 80,
+  });
+  assert.equal(condition.data.config.variable, "customer_city");
+  assert.deepEqual(condition.data.branches?.[0], {
+    id: firstBranch.id,
+    operator: "contains",
+    value: "karachi",
+  });
+  assert.equal(condition.data.branches?.length, 2);
+  assert.equal(
+    removeChatbotConditionBranch(condition, "second-branch").data.branches
+      ?.length,
+    1,
+  );
+  assert.equal(
+    removeChatbotConditionBranch(
+      removeChatbotConditionBranch(condition, "second-branch"),
+      firstBranch.id,
+    ).data.branches?.length,
+    1,
+  );
+});
+
 void test("core chatbot connection rules match compiler routing constraints", () => {
   const start = createChatbotNode("start", { x: 0, y: 0 }, "start");
   const message = createChatbotNode(
@@ -193,6 +285,166 @@ void test("core chatbot connection rules match compiler routing constraints", ()
       { id: "edge-1", source: "start", target: "message" },
     ]),
     false,
+  );
+});
+
+void test("condition connections require one edge per branch and a fallback", () => {
+  const input = createChatbotNode("collect_input", { x: 0, y: 0 }, "input");
+  const condition = createChatbotNode(
+    "condition",
+    { x: 200, y: 0 },
+    "condition",
+  );
+  const firstBranch = condition.data.branches?.[0];
+  const endA = createChatbotNode("end", { x: 400, y: 0 }, "end-a");
+  const endB = createChatbotNode("end", { x: 400, y: 160 }, "end-b");
+  assert.ok(firstBranch);
+  const nodes = [input, condition, endA, endB];
+
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "condition", target: "end-a" },
+      nodes,
+      [],
+    ),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      {
+        source: "condition",
+        target: "end-a",
+        sourceHandle: firstBranch.id,
+      },
+      nodes,
+      [],
+    ),
+    true,
+  );
+  const conditionalEdge = {
+    id: "condition-a",
+    source: "condition",
+    target: "end-a",
+    sourceHandle: firstBranch.id,
+  };
+  assert.equal(
+    isValidChatbotConnection(
+      {
+        source: "condition",
+        target: "end-b",
+        sourceHandle: firstBranch.id,
+      },
+      nodes,
+      [conditionalEdge],
+    ),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      {
+        source: "condition",
+        target: "end-a",
+        sourceHandle: "default",
+      },
+      nodes,
+      [conditionalEdge],
+    ),
+    true,
+  );
+});
+
+void test("conditions only expose variables collected on every incoming path", () => {
+  const start = createChatbotNode("start", { x: 0, y: 0 }, "start");
+  const input = updateChatbotCollectInputConfig(
+    createChatbotNode("collect_input", { x: 150, y: 0 }, "input"),
+    { variable: "customer_city" },
+  );
+  const message = createChatbotNode(
+    "send_message",
+    { x: 150, y: 160 },
+    "message",
+  );
+  const condition = createChatbotNode(
+    "condition",
+    { x: 350, y: 0 },
+    "condition",
+  );
+  const nodes = [start, input, message, condition];
+
+  assert.deepEqual(
+    getAvailableChatbotVariables("condition", nodes, [
+      { id: "start-input", source: "start", target: "input" },
+      { id: "input-condition", source: "input", target: "condition" },
+    ]),
+    ["customer_city"],
+  );
+  assert.deepEqual(
+    getAvailableChatbotVariables("condition", nodes, [
+      { id: "start-input", source: "start", target: "input" },
+      { id: "input-condition", source: "input", target: "condition" },
+      { id: "start-message", source: "start", target: "message" },
+      { id: "message-condition", source: "message", target: "condition" },
+    ]),
+    [],
+  );
+});
+
+void test("condition graph normalization keeps branch routing metadata", () => {
+  const graph = normalizeChatbotEditorGraph({
+    nodes: [
+      {
+        id: "condition",
+        position: { x: 100, y: 100 },
+        data: {
+          node_type: "condition",
+          config: { variable: "customer_city" },
+          branches: [{ id: "karachi", operator: "equals", value: "karachi" }],
+        },
+      },
+      {
+        id: "end-a",
+        position: { x: 400, y: 20 },
+        data: { node_type: "end", config: {} },
+      },
+      {
+        id: "end-b",
+        position: { x: 400, y: 180 },
+        data: { node_type: "end", config: {} },
+      },
+    ],
+    edges: [
+      {
+        id: "karachi-edge",
+        source: "condition",
+        sourceHandle: "karachi",
+        target: "end-a",
+        data: { kind: "condition", operator: "equals", value: "karachi" },
+      },
+      {
+        id: "fallback-edge",
+        source: "condition",
+        sourceHandle: "default",
+        target: "end-b",
+        data: { kind: "default" },
+      },
+    ],
+  });
+
+  assert.deepEqual(graph.edges[0]?.data, {
+    kind: "condition",
+    operator: "equals",
+    value: "karachi",
+  });
+  assert.equal(graph.edges[0]?.sourceHandle, "karachi");
+  assert.equal(graph.edges[0]?.label, "equals · karachi");
+  assert.equal(graph.edges[1]?.sourceHandle, "default");
+  assert.equal(graph.edges[1]?.label, "Fallback");
+  assert.deepEqual(graph.nodes[0]?.data.branches, [
+    { id: "karachi", operator: "equals", value: "karachi" },
+  ]);
+  assert.equal(
+    getChatbotConditionEdgeLabel("condition", "starts_with", "ka"),
+    "starts with · ka",
   );
 });
 
@@ -231,4 +483,59 @@ void test("message updates, duplication, and deletion preserve protected graph d
     ["start", "end"],
   );
   assert.deepEqual(removeChatbotNode(graph, "message").edges, []);
+});
+
+void test("duplicating a condition regenerates branch handle identifiers", () => {
+  const condition = createChatbotNode(
+    "condition",
+    { x: 200, y: 100 },
+    "condition",
+  );
+  const duplicate = duplicateChatbotNode(condition, "condition-copy");
+
+  assert.ok(duplicate);
+  assert.equal(duplicate.data.branches?.length, 1);
+  assert.notEqual(
+    duplicate.data.branches?.[0]?.id,
+    condition.data.branches?.[0]?.id,
+  );
+});
+
+void test("input and condition editor labels exist in every supported locale", () => {
+  const keys = [
+    "Recopilar respuesta",
+    "Pregunta y guarda una variable",
+    "Condición",
+    "Divide el flujo según una variable",
+    "Pregunta requerida",
+    "Variable requerida",
+    "Pregunta",
+    "Guardar en variable",
+    "Respuesta obligatoria",
+    "Variable a evaluar",
+    "Ramas condicionales",
+    "Agregar rama",
+    "Valor de comparación",
+    "Fallback",
+    "Igual a",
+    "Distinto de",
+    "Contiene",
+    "Comienza con",
+    "Termina con",
+  ];
+
+  for (const language of ["en", "pt", "fr", "sw"]) {
+    const translations = JSON.parse(
+      readFileSync(
+        new URL(`../public/locales/${language}.json`, import.meta.url),
+        "utf8",
+      ),
+    ) as Record<string, string>;
+
+    assert.deepEqual(
+      keys.filter((key) => !translations[key]),
+      [],
+      `${language} is missing chatbot input or condition labels`,
+    );
+  }
 });
