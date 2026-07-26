@@ -18,8 +18,10 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft,
+  Braces,
   Boxes,
   CircleStop,
+  GitBranch,
   Info,
   MessageSquareText,
   MousePointer2,
@@ -30,6 +32,8 @@ import {
   Copy,
   GripVertical,
   LockKeyhole,
+  Plus,
+  TextCursorInput,
   Trash2,
   X,
 } from "lucide-react";
@@ -42,16 +46,26 @@ import {
   useChatbotFlowDraft,
 } from "@/queries/useChatbotFlows";
 import {
+  addChatbotConditionBranch,
+  CHATBOT_INPUT_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  chatbotConditionOperators,
   createChatbotNode,
   duplicateChatbotNode,
   ensureChatbotStartNode,
+  getAvailableChatbotVariables,
+  getChatbotConditionEdgeLabel,
   isValidChatbotConnection,
   normalizeChatbotEditorGraph,
+  removeChatbotConditionBranch,
   removeChatbotNode,
+  type ChatbotConditionOperator,
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  updateChatbotCollectInputConfig,
+  updateChatbotConditionBranch,
+  updateChatbotConditionVariable,
   updateChatbotMessageText,
 } from "@/utils/ChatbotFlowUtils";
 
@@ -146,6 +160,9 @@ function FlowEditorWorkspace({
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const { fitView, screenToFlowPosition } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
+  const availableVariables = selectedNode
+    ? getAvailableChatbotVariables(selectedNode.id, nodes, edges)
+    : [];
 
   const addNode = useCallback(
     (type: ChatbotCoreNodeType, position?: XYPosition) => {
@@ -176,6 +193,24 @@ function FlowEditorWorkspace({
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!isValidChatbotConnection(connection, nodes, edges)) return;
+      const sourceNode = nodes.find((node) => node.id === connection.source);
+      const conditionBranch =
+        sourceNode?.data.node_type === "condition"
+          ? sourceNode.data.branches?.find(
+              (branch) => branch.id === connection.sourceHandle,
+            )
+          : undefined;
+      const edgeData =
+        sourceNode?.data.node_type === "condition" &&
+        connection.sourceHandle !== "default" &&
+        conditionBranch
+          ? {
+              kind: "condition" as const,
+              operator: conditionBranch.operator,
+              value: conditionBranch.value,
+            }
+          : { kind: "default" as const };
+      const isConditionEdge = sourceNode?.data.node_type === "condition";
 
       setEdges((currentEdges) =>
         addEdge(
@@ -183,7 +218,27 @@ function FlowEditorWorkspace({
             ...connection,
             id: `edge-${crypto.randomUUID()}`,
             type: "smoothstep",
-            data: { kind: "default" },
+            data: edgeData,
+            ...(isConditionEdge
+              ? {
+                  label: getChatbotConditionEdgeLabel(
+                    edgeData.kind,
+                    "operator" in edgeData ? edgeData.operator : undefined,
+                    "value" in edgeData ? edgeData.value : undefined,
+                  ),
+                  labelStyle: {
+                    fontSize: 10,
+                    fontWeight: 600,
+                    fill: "var(--foreground)",
+                  },
+                  labelBgStyle: {
+                    fill: "var(--card)",
+                    stroke: "var(--border)",
+                  },
+                  labelBgPadding: [6, 4] as [number, number],
+                  labelBgBorderRadius: 6,
+                }
+              : {}),
           },
           currentEdges,
         ),
@@ -196,7 +251,14 @@ function FlowEditorWorkspace({
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       const type = event.dataTransfer.getData(CHATBOT_NODE_DRAG_TYPE);
-      if (type !== "send_message" && type !== "end") return;
+      if (
+        type !== "send_message" &&
+        type !== "collect_input" &&
+        type !== "condition" &&
+        type !== "end"
+      ) {
+        return;
+      }
 
       addNode(
         type,
@@ -240,6 +302,100 @@ function FlowEditorWorkspace({
       );
     },
     [setNodes],
+  );
+
+  const updateCollectInput = useCallback(
+    (nodeId: string, updates: Record<string, unknown>) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? updateChatbotCollectInputConfig(node, updates)
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateConditionVariable = useCallback(
+    (nodeId: string, variable: string) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? updateChatbotConditionVariable(node, variable)
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const addConditionBranch = useCallback(
+    (nodeId: string) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId ? addChatbotConditionBranch(node) : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateConditionBranch = useCallback(
+    (
+      nodeId: string,
+      branchId: string,
+      updates: { operator?: ChatbotConditionOperator; value?: string },
+    ) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? updateChatbotConditionBranch(node, branchId, updates)
+            : node,
+        ),
+      );
+      setEdges((currentEdges) =>
+        currentEdges.map((edge) => {
+          if (edge.source !== nodeId || edge.sourceHandle !== branchId) {
+            return edge;
+          }
+          const operator =
+            updates.operator ??
+            (typeof edge.data?.operator === "string"
+              ? (edge.data.operator as ChatbotConditionOperator)
+              : "equals");
+          const value =
+            updates.value ??
+            (typeof edge.data?.value === "string" ? edge.data.value : "");
+          return {
+            ...edge,
+            data: { ...edge.data, kind: "condition", operator, value },
+            label: getChatbotConditionEdgeLabel("condition", operator, value),
+          };
+        }),
+      );
+    },
+    [setEdges, setNodes],
+  );
+
+  const removeConditionBranch = useCallback(
+    (nodeId: string, branchId: string) => {
+      const conditionNode = nodes.find((node) => node.id === nodeId);
+      if ((conditionNode?.data.branches?.length ?? 0) <= 1) return;
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? removeChatbotConditionBranch(node, branchId)
+            : node,
+        ),
+      );
+      setEdges((currentEdges) =>
+        currentEdges.filter(
+          (edge) => !(edge.source === nodeId && edge.sourceHandle === branchId),
+        ),
+      );
+    },
+    [nodes, setEdges, setNodes],
   );
 
   return (
@@ -402,7 +558,7 @@ function FlowEditorWorkspace({
                   </h2>
                   <p className="mt-[5px] text-[12px] leading-relaxed text-muted-foreground">
                     {t(
-                      "Arrastrá Enviar mensaje o Fin desde la biblioteca y conectalo con Inicio.",
+                      "Arrastrá un nodo desde la biblioteca y conectalo con Inicio.",
                     )}
                   </p>
                 </div>
@@ -415,6 +571,12 @@ function FlowEditorWorkspace({
           open={mobilePanel === "inspector"}
           onClose={() => setMobilePanel(null)}
           onMessageTextChange={updateMessageText}
+          onCollectInputChange={updateCollectInput}
+          availableVariables={availableVariables}
+          onConditionVariableChange={updateConditionVariable}
+          onConditionBranchAdd={addConditionBranch}
+          onConditionBranchChange={updateConditionBranch}
+          onConditionBranchRemove={removeConditionBranch}
           onDuplicate={duplicateNode}
           onDelete={deleteNode}
         />
@@ -446,6 +608,20 @@ function NodeLibrary({
       label: t("Enviar mensaje"),
       description: t("Envía un mensaje de texto"),
       icon: MessageSquareText,
+      locked: false,
+    },
+    {
+      type: "collect_input" as const,
+      label: t("Recopilar respuesta"),
+      description: t("Pregunta y guarda una variable"),
+      icon: TextCursorInput,
+      locked: false,
+    },
+    {
+      type: "condition" as const,
+      label: t("Condición"),
+      description: t("Divide el flujo según una variable"),
+      icon: GitBranch,
       locked: false,
     },
     {
@@ -528,6 +704,12 @@ function NodeInspector({
   open,
   onClose,
   onMessageTextChange,
+  onCollectInputChange,
+  availableVariables,
+  onConditionVariableChange,
+  onConditionBranchAdd,
+  onConditionBranchChange,
+  onConditionBranchRemove,
   onDuplicate,
   onDelete,
 }: {
@@ -535,6 +717,19 @@ function NodeInspector({
   open: boolean;
   onClose: () => void;
   onMessageTextChange: (nodeId: string, text: string) => void;
+  onCollectInputChange: (
+    nodeId: string,
+    updates: Record<string, unknown>,
+  ) => void;
+  availableVariables: string[];
+  onConditionVariableChange: (nodeId: string, variable: string) => void;
+  onConditionBranchAdd: (nodeId: string) => void;
+  onConditionBranchChange: (
+    nodeId: string,
+    branchId: string,
+    updates: { operator?: ChatbotConditionOperator; value?: string },
+  ) => void;
+  onConditionBranchRemove: (nodeId: string, branchId: string) => void;
   onDuplicate: (nodeId: string) => void;
   onDelete: (nodeId: string) => void;
 }) {
@@ -542,6 +737,8 @@ function NodeInspector({
   const nodeType = node?.data.node_type ?? t("Nodo");
   const isStart = nodeType === "start";
   const isMessage = nodeType === "send_message";
+  const isCollectInput = nodeType === "collect_input";
+  const isCondition = nodeType === "condition";
   const messageText =
     isMessage && typeof node?.data.config.text === "string"
       ? node.data.config.text
@@ -567,7 +764,7 @@ function NodeInspector({
         </button>
       </div>
       {node ? (
-        <div className="space-y-[14px] p-[15px]">
+        <div className="flex-1 space-y-[14px] overflow-y-auto p-[15px]">
           <div>
             <div className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
               {t("Nodo seleccionado")}
@@ -627,6 +824,26 @@ function NodeInspector({
                 </span>
               </span>
             </label>
+          ) : isCollectInput ? (
+            <CollectInputInspector
+              node={node}
+              onChange={(updates) => onCollectInputChange(node.id, updates)}
+            />
+          ) : isCondition ? (
+            <ConditionInspector
+              node={node}
+              availableVariables={availableVariables}
+              onVariableChange={(variable) =>
+                onConditionVariableChange(node.id, variable)
+              }
+              onBranchAdd={() => onConditionBranchAdd(node.id)}
+              onBranchChange={(branchId, updates) =>
+                onConditionBranchChange(node.id, branchId, updates)
+              }
+              onBranchRemove={(branchId) =>
+                onConditionBranchRemove(node.id, branchId)
+              }
+            />
           ) : (
             <p className="rounded-lg bg-muted/45 p-[10px] text-[11px] leading-relaxed text-muted-foreground">
               {isStart
@@ -672,6 +889,304 @@ function NodeInspector({
       )}
     </aside>
   );
+}
+
+function CollectInputInspector({
+  node,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  onChange: (updates: Record<string, unknown>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const prompt =
+    typeof node.data.config.prompt === "string" ? node.data.config.prompt : "";
+  const variable =
+    typeof node.data.config.variable === "string"
+      ? node.data.config.variable
+      : "";
+  const required = node.data.config.required !== false;
+  const minLength =
+    typeof node.data.config.min_length === "number"
+      ? node.data.config.min_length
+      : undefined;
+  const maxLength =
+    typeof node.data.config.max_length === "number"
+      ? node.data.config.max_length
+      : undefined;
+  const variableIsValid = /^[a-z][a-z0-9_]*$/.test(variable);
+  const lengthsAreValid =
+    minLength === undefined ||
+    maxLength === undefined ||
+    minLength <= maxLength;
+
+  return (
+    <div className="space-y-[13px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">{t("Pregunta")}</span>
+        <textarea
+          value={prompt}
+          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+          rows={4}
+          aria-invalid={!prompt.trim()}
+          onChange={(event) => onChange({ prompt: event.target.value })}
+          placeholder={t("Escribí la pregunta que recibirá el contacto")}
+          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
+            prompt.trim() ? "border-border" : "border-destructive"
+          }`}
+        />
+        {!prompt.trim() && (
+          <span className="mt-[4px] block text-[10px] text-destructive">
+            {t("La pregunta es obligatoria")}
+          </span>
+        )}
+      </label>
+
+      <label className="block">
+        <span className="flex items-center gap-[5px] text-[11px] font-medium">
+          <Braces className="h-[12px] w-[12px] text-amber-500" />
+          {t("Guardar en variable")}
+        </span>
+        <input
+          value={variable}
+          maxLength={64}
+          aria-invalid={!variableIsValid}
+          onChange={(event) => onChange({ variable: event.target.value })}
+          placeholder="customer_name"
+          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[10px] font-mono text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
+            variableIsValid ? "border-border" : "border-destructive"
+          }`}
+        />
+        {!variableIsValid && (
+          <span className="mt-[4px] block text-[10px] leading-relaxed text-destructive">
+            {t(
+              "Usá minúsculas, números y guiones bajos; comenzá con una letra.",
+            )}
+          </span>
+        )}
+      </label>
+
+      <label className="flex items-center justify-between gap-[12px] rounded-lg border border-border bg-background/45 p-[10px]">
+        <span>
+          <span className="block text-[11px] font-medium">
+            {t("Respuesta obligatoria")}
+          </span>
+          <span className="mt-[2px] block text-[10px] text-muted-foreground">
+            {t("El flujo espera una respuesta no vacía.")}
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          checked={required}
+          onChange={(event) => onChange({ required: event.target.checked })}
+          className="h-[16px] w-[16px] accent-primary"
+        />
+      </label>
+
+      <div>
+        <div className="text-[11px] font-medium">
+          {t("Longitud de respuesta")}
+        </div>
+        <div className="mt-[6px] grid grid-cols-2 gap-[8px]">
+          <label>
+            <span className="text-[10px] text-muted-foreground">
+              {t("Mínima")}
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={CHATBOT_INPUT_MAX_LENGTH}
+              value={minLength ?? ""}
+              onChange={(event) =>
+                onChange({
+                  min_length:
+                    event.target.value === ""
+                      ? undefined
+                      : Number(event.target.value),
+                })
+              }
+              className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
+            />
+          </label>
+          <label>
+            <span className="text-[10px] text-muted-foreground">
+              {t("Máxima")}
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={CHATBOT_INPUT_MAX_LENGTH}
+              value={maxLength ?? ""}
+              onChange={(event) =>
+                onChange({
+                  max_length:
+                    event.target.value === ""
+                      ? undefined
+                      : Number(event.target.value),
+                })
+              }
+              className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
+            />
+          </label>
+        </div>
+        {!lengthsAreValid && (
+          <span className="mt-[5px] block text-[10px] text-destructive">
+            {t("La longitud máxima debe ser mayor o igual que la mínima.")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ConditionInspector({
+  node,
+  availableVariables,
+  onVariableChange,
+  onBranchAdd,
+  onBranchChange,
+  onBranchRemove,
+}: {
+  node: ChatbotFlowNodeType;
+  availableVariables: string[];
+  onVariableChange: (variable: string) => void;
+  onBranchAdd: () => void;
+  onBranchChange: (
+    branchId: string,
+    updates: { operator?: ChatbotConditionOperator; value?: string },
+  ) => void;
+  onBranchRemove: (branchId: string) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const variable =
+    typeof node.data.config.variable === "string"
+      ? node.data.config.variable
+      : "";
+  const variableIsAvailable = availableVariables.includes(variable);
+  const branches = node.data.branches ?? [];
+
+  return (
+    <div className="space-y-[14px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Variable a evaluar")}
+        </span>
+        <select
+          value={variableIsAvailable ? variable : ""}
+          onChange={(event) => onVariableChange(event.target.value)}
+          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
+            variableIsAvailable ? "border-border" : "border-destructive"
+          }`}
+        >
+          <option value="">
+            {availableVariables.length > 0
+              ? t("Seleccioná una variable")
+              : t("Conectá primero un nodo Recopilar respuesta")}
+          </option>
+          {availableVariables.map((availableVariable) => (
+            <option key={availableVariable} value={availableVariable}>
+              {availableVariable}
+            </option>
+          ))}
+        </select>
+        {!variableIsAvailable && (
+          <span className="mt-[4px] block text-[10px] leading-relaxed text-destructive">
+            {t(
+              "La condición solo puede usar variables recopiladas en todos los caminos anteriores.",
+            )}
+          </span>
+        )}
+      </label>
+
+      <div>
+        <div className="flex items-center justify-between gap-[8px]">
+          <div>
+            <div className="text-[11px] font-medium">
+              {t("Ramas condicionales")}
+            </div>
+            <div className="mt-[2px] text-[10px] text-muted-foreground">
+              {t("Conectá cada salida desde su punto en el nodo.")}
+            </div>
+          </div>
+          <button
+            type="button"
+            title={t("Agregar rama")}
+            aria-label={t("Agregar rama")}
+            onClick={onBranchAdd}
+            className="flex h-[28px] w-[28px] items-center justify-center rounded-md border border-border hover:bg-muted"
+          >
+            <Plus className="h-[13px] w-[13px]" />
+          </button>
+        </div>
+
+        <div className="mt-[8px] space-y-[8px]">
+          {branches.map((branch, index) => (
+            <div
+              key={branch.id}
+              className="rounded-lg border border-border bg-background/45 p-[9px]"
+            >
+              <div className="flex items-center justify-between gap-[8px]">
+                <span className="text-[10px] font-semibold text-orange-500">
+                  {t("Rama")} {index + 1}
+                </span>
+                <button
+                  type="button"
+                  disabled={branches.length <= 1}
+                  title={t("Eliminar rama")}
+                  aria-label={`${t("Eliminar rama")} ${index + 1}`}
+                  onClick={() => onBranchRemove(branch.id)}
+                  className="flex h-[24px] w-[24px] items-center justify-center rounded text-destructive hover:bg-destructive/10 disabled:opacity-30"
+                >
+                  <Trash2 className="h-[12px] w-[12px]" />
+                </button>
+              </div>
+              <select
+                value={branch.operator}
+                onChange={(event) =>
+                  onBranchChange(branch.id, {
+                    operator: event.target.value as ChatbotConditionOperator,
+                  })
+                }
+                className="mt-[6px] h-[34px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+              >
+                {chatbotConditionOperators.map((operator) => (
+                  <option key={operator} value={operator}>
+                    {getConditionOperatorLabel(operator, t)}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={branch.value}
+                onChange={(event) =>
+                  onBranchChange(branch.id, { value: event.target.value })
+                }
+                placeholder={t("Valor de comparación")}
+                className="mt-[6px] h-[34px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border bg-muted/35 p-[10px]">
+        <div className="text-[10px] font-semibold">{t("Fallback")}</div>
+        <div className="mt-[3px] text-[10px] leading-relaxed text-muted-foreground">
+          {t("Esta salida se usa cuando ninguna rama condicional coincide.")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getConditionOperatorLabel(
+  operator: ChatbotConditionOperator,
+  t: (value: string) => string,
+) {
+  if (operator === "equals") return t("Igual a");
+  if (operator === "not_equals") return t("Distinto de");
+  if (operator === "contains") return t("Contiene");
+  if (operator === "starts_with") return t("Comienza con");
+  return t("Termina con");
 }
 
 function EditorLoading({ label }: { label: string }) {

@@ -2,11 +2,35 @@ import type { Edge, Node, Viewport, XYPosition } from "@xyflow/react";
 
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
+export const CHATBOT_INPUT_MAX_LENGTH = 4096;
 
-export type ChatbotCoreNodeType = "start" | "send_message" | "end";
+export type ChatbotCoreNodeType =
+  | "start"
+  | "send_message"
+  | "collect_input"
+  | "condition"
+  | "end";
+
+export type ChatbotConditionOperator =
+  | "equals"
+  | "not_equals"
+  | "contains"
+  | "starts_with"
+  | "ends_with";
+
+export type ChatbotConditionBranch = {
+  id: string;
+  operator: ChatbotConditionOperator;
+  value: string;
+};
 
 export type ChatbotNodeConfig = {
   text?: string;
+  prompt?: string;
+  variable?: string;
+  required?: boolean;
+  min_length?: number;
+  max_length?: number;
   [key: string]: unknown;
 };
 
@@ -15,11 +39,17 @@ export type ChatbotNodeData = {
   nodeType: string;
   label: string;
   config: ChatbotNodeConfig;
+  branches?: ChatbotConditionBranch[];
   [key: string]: unknown;
 };
 
 export type ChatbotFlowNode = Node<ChatbotNodeData>;
-export type ChatbotFlowEdge = Edge<{ kind: string; [key: string]: unknown }>;
+export type ChatbotFlowEdge = Edge<{
+  kind: string;
+  operator?: ChatbotConditionOperator;
+  value?: string;
+  [key: string]: unknown;
+}>;
 
 export function isChatbotWorkspacePath(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
@@ -74,8 +104,19 @@ const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
   START: "start",
   MESSAGE: "send_message",
   SEND_MESSAGE: "send_message",
+  INPUT: "collect_input",
+  COLLECT_INPUT: "collect_input",
+  CONDITION: "condition",
   END: "end",
 };
+
+export const chatbotConditionOperators: ChatbotConditionOperator[] = [
+  "equals",
+  "not_equals",
+  "contains",
+  "starts_with",
+  "ends_with",
+];
 
 export function normalizeChatbotNodeType(value: unknown): string | undefined {
   if (typeof value !== "string" || !value.trim()) return undefined;
@@ -86,17 +127,39 @@ export function normalizeChatbotNodeType(value: unknown): string | undefined {
 export function isChatbotCoreNodeType(
   value: unknown,
 ): value is ChatbotCoreNodeType {
-  return value === "start" || value === "send_message" || value === "end";
+  return (
+    value === "start" ||
+    value === "send_message" ||
+    value === "collect_input" ||
+    value === "condition" ||
+    value === "end"
+  );
 }
 
 export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "start") return "Inicio";
   if (type === "send_message") return "Enviar mensaje";
+  if (type === "collect_input") return "Recopilar respuesta";
+  if (type === "condition") return "Condición";
   return "Fin";
 }
 
 function createStableNodeId(type: ChatbotCoreNodeType) {
   return `${type}-${crypto.randomUUID()}`;
+}
+
+function createConditionBranchId() {
+  return `branch-${crypto.randomUUID()}`;
+}
+
+export function createChatbotConditionBranch(
+  overrides: Partial<ChatbotConditionBranch> = {},
+): ChatbotConditionBranch {
+  return {
+    id: overrides.id ?? createConditionBranchId(),
+    operator: overrides.operator ?? "equals",
+    value: overrides.value ?? "",
+  };
 }
 
 export function createChatbotNode(
@@ -113,7 +176,17 @@ export function createChatbotNode(
       node_type: type,
       nodeType: type,
       label: getChatbotNodeDefaultLabel(type),
-      config: type === "send_message" ? { text: "" } : {},
+      config:
+        type === "send_message"
+          ? { text: "" }
+          : type === "collect_input"
+            ? { prompt: "", variable: "", required: true }
+            : type === "condition"
+              ? { variable: "" }
+              : {},
+      ...(type === "condition"
+        ? { branches: [createChatbotConditionBranch()] }
+        : {}),
     },
   };
 }
@@ -152,6 +225,95 @@ export function updateChatbotMessageText(
   };
 }
 
+export function updateChatbotCollectInputConfig(
+  node: ChatbotFlowNode,
+  updates: Partial<ChatbotNodeConfig>,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "collect_input") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: {
+        ...node.data.config,
+        ...updates,
+      },
+    },
+  };
+}
+
+export function updateChatbotConditionVariable(
+  node: ChatbotFlowNode,
+  variable: string,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "condition") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: {
+        ...node.data.config,
+        variable,
+      },
+    },
+  };
+}
+
+export function addChatbotConditionBranch(
+  node: ChatbotFlowNode,
+  branch = createChatbotConditionBranch(),
+): ChatbotFlowNode {
+  if (node.data.node_type !== "condition") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      branches: [...(node.data.branches ?? []), branch],
+    },
+  };
+}
+
+export function updateChatbotConditionBranch(
+  node: ChatbotFlowNode,
+  branchId: string,
+  updates: Partial<Pick<ChatbotConditionBranch, "operator" | "value">>,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "condition") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      branches: (node.data.branches ?? []).map((branch) =>
+        branch.id === branchId ? { ...branch, ...updates } : branch,
+      ),
+    },
+  };
+}
+
+export function removeChatbotConditionBranch(
+  node: ChatbotFlowNode,
+  branchId: string,
+): ChatbotFlowNode {
+  if (
+    node.data.node_type !== "condition" ||
+    (node.data.branches?.length ?? 0) <= 1
+  ) {
+    return node;
+  }
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      branches: node.data.branches?.filter((branch) => branch.id !== branchId),
+    },
+  };
+}
+
 export function duplicateChatbotNode(
   node: ChatbotFlowNode,
   id = createStableNodeId(
@@ -173,6 +335,16 @@ export function duplicateChatbotNode(
     data: {
       ...node.data,
       config: { ...node.data.config },
+      ...(node.data.node_type === "condition"
+        ? {
+            branches: (node.data.branches ?? []).map((branch) =>
+              createChatbotConditionBranch({
+                operator: branch.operator,
+                value: branch.value,
+              }),
+            ),
+          }
+        : {}),
     },
   };
 }
@@ -218,7 +390,11 @@ function wouldCreateCycle(
 }
 
 export function isValidChatbotConnection(
-  connection: { source: string | null; target: string | null },
+  connection: {
+    source: string | null;
+    target: string | null;
+    sourceHandle?: string | null;
+  },
   nodes: ReadonlyArray<ChatbotFlowNode>,
   edges: ReadonlyArray<Edge>,
 ) {
@@ -233,17 +409,148 @@ export function isValidChatbotConnection(
 
   if (
     (sourceNode.data.node_type === "start" ||
-      sourceNode.data.node_type === "send_message") &&
+      sourceNode.data.node_type === "send_message" ||
+      sourceNode.data.node_type === "collect_input") &&
     edges.some((edge) => edge.source === source)
   ) {
     return false;
   }
 
-  if (edges.some((edge) => edge.source === source && edge.target === target)) {
+  if (sourceNode.data.node_type === "condition") {
+    const validHandle =
+      connection.sourceHandle === "default" ||
+      sourceNode.data.branches?.some(
+        (branch) => branch.id === connection.sourceHandle,
+      );
+    if (!validHandle) return false;
+    if (
+      edges.some(
+        (edge) =>
+          edge.source === source &&
+          edge.sourceHandle === connection.sourceHandle,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (
+    edges.some(
+      (edge) =>
+        edge.source === source &&
+        edge.target === target &&
+        edge.sourceHandle === connection.sourceHandle,
+    )
+  ) {
     return false;
   }
 
   return !wouldCreateCycle(source, target, edges);
+}
+
+function intersectVariableSets(sets: ReadonlyArray<ReadonlySet<string>>) {
+  if (sets.length === 0) return new Set<string>();
+  const intersection = new Set(sets[0]);
+  for (const variable of intersection) {
+    if (sets.slice(1).some((set) => !set.has(variable))) {
+      intersection.delete(variable);
+    }
+  }
+  return intersection;
+}
+
+export function getAvailableChatbotVariables(
+  nodeId: string,
+  nodes: ReadonlyArray<ChatbotFlowNode>,
+  edges: ReadonlyArray<Edge>,
+) {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const incoming = new Map<string, string[]>();
+  edges.forEach((edge) => {
+    const sources = incoming.get(edge.target) ?? [];
+    sources.push(edge.source);
+    incoming.set(edge.target, sources);
+  });
+  const memo = new Map<string, ReadonlySet<string>>();
+  const active = new Set<string>();
+
+  const variablesAfterNode = (currentNodeId: string): ReadonlySet<string> => {
+    const cached = memo.get(currentNodeId);
+    if (cached) return cached;
+    if (active.has(currentNodeId)) return new Set();
+    active.add(currentNodeId);
+
+    const predecessorSets = (incoming.get(currentNodeId) ?? []).map(
+      variablesAfterNode,
+    );
+    const available = intersectVariableSets(predecessorSets);
+    const currentNode = nodeById.get(currentNodeId);
+    const variable = currentNode?.data.config.variable;
+    if (
+      currentNode?.data.node_type === "collect_input" &&
+      typeof variable === "string" &&
+      /^[a-z][a-z0-9_]*$/.test(variable)
+    ) {
+      available.add(variable);
+    }
+
+    active.delete(currentNodeId);
+    memo.set(currentNodeId, available);
+    return available;
+  };
+
+  const predecessorSets = (incoming.get(nodeId) ?? []).map(variablesAfterNode);
+  return [...intersectVariableSets(predecessorSets)].sort();
+}
+
+export function getChatbotConditionEdgeLabel(
+  kind: string,
+  operator?: string,
+  value?: string,
+) {
+  if (kind === "default") return "Fallback";
+  const readableOperator = (operator ?? "equals").replaceAll("_", " ");
+  return value ? `${readableOperator} · ${value}` : readableOperator;
+}
+
+function isConditionOperator(
+  value: unknown,
+): value is ChatbotConditionOperator {
+  return (
+    typeof value === "string" &&
+    chatbotConditionOperators.includes(value as ChatbotConditionOperator)
+  );
+}
+
+function normalizeConditionBranches(
+  value: unknown,
+  nodeId: string,
+): ChatbotConditionBranch[] {
+  const seenIds = new Set<string>();
+  const branches = (Array.isArray(value) ? value : [])
+    .filter(isRecord)
+    .flatMap((branch): ChatbotConditionBranch[] => {
+      if (
+        typeof branch.id !== "string" ||
+        !branch.id ||
+        seenIds.has(branch.id) ||
+        !isConditionOperator(branch.operator)
+      ) {
+        return [];
+      }
+      seenIds.add(branch.id);
+      return [
+        {
+          id: branch.id,
+          operator: branch.operator,
+          value: typeof branch.value === "string" ? branch.value : "",
+        },
+      ];
+    });
+
+  return branches.length > 0
+    ? branches
+    : [createChatbotConditionBranch({ id: `${nodeId}-branch-1` })];
 }
 
 export function normalizeChatbotEditorGraph(
@@ -294,6 +601,14 @@ export function normalizeChatbotEditorGraph(
             nodeType,
             label,
             config,
+            ...(nodeType === "condition"
+              ? {
+                  branches: normalizeConditionBranches(
+                    sourceData.branches,
+                    node.id,
+                  ),
+                }
+              : {}),
           },
           draggable: node.draggable !== false,
           selectable: node.selectable !== false,
@@ -319,27 +634,91 @@ export function normalizeChatbotEditorGraph(
       }
 
       seenEdgeIds.add(edge.id);
+      const sourceNode = nodes.find((node) => node.id === edge.source);
+      const sourceIsCondition = sourceNode?.data.node_type === "condition";
+      const sourceData = isRecord(edge.data) ? edge.data : {};
+      const kind = sourceData.kind === "condition" ? "condition" : "default";
+      const operator = isConditionOperator(sourceData.operator)
+        ? sourceData.operator
+        : "equals";
+      const edgeValue =
+        typeof sourceData.value === "string" ? sourceData.value : "";
+      const sourceHandle = sourceIsCondition
+        ? kind === "default"
+          ? "default"
+          : typeof edge.sourceHandle === "string"
+            ? edge.sourceHandle
+            : `${edge.id}-branch`
+        : typeof edge.sourceHandle === "string"
+          ? edge.sourceHandle
+          : null;
+
       return [
         {
           id: edge.id,
           source: edge.source,
           target: edge.target,
-          sourceHandle:
-            typeof edge.sourceHandle === "string" ? edge.sourceHandle : null,
+          sourceHandle,
           targetHandle:
             typeof edge.targetHandle === "string" ? edge.targetHandle : null,
           animated: edge.animated === true,
           type: typeof edge.type === "string" ? edge.type : "smoothstep",
           data: {
-            ...(isRecord(edge.data) ? edge.data : {}),
-            kind:
-              isRecord(edge.data) && typeof edge.data.kind === "string"
-                ? edge.data.kind
-                : "default",
+            ...sourceData,
+            kind,
+            ...(kind === "condition" ? { operator, value: edgeValue } : {}),
           },
+          ...(sourceIsCondition
+            ? {
+                label: getChatbotConditionEdgeLabel(kind, operator, edgeValue),
+                labelStyle: {
+                  fontSize: 10,
+                  fontWeight: 600,
+                  fill: "var(--foreground)",
+                },
+                labelBgStyle: {
+                  fill: "var(--card)",
+                  stroke: "var(--border)",
+                },
+                labelBgPadding: [6, 4] as [number, number],
+                labelBgBorderRadius: 6,
+              }
+            : {}),
         },
       ];
     });
+
+  const normalizedNodes = nodes.map((node) => {
+    if (node.data.node_type !== "condition") return node;
+
+    const branchById = new Map(
+      (node.data.branches ?? []).map((branch) => [branch.id, branch]),
+    );
+    edges
+      .filter(
+        (edge) =>
+          edge.source === node.id &&
+          edge.data?.kind === "condition" &&
+          typeof edge.sourceHandle === "string",
+      )
+      .forEach((edge) => {
+        branchById.set(edge.sourceHandle!, {
+          id: edge.sourceHandle!,
+          operator: isConditionOperator(edge.data?.operator)
+            ? edge.data.operator
+            : "equals",
+          value: typeof edge.data?.value === "string" ? edge.data.value : "",
+        });
+      });
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        branches: [...branchById.values()],
+      },
+    };
+  });
 
   const viewport = isRecord(value.viewport) ? value.viewport : undefined;
   const normalizedViewport =
@@ -351,5 +730,5 @@ export function normalizeChatbotEditorGraph(
       ? { x: viewport.x, y: viewport.y, zoom: viewport.zoom }
       : undefined;
 
-  return { nodes, edges, viewport: normalizedViewport };
+  return { nodes: normalizedNodes, edges, viewport: normalizedViewport };
 }
