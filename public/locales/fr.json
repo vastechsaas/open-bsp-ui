@@ -794,5 +794,19 @@
   "Seleccioná un nodo": "Sélectionnez un nœud",
   "Sus datos básicos aparecerán en este panel.": "Ses informations de base apparaîtront dans ce panneau.",
   "Inicio": "Début",
-  "Fin": "Fin"
+  "Fin": "Fin",
+  "Agregá tu primer paso": "Ajoutez votre première étape",
+  "Arrastrá Enviar mensaje o Fin desde la biblioteca y conectalo con Inicio.": "Faites glisser Envoyer un message ou Fin depuis la bibliothèque et connectez-le à Début.",
+  "Punto de entrada único": "Point d’entrée unique",
+  "Envía un mensaje de texto": "Envoie un message texte",
+  "Finaliza la conversación": "Termine la conversation",
+  "Arrastrá un nodo al lienzo o hacé clic para agregarlo.": "Faites glisser un nœud sur le canevas ou cliquez pour l’ajouter.",
+  "Inicio es único y está protegido. Los cambios permanecen locales hasta habilitar el guardado.": "Début est unique et protégé. Les modifications restent locales jusqu’à l’activation de l’enregistrement.",
+  "Mensaje requerido": "Message requis",
+  "Texto del mensaje": "Texte du message",
+  "Escribí el mensaje que recibirá el contacto": "Écrivez le message que le contact recevra",
+  "El mensaje es obligatorio": "Le message est obligatoire",
+  "Mensaje listo": "Message prêt",
+  "Inicio recibe la conversación y debe conectarse con un único paso siguiente.": "Début reçoit la conversation et doit être connecté à une seule étape suivante.",
+  "Fin completa la conversación y no permite conexiones salientes.": "Fin termine la conversation et n’autorise aucune connexion sortante."
 }
