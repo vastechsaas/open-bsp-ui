@@ -72,6 +72,8 @@ export const queryKeys = {
     all: (orgId: NullableId) => [orgId, "chatbot_flows"] as const,
     page: (orgId: NullableId, params: object) =>
       [orgId, "chatbot_flows", "page", params] as const,
+    draft: (orgId: NullableId, flowId: NullableId) =>
+      [orgId, "chatbot_flows", flowId, "draft"] as const,
   },
   members: {
     all: (orgId: NullableId) => [orgId, "members"] as const,

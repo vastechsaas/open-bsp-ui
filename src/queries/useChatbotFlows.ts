@@ -11,6 +11,25 @@ import { queryKeys } from "./queryKeys";
 export type ChatbotFlowListRow =
   Database["public"]["Functions"]["list_chatbot_flows_page"]["Returns"][number];
 
+export type ChatbotFlowDraft = Pick<
+  Database["public"]["Tables"]["chatbot_flow_versions"]["Row"],
+  | "id"
+  | "flow_id"
+  | "version"
+  | "status"
+  | "editor_graph"
+  | "created_at"
+  | "updated_at"
+>;
+
+export type ChatbotFlowEditorData = {
+  flow: Pick<
+    Database["public"]["Tables"]["chatbot_flows"]["Row"],
+    "id" | "name" | "status"
+  >;
+  draft: ChatbotFlowDraft;
+};
+
 export type ChatbotFlowPageParams = DataTablePageParams & {
   status?: ChatbotFlowStatus;
 };
@@ -40,11 +59,15 @@ type DuplicateChatbotFlowInput = {
 
 async function invokeChatbotManagement<T>(
   path: string,
-  body: Record<string, string>,
+  body?: Record<string, unknown>,
+  method: "GET" | "POST" = "POST",
 ) {
   const { data, error } = await supabase.functions.invoke<T>(
     `chatbot-management/${path}`,
-    { method: "POST", body },
+    {
+      method,
+      ...(body ? { body } : {}),
+    },
   );
 
   if (error || !data) {
@@ -52,6 +75,37 @@ async function invokeChatbotManagement<T>(
   }
 
   return data;
+}
+
+export function useChatbotFlowDraft(flowId: string, enabled = true) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery<ChatbotFlowEditorData>({
+    queryKey: queryKeys.chatbotFlows.draft(orgId, flowId),
+    queryFn: async () => {
+      const [flowResult, draft] = await Promise.all([
+        supabase
+          .from("chatbot_flows")
+          .select("id, name, status")
+          .eq("organization_id", orgId!)
+          .eq("id", flowId)
+          .throwOnError()
+          .single(),
+        invokeChatbotManagement<ChatbotFlowDraft>(
+          `flows/${flowId}/draft?organization_id=${encodeURIComponent(orgId!)}`,
+          undefined,
+          "GET",
+        ),
+      ]);
+
+      if (!flowResult.data) {
+        throw new Error("Chatbot flow not found");
+      }
+
+      return { flow: flowResult.data, draft };
+    },
+    enabled: !!orgId && !!flowId && enabled,
+  });
 }
 
 export function useChatbotFlows(params: ChatbotFlowPageParams) {
