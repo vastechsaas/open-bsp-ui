@@ -5,6 +5,7 @@ import {
   addChatbotConditionBranch,
   chatbotConditionOperators,
   ChatbotDraftConflictError,
+  ChatbotPublishValidationError,
   CHATBOT_MESSAGE_MAX_LENGTH,
   createChatbotManagementError,
   createChatbotNode,
@@ -14,6 +15,7 @@ import {
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorValidationFingerprint,
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
@@ -241,6 +243,14 @@ void test("draft fingerprints ignore selection but detect authored and viewport 
     getChatbotEditorGraphFingerprint(base),
     getChatbotEditorGraphFingerprint(panned),
   );
+  assert.equal(
+    getChatbotEditorValidationFingerprint(base),
+    getChatbotEditorValidationFingerprint(panned),
+  );
+  assert.notEqual(
+    getChatbotEditorValidationFingerprint(base),
+    getChatbotEditorValidationFingerprint(moved),
+  );
 });
 
 void test("draft save status prioritizes active saves and concurrency conflicts", () => {
@@ -308,6 +318,33 @@ void test("draft save status prioritizes active saves and concurrency conflicts"
     createChatbotManagementError(500, { message: "Save failed" }).message,
     "Save failed",
   );
+});
+
+void test("publish validation errors preserve structured node and edge issues", () => {
+  const error = createChatbotManagementError(422, {
+    message: "Draft is invalid",
+    issues: [
+      {
+        code: "invalid_start_routing",
+        path: ["nodes", 0],
+        message: "Start must have one outgoing edge",
+        node_id: "start",
+      },
+      {
+        code: "dangling_edge_target",
+        path: ["edges", 0, "target"],
+        message: "Target does not exist",
+        edge_id: "edge-1",
+      },
+      { code: "malformed" },
+    ],
+  });
+
+  assert.ok(error instanceof ChatbotPublishValidationError);
+  assert.equal(error.message, "Draft is invalid");
+  assert.equal(error.issues.length, 2);
+  assert.equal(error.issues[0]?.node_id, "start");
+  assert.equal(error.issues[1]?.edge_id, "edge-1");
 });
 
 void test("chatbot editor adds exactly one protected start to an empty graph", () => {
@@ -704,6 +741,19 @@ void test("input and condition editor labels exist in every supported locale", (
     "Salir sin guardar",
     "Descartar y recargar",
     "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
+    "El flujo es válido",
+    "El flujo necesita correcciones",
+    "¿Publicar esta versión?",
+    "Publicar",
+    "Validar flujo",
+    "Versiones",
+    "Borrador actual",
+    "Versión publicada",
+    "Vista de solo lectura",
+    "Guardá los cambios antes de publicar",
+    "Ver resultado",
+    "La versión se publicó correctamente.",
+    "Ya podés continuar editando el siguiente borrador.",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

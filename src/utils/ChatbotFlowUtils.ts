@@ -99,6 +99,18 @@ export type ChatbotDraftSaveStatus =
   | "error"
   | "conflict";
 
+export type ChatbotFlowValidationIssue = {
+  code: string;
+  path: Array<string | number>;
+  message: string;
+  node_id?: string;
+  edge_id?: string;
+};
+
+export type ChatbotFlowValidationResult =
+  | { valid: true; definition: unknown }
+  | { valid: false; issues: ChatbotFlowValidationIssue[] };
+
 export class ChatbotDraftConflictError extends Error {
   currentUpdatedAt: string | null;
 
@@ -109,8 +121,31 @@ export class ChatbotDraftConflictError extends Error {
   }
 }
 
+export class ChatbotPublishValidationError extends Error {
+  issues: ChatbotFlowValidationIssue[];
+
+  constructor(message: string, issues: ChatbotFlowValidationIssue[] = []) {
+    super(message);
+    this.name = "ChatbotPublishValidationError";
+    this.issues = issues;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function isChatbotFlowValidationIssue(
+  value: unknown,
+): value is ChatbotFlowValidationIssue {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.code === "string" &&
+    Array.isArray(value.path) &&
+    typeof value.message === "string" &&
+    (value.node_id === undefined || typeof value.node_id === "string") &&
+    (value.edge_id === undefined || typeof value.edge_id === "string")
+  );
 }
 
 export function createChatbotManagementError(
@@ -128,6 +163,14 @@ export function createChatbotManagementError(
       typeof body.current_updated_at === "string"
         ? body.current_updated_at
         : null,
+    );
+  }
+  if (status === 422) {
+    return new ChatbotPublishValidationError(
+      message,
+      Array.isArray(body.issues)
+        ? body.issues.filter(isChatbotFlowValidationIssue)
+        : [],
     );
   }
   return new Error(message);
@@ -206,6 +249,16 @@ export function serializeChatbotEditorGraph(
 
 export function getChatbotEditorGraphFingerprint(graph: ChatbotEditorGraph) {
   return JSON.stringify(serializeChatbotEditorGraph(graph));
+}
+
+export function getChatbotEditorValidationFingerprint(
+  graph: ChatbotEditorGraph,
+) {
+  const serialized = serializeChatbotEditorGraph(graph);
+  return JSON.stringify({
+    nodes: serialized.nodes,
+    edges: serialized.edges,
+  });
 }
 
 export function getChatbotDraftSaveStatus({
