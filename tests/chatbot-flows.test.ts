@@ -33,6 +33,11 @@ import {
   updateChatbotConditionVariable,
   updateChatbotMessageText,
 } from "../src/utils/ChatbotFlowUtils.ts";
+import {
+  appendChatbotSimulationInput,
+  applyChatbotSimulationStep,
+  createChatbotSimulationSession,
+} from "../src/utils/ChatbotSimulationUtils.ts";
 
 void test("chatbot listing uses the full workspace layout", () => {
   assert.equal(isChatbotWorkspacePath("/chatbots"), true);
@@ -79,6 +84,61 @@ void test("chatbot version summaries distinguish drafts and unpublished flows", 
     }),
     { draft: "v1", published: "Sin publicar" },
   );
+});
+
+void test("chatbot simulator keeps conversation state local and resettable", () => {
+  const initial = createChatbotSimulationSession();
+  const waiting = applyChatbotSimulationStep(initial, {
+    valid: true,
+    status: "waiting",
+    current_node_id: "city",
+    waiting_for: "free_text",
+    variables: {},
+    outgoing_texts: ["Welcome", "What is your city?"],
+    error: null,
+    transition_count: 3,
+  });
+  const answered = appendChatbotSimulationInput(waiting, " Lahore ");
+  const completed = applyChatbotSimulationStep(answered, {
+    valid: true,
+    status: "completed",
+    current_node_id: "end",
+    waiting_for: null,
+    variables: { customer_city: "Lahore" },
+    outgoing_texts: ["Lahore selected"],
+    error: null,
+    transition_count: 4,
+  });
+
+  assert.equal(waiting.status, "waiting");
+  assert.deepEqual(
+    completed.messages.map((message) => [message.role, message.text]),
+    [
+      ["bot", "Welcome"],
+      ["bot", "What is your city?"],
+      ["user", "Lahore"],
+      ["bot", "Lahore selected"],
+    ],
+  );
+  assert.deepEqual(completed.variables, { customer_city: "Lahore" });
+  assert.deepEqual(createChatbotSimulationSession(), initial);
+});
+
+void test("chatbot simulator exposes invalid graph issues without runtime state", () => {
+  const session = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: false,
+    issues: [
+      {
+        code: "invalid_start_count",
+        path: ["nodes"],
+        message: "Exactly one start node is required",
+      },
+    ],
+  });
+
+  assert.equal(session.status, "invalid");
+  assert.equal(session.issues[0]?.code, "invalid_start_count");
+  assert.deepEqual(session.messages, []);
 });
 
 void test("chatbot duplication uses a predictable editable name", () => {
@@ -863,6 +923,20 @@ void test("input and condition editor labels exist in every supported locale", (
     "Ver resultado",
     "La versión se publicó correctamente.",
     "Ya podés continuar editando el siguiente borrador.",
+    "Simular flujo",
+    "Simular",
+    "Simulador",
+    "Entorno local sin envíos",
+    "Reiniciar",
+    "Usa el flujo actual en memoria. No crea conversaciones, mensajes ni ejecuciones reales.",
+    "Iniciando simulación…",
+    "Corregí el flujo antes de simularlo.",
+    "No se pudo continuar la simulación. Intentá reiniciarla.",
+    "Procesando…",
+    "La simulación terminó correctamente.",
+    "Escribí una respuesta",
+    "Esperando al flujo",
+    "Enviar respuesta",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

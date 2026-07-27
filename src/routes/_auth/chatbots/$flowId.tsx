@@ -32,6 +32,7 @@ import {
   Boxes,
   CircleStop,
   FileClock,
+  FlaskConical,
   GitBranch,
   Info,
   MessageSquareText,
@@ -53,6 +54,7 @@ import {
   X,
 } from "lucide-react";
 import { ChatbotFlowDeploymentDialog } from "@/components/chatbots/ChatbotFlowDeployment";
+import { ChatbotFlowSimulator } from "@/components/chatbots/ChatbotFlowSimulator";
 import {
   PublishChatbotDialog,
   ValidationResultsDialog,
@@ -74,9 +76,16 @@ import {
   useDeactivateChatbotFlow,
   usePublishChatbotFlow,
   useSaveChatbotFlowDraft,
+  useSimulateChatbotFlow,
   useValidateChatbotFlow,
 } from "@/queries/useChatbotFlows";
 import type { AIAgentRow } from "@/supabase/client";
+import {
+  appendChatbotSimulationInput,
+  applyChatbotSimulationStep,
+  createChatbotSimulationSession,
+  type ChatbotSimulationSession,
+} from "@/utils/ChatbotSimulationUtils";
 import {
   addChatbotConditionBranch,
   ChatbotDraftConflictError,
@@ -236,6 +245,9 @@ function FlowEditorWorkspace({
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [deploymentOpen, setDeploymentOpen] = useState(false);
+  const [simulatorOpen, setSimulatorOpen] = useState(false);
+  const [simulationSession, setSimulationSession] =
+    useState<ChatbotSimulationSession>(createChatbotSimulationSession);
   const [previewVersion, setPreviewVersion] =
     useState<ChatbotFlowVersion | null>(null);
   const saveDraft = useSaveChatbotFlowDraft();
@@ -243,6 +255,7 @@ function FlowEditorWorkspace({
   const publishDraft = usePublishChatbotFlow();
   const activateFlow = useActivateChatbotFlow();
   const deactivateFlow = useDeactivateChatbotFlow();
+  const simulateFlow = useSimulateChatbotFlow();
   const versionsQuery = useChatbotFlowVersions(
     editor.flow.id,
     versionsOpen || deploymentOpen,
@@ -285,6 +298,41 @@ function FlowEditorWorkspace({
     failed: saveDraft.isError,
     conflict,
   });
+
+  const runSimulation = async (
+    baseSession: ChatbotSimulationSession,
+    freeTextInput?: string,
+  ) => {
+    const requestSession =
+      freeTextInput === undefined
+        ? baseSession
+        : appendChatbotSimulationInput(baseSession, freeTextInput);
+    setSimulationSession(requestSession);
+
+    try {
+      const step = await simulateFlow.mutateAsync({
+        flowId: editor.flow.id,
+        editorGraph,
+        currentNodeId: requestSession.currentNodeId,
+        variables: requestSession.variables,
+        freeTextInput,
+      });
+      setSimulationSession((current) =>
+        applyChatbotSimulationStep(current, step),
+      );
+    } catch {
+      // The mutation error is rendered in the simulator panel.
+    }
+  };
+
+  const startSimulation = () => {
+    const session = createChatbotSimulationSession();
+    simulateFlow.reset();
+    setSimulationSession(session);
+    setSimulatorOpen(true);
+    setMobilePanel(null);
+    void runSimulation(session);
+  };
   const shouldBlockNavigation = useCallback(() => dirty, [dirty]);
   const navigationBlocker = useBlocker({
     shouldBlockFn: shouldBlockNavigation,
@@ -682,6 +730,7 @@ function FlowEditorWorkspace({
           validationDialogOpen ||
           publishDialogOpen ||
           versionsOpen ||
+          simulatorOpen ||
           previewVersion)
       ) {
         event.preventDefault();
@@ -690,6 +739,7 @@ function FlowEditorWorkspace({
         setValidationDialogOpen(false);
         setPublishDialogOpen(false);
         setVersionsOpen(false);
+        setSimulatorOpen(false);
         setPreviewVersion(null);
       }
     };
@@ -705,6 +755,7 @@ function FlowEditorWorkspace({
     publishDialogOpen,
     saveEditorGraph,
     selectedNodeId,
+    simulatorOpen,
     validationDialogOpen,
     versionsOpen,
   ]);
@@ -767,6 +818,20 @@ function FlowEditorWorkspace({
             }
           >
             <PanelRight className="h-[17px] w-[17px]" />
+          </button>
+          <button
+            type="button"
+            title={t("Simular flujo")}
+            aria-label={t("Simular flujo")}
+            className={`flex h-[36px] items-center gap-[7px] rounded-lg border px-[10px] text-[12px] ${
+              simulatorOpen
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:bg-muted"
+            }`}
+            onClick={startSimulation}
+          >
+            <FlaskConical className="h-[15px] w-[15px]" />
+            <span className="hidden xl:inline">{t("Simular")}</span>
           </button>
           <button
             type="button"
@@ -994,6 +1059,7 @@ function FlowEditorWorkspace({
             }}
             onDrop={onDrop}
             onNodeClick={(_, node) => {
+              setSimulatorOpen(false);
               setSelectedNodeId(node.id);
               setMobilePanel(null);
             }}
@@ -1056,20 +1122,31 @@ function FlowEditorWorkspace({
             )}
         </main>
 
-        <NodeInspector
-          node={selectedNode}
-          open={mobilePanel === "inspector"}
-          onClose={() => setMobilePanel(null)}
-          onMessageTextChange={updateMessageText}
-          onCollectInputChange={updateCollectInput}
-          availableVariables={availableVariables}
-          onConditionVariableChange={updateConditionVariable}
-          onConditionBranchAdd={addConditionBranch}
-          onConditionBranchChange={updateConditionBranch}
-          onConditionBranchRemove={removeConditionBranch}
-          onDuplicate={duplicateNode}
-          onDelete={deleteNode}
-        />
+        {simulatorOpen ? (
+          <ChatbotFlowSimulator
+            session={simulationSession}
+            pending={simulateFlow.isPending}
+            error={simulateFlow.isError}
+            onSend={(text) => void runSimulation(simulationSession, text)}
+            onReset={startSimulation}
+            onClose={() => setSimulatorOpen(false)}
+          />
+        ) : (
+          <NodeInspector
+            node={selectedNode}
+            open={mobilePanel === "inspector"}
+            onClose={() => setMobilePanel(null)}
+            onMessageTextChange={updateMessageText}
+            onCollectInputChange={updateCollectInput}
+            availableVariables={availableVariables}
+            onConditionVariableChange={updateConditionVariable}
+            onConditionBranchAdd={addConditionBranch}
+            onConditionBranchChange={updateConditionBranch}
+            onConditionBranchRemove={removeConditionBranch}
+            onDuplicate={duplicateNode}
+            onDelete={deleteNode}
+          />
+        )}
       </div>
       <UnsavedChangesDialog
         action={
