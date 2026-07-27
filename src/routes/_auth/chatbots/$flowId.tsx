@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, type DragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+} from "react";
 import {
   createFileRoute,
   useBlocker,
@@ -77,7 +83,9 @@ import {
   getAvailableChatbotVariables,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
+  getChatbotEditorActionAvailability,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
   isValidChatbotConnection,
   normalizeChatbotEditorGraph,
@@ -270,15 +278,18 @@ function FlowEditorWorkspace({
   const validationIsStale =
     validationSnapshot !== null &&
     validationSnapshot.fingerprint !== currentValidationFingerprint;
-  const publishDisabled =
-    dirty ||
-    saveDraft.isPending ||
-    publishDraft.isPending ||
-    conflict ||
-    editor.flow.status === "archived";
+  const actionAvailability = getChatbotEditorActionAvailability({
+    dirty,
+    saving: saveDraft.isPending,
+    validating: validateDraft.isPending,
+    publishing: publishDraft.isPending,
+    conflict,
+    archived: editor.flow.status === "archived",
+    selectedNodeType: selectedNode?.data.node_type,
+  });
 
-  const saveEditorGraph = async () => {
-    if (!dirty || saveDraft.isPending) return;
+  const saveEditorGraph = useCallback(async () => {
+    if (!actionAvailability.canSave) return;
     try {
       const savedDraft = await saveDraft.mutateAsync({
         flowId: editor.flow.id,
@@ -291,7 +302,15 @@ function FlowEditorWorkspace({
     } catch {
       // The mutation state renders the actionable save error.
     }
-  };
+  }, [
+    actionAvailability.canSave,
+    currentFingerprint,
+    editor.draft.id,
+    editor.flow.id,
+    editorGraph,
+    expectedUpdatedAt,
+    saveDraft,
+  ]);
 
   const validateEditorGraph = async () => {
     try {
@@ -601,6 +620,71 @@ function FlowEditorWorkspace({
     [nodes, setEdges, setNodes],
   );
 
+  useEffect(() => {
+    const handleEditorKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const shortcut = getChatbotEditorShortcut({
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        editableTarget: Boolean(
+          target?.closest("input, textarea, select, [contenteditable='true']"),
+        ),
+        composing: event.isComposing,
+      });
+
+      if (shortcut === "save") {
+        event.preventDefault();
+        if (actionAvailability.canSave) void saveEditorGraph();
+        return;
+      }
+
+      if (
+        shortcut === "delete-selected" &&
+        selectedNodeId &&
+        actionAvailability.canDeleteSelected
+      ) {
+        event.preventDefault();
+        deleteNode(selectedNodeId);
+        return;
+      }
+
+      if (
+        shortcut === "dismiss" &&
+        (selectedNodeId ||
+          mobilePanel ||
+          validationDialogOpen ||
+          publishDialogOpen ||
+          versionsOpen ||
+          previewVersion)
+      ) {
+        event.preventDefault();
+        setSelectedNodeId(null);
+        setMobilePanel(null);
+        setValidationDialogOpen(false);
+        setPublishDialogOpen(false);
+        setVersionsOpen(false);
+        setPreviewVersion(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleEditorKeyDown);
+    return () => window.removeEventListener("keydown", handleEditorKeyDown);
+  }, [
+    actionAvailability.canDeleteSelected,
+    actionAvailability.canSave,
+    deleteNode,
+    mobilePanel,
+    previewVersion,
+    publishDialogOpen,
+    saveEditorGraph,
+    selectedNodeId,
+    validationDialogOpen,
+    versionsOpen,
+  ]);
+
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="flex shrink-0 flex-wrap items-center gap-[10px] border-b border-border px-[12px] py-[10px] md:px-[18px]">
@@ -674,7 +758,7 @@ function FlowEditorWorkspace({
             type="button"
             title={t("Validar flujo")}
             aria-label={t("Validar flujo")}
-            disabled={validateDraft.isPending}
+            disabled={!actionAvailability.canValidate}
             className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted disabled:opacity-50"
             onClick={() => void validateEditorGraph()}
           >
@@ -702,9 +786,9 @@ function FlowEditorWorkspace({
           </button>
           <button
             type="button"
-            title={t("Guardar borrador")}
+            title={`${t("Guardar borrador")} (Ctrl/⌘ S)`}
             aria-label={t("Guardar borrador")}
-            disabled={!dirty || saveDraft.isPending || conflict}
+            disabled={!actionAvailability.canSave}
             className="primary flex h-[36px] min-w-[96px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => void saveEditorGraph()}
           >
@@ -723,7 +807,7 @@ function FlowEditorWorkspace({
                 : t("Publicar flujo")
             }
             aria-label={t("Publicar flujo")}
-            disabled={publishDisabled}
+            disabled={!actionAvailability.canPublish}
             className="primary flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => setPublishDialogOpen(true)}
           >
@@ -886,6 +970,7 @@ function FlowEditorWorkspace({
             fitView={!graph.viewport && nodes.length > 0}
             minZoom={0.25}
             maxZoom={2}
+            deleteKeyCode={null}
             colorMode={
               document.documentElement.classList.contains("dark")
                 ? "dark"
@@ -1095,11 +1180,33 @@ function NodeLibrary({
           </button>
         ))}
       </div>
-      <div className="mt-auto flex gap-[7px] border-t border-border p-[12px] text-[10px] leading-relaxed text-muted-foreground">
-        <Info className="mt-[1px] h-[13px] w-[13px] shrink-0 text-primary" />
-        {t(
-          "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
-        )}
+      <div className="mt-auto space-y-[9px] border-t border-border p-[12px] text-[10px] leading-relaxed text-muted-foreground">
+        <div className="flex gap-[7px]">
+          <Info className="mt-[1px] h-[13px] w-[13px] shrink-0 text-primary" />
+          {t(
+            "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[5px] border-t border-border/70 pt-[9px]">
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Ctrl/⌘ S
+            </kbd>{" "}
+            {t("Guardar")}
+          </span>
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Del
+            </kbd>{" "}
+            {t("Eliminar")}
+          </span>
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Esc
+            </kbd>{" "}
+            {t("Cerrar")}
+          </span>
+        </div>
       </div>
     </aside>
   );
@@ -1614,6 +1721,9 @@ function SaveStatusLabel({
 
   return (
     <span
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className={
         status === "saved"
           ? "text-emerald-500"
