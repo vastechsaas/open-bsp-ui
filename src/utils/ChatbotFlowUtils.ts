@@ -99,6 +99,20 @@ export type ChatbotDraftSaveStatus =
   | "error"
   | "conflict";
 
+export type ChatbotEditorShortcut =
+  | "save"
+  | "delete-selected"
+  | "dismiss"
+  | null;
+
+export type ChatbotEditorActionAvailability = {
+  canSave: boolean;
+  canValidate: boolean;
+  canPublish: boolean;
+  canDeleteSelected: boolean;
+  canViewVersions: boolean;
+};
+
 export type ChatbotFlowValidationIssue = {
   code: string;
   path: Array<string | number>;
@@ -276,6 +290,76 @@ export function getChatbotDraftSaveStatus({
   if (conflict) return "conflict";
   if (failed) return "error";
   return dirty ? "dirty" : "saved";
+}
+
+export function getChatbotEditorShortcut({
+  key,
+  ctrlKey = false,
+  metaKey = false,
+  altKey = false,
+  shiftKey = false,
+  editableTarget = false,
+  composing = false,
+}: {
+  key: string;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  editableTarget?: boolean;
+  composing?: boolean;
+}): ChatbotEditorShortcut {
+  if (editableTarget || composing) return null;
+
+  const normalizedKey = key.toLowerCase();
+  const primaryModifier = ctrlKey || metaKey;
+  if (normalizedKey === "s" && primaryModifier && !altKey && !shiftKey) {
+    return "save";
+  }
+  if (
+    !primaryModifier &&
+    !altKey &&
+    !shiftKey &&
+    (normalizedKey === "delete" || normalizedKey === "backspace")
+  ) {
+    return "delete-selected";
+  }
+  if (normalizedKey === "escape" && !primaryModifier && !altKey && !shiftKey) {
+    return "dismiss";
+  }
+  return null;
+}
+
+export function getChatbotEditorActionAvailability({
+  dirty,
+  saving,
+  validating,
+  publishing,
+  conflict,
+  archived,
+  selectedNodeType,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  validating: boolean;
+  publishing: boolean;
+  conflict: boolean;
+  archived: boolean;
+  selectedNodeType?: string;
+}): ChatbotEditorActionAvailability {
+  const busy = saving || validating || publishing;
+  const editable = !archived && !conflict && !busy;
+
+  return {
+    canSave: editable && dirty,
+    canValidate: editable,
+    canPublish: editable && !dirty,
+    canDeleteSelected:
+      editable &&
+      selectedNodeType !== undefined &&
+      selectedNodeType !== "start",
+    canViewVersions: true,
+  };
 }
 
 const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {

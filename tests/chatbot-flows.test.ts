@@ -14,7 +14,9 @@ import {
   getAvailableChatbotVariables,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
+  getChatbotEditorActionAvailability,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
@@ -318,6 +320,113 @@ void test("draft save status prioritizes active saves and concurrency conflicts"
     createChatbotManagementError(500, { message: "Save failed" }).message,
     "Save failed",
   );
+});
+
+void test("builder shortcuts are safe, cross-platform, and ignore editable controls", () => {
+  assert.equal(getChatbotEditorShortcut({ key: "s", ctrlKey: true }), "save");
+  assert.equal(getChatbotEditorShortcut({ key: "S", metaKey: true }), "save");
+  assert.equal(getChatbotEditorShortcut({ key: "Delete" }), "delete-selected");
+  assert.equal(
+    getChatbotEditorShortcut({ key: "Backspace" }),
+    "delete-selected",
+  );
+  assert.equal(getChatbotEditorShortcut({ key: "Escape" }), "dismiss");
+  assert.equal(
+    getChatbotEditorShortcut({
+      key: "Delete",
+      editableTarget: true,
+    }),
+    null,
+  );
+  assert.equal(
+    getChatbotEditorShortcut({
+      key: "s",
+      ctrlKey: true,
+      composing: true,
+    }),
+    null,
+  );
+  assert.equal(
+    getChatbotEditorShortcut({ key: "s", ctrlKey: true, shiftKey: true }),
+    null,
+  );
+});
+
+void test("builder action contract covers the complete V1 authoring workflow", () => {
+  const availability = (
+    overrides: Partial<
+      Parameters<typeof getChatbotEditorActionAvailability>[0]
+    > = {},
+  ) =>
+    getChatbotEditorActionAvailability({
+      dirty: false,
+      saving: false,
+      validating: false,
+      publishing: false,
+      conflict: false,
+      archived: false,
+      ...overrides,
+    });
+
+  // A newly created or freshly loaded draft can be validated, published,
+  // and inspected through version history, but has nothing to save yet.
+  assert.deepEqual(availability(), {
+    canSave: false,
+    canValidate: true,
+    canPublish: true,
+    canDeleteSelected: false,
+    canViewVersions: true,
+  });
+
+  // Editing enables saving, protects the Start node, and prevents publishing
+  // until the exact graph snapshot has been persisted.
+  assert.deepEqual(availability({ dirty: true, selectedNodeType: "start" }), {
+    canSave: true,
+    canValidate: true,
+    canPublish: false,
+    canDeleteSelected: false,
+    canViewVersions: true,
+  });
+  assert.equal(
+    availability({ dirty: true, selectedNodeType: "send_message" })
+      .canDeleteSelected,
+    true,
+  );
+
+  // Save, validation, and publication are mutually exclusive operations.
+  for (const pending of [
+    { saving: true },
+    { validating: true },
+    { publishing: true },
+  ]) {
+    assert.deepEqual(availability({ dirty: true, ...pending }), {
+      canSave: false,
+      canValidate: false,
+      canPublish: false,
+      canDeleteSelected: false,
+      canViewVersions: true,
+    });
+  }
+
+  // After save and validation, publication is available. Conflicted or
+  // archived drafts remain read-only while version history stays accessible.
+  assert.equal(availability({ dirty: false }).canPublish, true);
+  for (const blocked of [{ conflict: true }, { archived: true }]) {
+    assert.deepEqual(
+      availability({
+        dirty: true,
+        selectedNodeType: "condition",
+        ...blocked,
+      }),
+      {
+        canSave: false,
+        canValidate: false,
+        canPublish: false,
+        canDeleteSelected: false,
+        canViewVersions: true,
+      },
+    );
+  }
 });
 
 void test("publish validation errors preserve structured node and edge issues", () => {
