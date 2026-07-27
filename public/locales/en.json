@@ -890,5 +890,19 @@
   "El flujo tiene problemas que deben corregirse.": "The flow has issues that must be corrected.",
   "Ver resultado": "View result",
   "La versión se publicó correctamente.": "The version was published successfully.",
-  "Ya podés continuar editando el siguiente borrador.": "You can now continue editing the next draft."
+  "Ya podés continuar editando el siguiente borrador.": "You can now continue editing the next draft.",
+  "Simular flujo": "Simulate flow",
+  "Simular": "Simulate",
+  "Simulador": "Simulator",
+  "Entorno local sin envíos": "Local sandbox with no sends",
+  "Reiniciar": "Reset",
+  "Usa el flujo actual en memoria. No crea conversaciones, mensajes ni ejecuciones reales.": "Uses the current in-memory flow. It creates no real conversations, messages, or runs.",
+  "Iniciando simulación…": "Starting simulation…",
+  "Corregí el flujo antes de simularlo.": "Fix the flow before simulating it.",
+  "No se pudo continuar la simulación. Intentá reiniciarla.": "The simulation could not continue. Try resetting it.",
+  "Procesando…": "Processing…",
+  "La simulación terminó correctamente.": "The simulation completed successfully.",
+  "Escribí una respuesta": "Type a reply",
+  "Esperando al flujo": "Waiting for the flow",
+  "Enviar respuesta": "Send reply"
 }

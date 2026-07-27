@@ -8,6 +8,7 @@ import {
   type ChatbotFlowStatus,
   type ChatbotFlowValidationResult,
 } from "@/utils/ChatbotFlowUtils";
+import type { ChatbotSimulationStep } from "@/utils/ChatbotSimulationUtils";
 import type {
   DataTablePage,
   DataTablePageParams,
@@ -94,6 +95,14 @@ type PublishChatbotFlowInput = {
   flowId: string;
   versionId: string;
   expectedUpdatedAt: string;
+};
+
+type SimulateChatbotFlowInput = {
+  flowId: string;
+  editorGraph: ChatbotEditorGraph;
+  currentNodeId?: string;
+  variables: Record<string, unknown>;
+  freeTextInput?: string;
 };
 
 type ActivateChatbotFlowInput = {
@@ -231,6 +240,34 @@ export function useValidateChatbotFlow() {
         {
           organization_id: orgId,
           editor_graph: editorGraph,
+        },
+      );
+    },
+  });
+}
+
+export function useSimulateChatbotFlow() {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      editorGraph,
+      currentNodeId,
+      variables,
+      freeTextInput,
+    }: SimulateChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<ChatbotSimulationStep>(
+        `flows/${flowId}/simulate`,
+        {
+          organization_id: orgId,
+          editor_graph: editorGraph,
+          variables,
+          ...(currentNodeId ? { current_node_id: currentNodeId } : {}),
+          ...(freeTextInput === undefined
+            ? {}
+            : { free_text_input: freeTextInput }),
         },
       );
     },

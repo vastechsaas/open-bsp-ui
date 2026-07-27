@@ -1,0 +1,208 @@
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Bot,
+  CircleAlert,
+  FlaskConical,
+  RefreshCw,
+  RotateCcw,
+  Send,
+  UserRound,
+  X,
+} from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { ChatbotSimulationSession } from "@/utils/ChatbotSimulationUtils";
+
+export function ChatbotFlowSimulator({
+  session,
+  pending,
+  error,
+  onSend,
+  onReset,
+  onClose,
+}: {
+  session: ChatbotSimulationSession;
+  pending: boolean;
+  error: boolean;
+  onSend: (text: string) => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const { translate: t } = useTranslation();
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [pending, session.messages]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const value = input.trim();
+    if (!value || pending || session.status !== "waiting") return;
+    setInput("");
+    onSend(value);
+  };
+
+  return (
+    <aside className="absolute inset-y-0 right-0 z-30 flex w-[320px] shrink-0 flex-col border-l border-border bg-card shadow-xl lg:static lg:z-auto lg:shadow-none">
+      <div className="flex items-center gap-[8px] border-b border-border p-[15px]">
+        <FlaskConical className="h-[16px] w-[16px] text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-semibold">{t("Simulador")}</div>
+          <div className="text-[10px] text-muted-foreground">
+            {t("Entorno local sin envíos")}
+          </div>
+        </div>
+        <button
+          type="button"
+          title={t("Reiniciar")}
+          aria-label={t("Reiniciar")}
+          disabled={pending}
+          className="flex h-[28px] w-[28px] items-center justify-center rounded-md hover:bg-muted disabled:opacity-50"
+          onClick={onReset}
+        >
+          <RotateCcw className="h-[14px] w-[14px]" />
+        </button>
+        <button
+          type="button"
+          title={t("Cerrar panel")}
+          aria-label={t("Cerrar panel")}
+          className="flex h-[28px] w-[28px] items-center justify-center rounded-md hover:bg-muted"
+          onClick={onClose}
+        >
+          <X className="h-[15px] w-[15px]" />
+        </button>
+      </div>
+
+      <div className="border-b border-border bg-primary/5 px-[14px] py-[9px] text-[10px] leading-relaxed text-muted-foreground">
+        {t(
+          "Usa el flujo actual en memoria. No crea conversaciones, mensajes ni ejecuciones reales.",
+        )}
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-[13px]">
+        {pending && session.messages.length === 0 && (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <RefreshCw className="h-[20px] w-[20px] animate-spin text-primary" />
+            <div className="mt-[9px] text-[11px] text-muted-foreground">
+              {t("Iniciando simulación…")}
+            </div>
+          </div>
+        )}
+
+        {session.status === "invalid" && (
+          <div className="space-y-[8px]">
+            <div className="flex items-start gap-[8px] rounded-xl border border-destructive/30 bg-destructive/8 p-[11px] text-destructive">
+              <CircleAlert className="mt-[1px] h-[15px] w-[15px] shrink-0" />
+              <div className="text-[11px] leading-relaxed">
+                {t("Corregí el flujo antes de simularlo.")}
+              </div>
+            </div>
+            {session.issues.map((issue, index) => (
+              <div
+                key={`${issue.code}:${index}`}
+                className="rounded-lg border border-border bg-background/45 p-[10px]"
+              >
+                <div className="text-[10px] font-semibold text-destructive">
+                  {issue.code}
+                </div>
+                <div className="mt-[3px] text-[11px] leading-relaxed">
+                  {issue.message}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-[8px] rounded-xl border border-destructive/30 bg-destructive/8 p-[11px] text-destructive"
+          >
+            <CircleAlert className="mt-[1px] h-[15px] w-[15px] shrink-0" />
+            <div className="text-[11px] leading-relaxed">
+              {t("No se pudo continuar la simulación. Intentá reiniciarla.")}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-[10px]">
+          {session.messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-[7px] ${
+                message.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              {message.role !== "user" && (
+                <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                  {message.role === "bot" ? (
+                    <Bot className="h-[13px] w-[13px]" />
+                  ) : (
+                    <CircleAlert className="h-[13px] w-[13px]" />
+                  )}
+                </div>
+              )}
+              <div
+                className={`max-w-[220px] rounded-xl px-[10px] py-[8px] text-[11px] leading-relaxed ${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : message.role === "system"
+                      ? "border border-destructive/25 bg-destructive/8 text-destructive"
+                      : "border border-border bg-background"
+                }`}
+              >
+                {message.text}
+              </div>
+              {message.role === "user" && (
+                <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <UserRound className="h-[13px] w-[13px]" />
+                </div>
+              )}
+            </div>
+          ))}
+          {pending && session.messages.length > 0 && (
+            <div className="flex items-center gap-[7px] text-[10px] text-muted-foreground">
+              <RefreshCw className="h-[12px] w-[12px] animate-spin" />
+              {t("Procesando…")}
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {session.status === "completed" && (
+        <div className="border-t border-emerald-500/25 bg-emerald-500/8 px-[13px] py-[9px] text-[10px] text-emerald-600 dark:text-emerald-400">
+          {t("La simulación terminó correctamente.")}
+        </div>
+      )}
+
+      <form
+        className="flex gap-[7px] border-t border-border p-[11px]"
+        onSubmit={submit}
+      >
+        <input
+          value={input}
+          maxLength={4096}
+          disabled={pending || session.status !== "waiting"}
+          placeholder={
+            session.status === "waiting"
+              ? t("Escribí una respuesta")
+              : t("Esperando al flujo")
+          }
+          className="h-[36px] min-w-0 flex-1 rounded-lg border border-border bg-background px-[10px] text-[11px] outline-none focus:border-primary disabled:opacity-55"
+          onChange={(event) => setInput(event.target.value)}
+        />
+        <button
+          type="submit"
+          title={t("Enviar respuesta")}
+          aria-label={t("Enviar respuesta")}
+          disabled={pending || session.status !== "waiting" || !input.trim()}
+          className="primary flex h-[36px] w-[36px] items-center justify-center disabled:opacity-45"
+        >
+          <Send className="h-[14px] w-[14px]" />
+        </button>
+      </form>
+    </aside>
+  );
+}

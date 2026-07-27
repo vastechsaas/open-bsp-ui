@@ -890,5 +890,19 @@
   "El flujo tiene problemas que deben corregirse.": "Le flux présente des problèmes à corriger.",
   "Ver resultado": "Voir le résultat",
   "La versión se publicó correctamente.": "La version a été publiée avec succès.",
-  "Ya podés continuar editando el siguiente borrador.": "Vous pouvez maintenant continuer à modifier le brouillon suivant."
+  "Ya podés continuar editando el siguiente borrador.": "Vous pouvez maintenant continuer à modifier le brouillon suivant.",
+  "Simular flujo": "Simuler le flux",
+  "Simular": "Simuler",
+  "Simulador": "Simulateur",
+  "Entorno local sin envíos": "Environnement local sans envoi",
+  "Reiniciar": "Réinitialiser",
+  "Usa el flujo actual en memoria. No crea conversaciones, mensajes ni ejecuciones reales.": "Utilise le flux actuel en mémoire. Aucune conversation, aucun message ni aucune exécution réelle n’est créé.",
+  "Iniciando simulación…": "Démarrage de la simulation…",
+  "Corregí el flujo antes de simularlo.": "Corrigez le flux avant de le simuler.",
+  "No se pudo continuar la simulación. Intentá reiniciarla.": "La simulation n’a pas pu continuer. Essayez de la réinitialiser.",
+  "Procesando…": "Traitement…",
+  "La simulación terminó correctamente.": "La simulation s’est terminée avec succès.",
+  "Escribí una respuesta": "Saisissez une réponse",
+  "Esperando al flujo": "En attente du flux",
+  "Enviar respuesta": "Envoyer la réponse"
 }
