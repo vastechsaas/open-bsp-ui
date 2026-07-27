@@ -103,6 +103,10 @@ type SimulateChatbotFlowInput = {
   currentNodeId?: string;
   variables: Record<string, unknown>;
   freeTextInput?: string;
+  optionInput?: {
+    kind: "button" | "list_selection";
+    id: string;
+  };
 };
 
 type ActivateChatbotFlowInput = {
@@ -256,6 +260,7 @@ export function useSimulateChatbotFlow() {
       currentNodeId,
       variables,
       freeTextInput,
+      optionInput,
     }: SimulateChatbotFlowInput) => {
       if (!orgId) throw new Error("No active organization");
       return await invokeChatbotManagement<ChatbotSimulationStep>(
@@ -268,6 +273,7 @@ export function useSimulateChatbotFlow() {
           ...(freeTextInput === undefined
             ? {}
             : { free_text_input: freeTextInput }),
+          ...(optionInput === undefined ? {} : { option_input: optionInput }),
         },
       );
     },
