@@ -917,6 +917,18 @@ export function getAvailableChatbotVariables(
   return [...intersectVariableSets(predecessorSets)].sort();
 }
 
+export function insertChatbotTemplateVariable(
+  text: string,
+  variable: string,
+  selectionStart = text.length,
+  selectionEnd = selectionStart,
+) {
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(variable)) return text;
+  const start = Math.max(0, Math.min(selectionStart, text.length));
+  const end = Math.max(start, Math.min(selectionEnd, text.length));
+  return `${text.slice(0, start)}{{${variable}}}${text.slice(end)}`;
+}
+
 export function getChatbotConditionEdgeLabel(
   kind: string,
   operator?: string,

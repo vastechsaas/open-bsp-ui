@@ -120,6 +120,7 @@ import {
   getChatbotEditorValidationFingerprint,
   getChatbotNodeOptionIds,
   isValidChatbotConnection,
+  insertChatbotTemplateVariable,
   normalizeChatbotEditorGraph,
   removeChatbotConditionBranch,
   removeChatbotNode,
@@ -1452,6 +1453,51 @@ function NodeLibrary({
   );
 }
 
+function TemplateVariableControls({
+  availableVariables,
+  onInsert,
+}: {
+  availableVariables: string[];
+  onInsert: (variable: string) => void;
+}) {
+  const { translate: t } = useTranslation();
+
+  return (
+    <div className="mt-[7px] rounded-lg border border-border bg-muted/25 p-[8px]">
+      <div className="flex items-center gap-[5px] text-[10px] font-medium">
+        <Braces className="h-[11px] w-[11px] text-primary" />
+        {t("Insertar variable")}
+      </div>
+      {availableVariables.length > 0 ? (
+        <div className="mt-[6px] flex flex-wrap gap-[5px]">
+          {availableVariables.map((variable) => (
+            <button
+              key={variable}
+              type="button"
+              onClick={() => onInsert(variable)}
+              className="rounded-md border border-primary/30 bg-primary/5 px-[6px] py-[3px] font-mono text-[9px] text-primary hover:bg-primary/10"
+            >
+              {`{{${variable}}}`}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-[4px] text-[9px] text-muted-foreground">
+          {t("No hay variables disponibles en este punto.")}
+        </div>
+      )}
+      <div className="mt-[5px] text-[9px] leading-relaxed text-muted-foreground">
+        {t("Usa variables recopiladas anteriormente con {{variable}}.")}
+      </div>
+    </div>
+  );
+}
+
+function appendTemplateVariable(text: string, variable: string) {
+  const prefix = text.length > 0 && !/\s$/.test(text) ? `${text} ` : text;
+  return insertChatbotTemplateVariable(prefix, variable);
+}
+
 function NodeInspector({
   node,
   open,
@@ -1567,6 +1613,15 @@ function NodeInspector({
                     : "border-border focus:border-primary"
                 }`}
               />
+              <TemplateVariableControls
+                availableVariables={availableVariables}
+                onInsert={(variable) =>
+                  onMessageTextChange(
+                    node.id,
+                    appendTemplateVariable(messageText, variable),
+                  )
+                }
+              />
               <span className="mt-[4px] flex justify-between gap-[8px] text-[10px]">
                 <span
                   className={
@@ -1587,16 +1642,19 @@ function NodeInspector({
           ) : isCollectInput ? (
             <CollectInputInspector
               node={node}
+              availableVariables={availableVariables}
               onChange={(updates) => onCollectInputChange(node.id, updates)}
             />
           ) : isButtons ? (
             <InteractiveButtonsInspector
               node={node}
+              availableVariables={availableVariables}
               onChange={(updates) => onInteractiveChange(node.id, updates)}
             />
           ) : isListMessage ? (
             <ListMessageInspector
               node={node}
+              availableVariables={availableVariables}
               onChange={(updates) => onInteractiveChange(node.id, updates)}
             />
           ) : isCondition ? (
@@ -1663,9 +1721,11 @@ function NodeInspector({
 
 function InteractiveButtonsInspector({
   node,
+  availableVariables,
   onChange,
 }: {
   node: ChatbotFlowNodeType;
+  availableVariables: string[];
   onChange: (updates: Partial<ChatbotNodeConfig>) => void;
 }) {
   const { translate: t } = useTranslation();
@@ -1702,6 +1762,12 @@ function InteractiveButtonsInspector({
               ? "border-border focus:border-primary"
               : "border-destructive"
           }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(variable) =>
+            onChange({ body: appendTemplateVariable(body, variable) })
+          }
         />
         <span className="mt-[4px] flex justify-between text-[10px] text-muted-foreground">
           <span className={!body.trim() ? "text-destructive" : ""}>
@@ -1785,9 +1851,11 @@ function InteractiveButtonsInspector({
 
 function ListMessageInspector({
   node,
+  availableVariables,
   onChange,
 }: {
   node: ChatbotFlowNodeType;
+  availableVariables: string[];
   onChange: (updates: Partial<ChatbotNodeConfig>) => void;
 }) {
   const { translate: t } = useTranslation();
@@ -1831,6 +1899,12 @@ function ListMessageInspector({
           className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed ${
             body.trim() ? "border-border" : "border-destructive"
           }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(variable) =>
+            onChange({ body: appendTemplateVariable(body, variable) })
+          }
         />
         <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
           {body.length}/{CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
@@ -2018,9 +2092,11 @@ function ListMessageInspector({
 
 function CollectInputInspector({
   node,
+  availableVariables,
   onChange,
 }: {
   node: ChatbotFlowNodeType;
+  availableVariables: string[];
   onChange: (updates: Record<string, unknown>) => void;
 }) {
   const { translate: t } = useTranslation();
@@ -2059,6 +2135,14 @@ function CollectInputInspector({
           className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
             prompt.trim() ? "border-border" : "border-destructive"
           }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(templateVariable) =>
+            onChange({
+              prompt: appendTemplateVariable(prompt, templateVariable),
+            })
+          }
         />
         {!prompt.trim() && (
           <span className="mt-[4px] block text-[10px] text-destructive">

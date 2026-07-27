@@ -925,5 +925,8 @@
   "Descripción opcional": "Descrição opcional",
   "Agregar opción": "Adicionar opção",
   "Agregar sección": "Adicionar seção",
-  "Seleccioná una opción para continuar": "Selecione uma opção para continuar"
+  "Seleccioná una opción para continuar": "Selecione uma opção para continuar",
+  "Insertar variable": "Inserir variável",
+  "No hay variables disponibles en este punto.": "Nenhuma variável está disponível neste ponto.",
+  "Usa variables recopiladas anteriormente con {{variable}}.": "Use variáveis coletadas anteriormente com {{variable}}."
 }
