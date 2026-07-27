@@ -41,6 +41,7 @@ import {
   Play,
   RefreshCw,
   Rocket,
+  RadioTower,
   Save,
   ShieldCheck,
   Copy,
@@ -51,6 +52,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { ChatbotFlowDeploymentDialog } from "@/components/chatbots/ChatbotFlowDeployment";
 import {
   PublishChatbotDialog,
   ValidationResultsDialog,
@@ -60,16 +62,21 @@ import {
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type ChatbotFlowEditorData,
   type ChatbotFlowVersion,
+  useActivateChatbotFlow,
   useChatbotFlowDraft,
+  useChatbotFlowDeployments,
   useChatbotFlowVersions,
+  useDeactivateChatbotFlow,
   usePublishChatbotFlow,
   useSaveChatbotFlowDraft,
   useValidateChatbotFlow,
 } from "@/queries/useChatbotFlows";
+import type { AIAgentRow } from "@/supabase/client";
 import {
   addChatbotConditionBranch,
   ChatbotDraftConflictError,
@@ -228,12 +235,29 @@ function FlowEditorWorkspace({
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [deploymentOpen, setDeploymentOpen] = useState(false);
   const [previewVersion, setPreviewVersion] =
     useState<ChatbotFlowVersion | null>(null);
   const saveDraft = useSaveChatbotFlowDraft();
   const validateDraft = useValidateChatbotFlow();
   const publishDraft = usePublishChatbotFlow();
-  const versionsQuery = useChatbotFlowVersions(editor.flow.id, versionsOpen);
+  const activateFlow = useActivateChatbotFlow();
+  const deactivateFlow = useDeactivateChatbotFlow();
+  const versionsQuery = useChatbotFlowVersions(
+    editor.flow.id,
+    versionsOpen || deploymentOpen,
+  );
+  const deploymentsQuery = useChatbotFlowDeployments(editor.flow.id);
+  const addressesQuery = useOrganizationsAddresses();
+  const agentsQuery = useCurrentAgents();
+  const connectedWhatsAppAddresses = (addressesQuery.data ?? []).filter(
+    (address) =>
+      address.service === "whatsapp" && address.status === "connected",
+  );
+  const activeAiAgents = (agentsQuery.data ?? []).filter(
+    (agent): agent is AIAgentRow =>
+      agent.ai && agent.extra?.mode !== "inactive",
+  );
   const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const availableVariables = selectedNode
@@ -818,6 +842,20 @@ function FlowEditorWorkspace({
             )}
             <span className="hidden sm:inline">{t("Publicar")}</span>
           </button>
+          <button
+            type="button"
+            title={t("Activar chatbot")}
+            aria-label={t("Activar chatbot")}
+            className="flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] rounded-lg border border-primary/45 px-[12px] text-[12px] text-primary hover:bg-primary/10"
+            onClick={() => setDeploymentOpen(true)}
+          >
+            <RadioTower className="h-[15px] w-[15px]" />
+            <span className="hidden xl:inline">
+              {deploymentsQuery.data?.length
+                ? `${t("Activo")} (${deploymentsQuery.data.length})`
+                : t("Activar")}
+            </span>
+          </button>
         </div>
       </header>
 
@@ -1071,6 +1109,52 @@ function FlowEditorWorkspace({
       <VersionPreviewDialog
         version={previewVersion}
         onClose={() => setPreviewVersion(null)}
+      />
+      <ChatbotFlowDeploymentDialog
+        open={deploymentOpen}
+        deployments={deploymentsQuery.data ?? []}
+        versions={versionsQuery.data ?? []}
+        addresses={connectedWhatsAppAddresses}
+        agents={activeAiAgents}
+        loading={
+          deploymentsQuery.isLoading ||
+          versionsQuery.isLoading ||
+          addressesQuery.isLoading ||
+          agentsQuery.isLoading
+        }
+        error={
+          deploymentsQuery.isError ||
+          versionsQuery.isError ||
+          addressesQuery.isError ||
+          agentsQuery.isError
+        }
+        actionError={activateFlow.isError || deactivateFlow.isError}
+        pending={activateFlow.isPending || deactivateFlow.isPending}
+        onClose={() => {
+          activateFlow.reset();
+          deactivateFlow.reset();
+          setDeploymentOpen(false);
+        }}
+        onRetry={() => {
+          void Promise.all([
+            deploymentsQuery.refetch(),
+            versionsQuery.refetch(),
+            addressesQuery.refetch(),
+            agentsQuery.refetch(),
+          ]);
+        }}
+        onActivate={(input) =>
+          activateFlow.mutate({
+            flowId: editor.flow.id,
+            ...input,
+          })
+        }
+        onDeactivate={(organizationAddress) =>
+          deactivateFlow.mutate({
+            flowId: editor.flow.id,
+            organizationAddress,
+          })
+        }
       />
     </div>
   );
