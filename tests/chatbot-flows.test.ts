@@ -174,6 +174,83 @@ void test("chatbot simulator renders and selects interactive options locally", (
   assert.equal(selected.messages.at(-1)?.text, "Support");
 });
 
+void test("chatbot simulator preserves WhatsApp list button and sections", () => {
+  const waiting = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: true,
+    status: "waiting",
+    current_node_id: "offices",
+    waiting_for: "list_selection",
+    variables: {},
+    outgoing_texts: [],
+    outgoing_messages: [
+      {
+        type: "interactive",
+        interactive: {
+          type: "list",
+          body: { text: "Choose an office" },
+          action: {
+            button: "View offices",
+            sections: [
+              {
+                title: "Pakistan",
+                rows: [
+                  {
+                    id: "lahore",
+                    title: "Lahore",
+                    description: "Main office",
+                  },
+                ],
+              },
+              {
+                title: "UAE",
+                rows: [{ id: "dubai", title: "Dubai" }],
+              },
+            ],
+          },
+        },
+      },
+    ],
+    error: null,
+    transition_count: 2,
+  });
+
+  assert.equal(waiting.waitingFor, "list_selection");
+  assert.equal(waiting.messages[0]?.options, undefined);
+  assert.deepEqual(waiting.messages[0]?.list, {
+    buttonText: "View offices",
+    sections: [
+      {
+        title: "Pakistan",
+        options: [
+          {
+            id: "lahore",
+            title: "Lahore",
+            description: "Main office",
+            kind: "list_selection",
+          },
+        ],
+      },
+      {
+        title: "UAE",
+        options: [
+          {
+            id: "dubai",
+            title: "Dubai",
+            description: undefined,
+            kind: "list_selection",
+          },
+        ],
+      },
+    ],
+  });
+
+  const selected = appendChatbotSimulationOption(
+    waiting,
+    waiting.messages[0]!.list!.sections[1]!.options[0]!,
+  );
+  assert.equal(selected.messages.at(-1)?.text, "Dubai");
+});
+
 void test("chatbot simulator exposes invalid graph issues without runtime state", () => {
   const session = applyChatbotSimulationStep(createChatbotSimulationSession(), {
     valid: false,

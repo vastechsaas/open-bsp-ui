@@ -3,6 +3,7 @@ import {
   Bot,
   CircleAlert,
   FlaskConical,
+  List as ListIcon,
   RefreshCw,
   RotateCcw,
   Send,
@@ -34,14 +35,40 @@ export function ChatbotFlowSimulator({
 }) {
   const { translate: t } = useTranslation();
   const [input, setInput] = useState("");
+  const [openListMessageId, setOpenListMessageId] = useState<string | null>(
+    null,
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const actionableMessageId = [...session.messages]
     .reverse()
-    .find((message) => message.options?.length)?.id;
+    .find(
+      (message) =>
+        message.options?.length ||
+        message.list?.sections.some((section) => section.options.length > 0),
+    )?.id;
+  const openListMessage = openListMessageId
+    ? session.messages.find((message) => message.id === openListMessageId)
+    : undefined;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [pending, session.messages]);
+
+  useEffect(() => {
+    if (
+      openListMessageId &&
+      (openListMessageId !== actionableMessageId ||
+        pending ||
+        session.status !== "waiting")
+    ) {
+      setOpenListMessageId(null);
+    }
+  }, [
+    actionableMessageId,
+    openListMessageId,
+    pending,
+    session.status,
+  ]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -52,7 +79,7 @@ export function ChatbotFlowSimulator({
   };
 
   return (
-    <aside className="absolute inset-y-0 right-0 z-30 flex w-[320px] shrink-0 flex-col border-l border-border bg-card shadow-xl lg:static lg:z-auto lg:shadow-none">
+    <aside className="absolute inset-y-0 right-0 z-30 flex w-[320px] shrink-0 flex-col border-l border-border bg-card shadow-xl lg:relative lg:z-auto lg:shadow-none">
       <div className="flex items-center gap-[8px] border-b border-border p-[15px]">
         <FlaskConical className="h-[16px] w-[16px] text-primary" />
         <div className="min-w-0 flex-1">
@@ -67,7 +94,10 @@ export function ChatbotFlowSimulator({
           aria-label={t("Reiniciar")}
           disabled={pending}
           className="flex h-[28px] w-[28px] items-center justify-center rounded-md hover:bg-muted disabled:opacity-50"
-          onClick={onReset}
+          onClick={() => {
+            setOpenListMessageId(null);
+            onReset();
+          }}
         >
           <RotateCcw className="h-[14px] w-[14px]" />
         </button>
@@ -76,7 +106,10 @@ export function ChatbotFlowSimulator({
           title={t("Cerrar panel")}
           aria-label={t("Cerrar panel")}
           className="flex h-[28px] w-[28px] items-center justify-center rounded-md hover:bg-muted"
-          onClick={onClose}
+          onClick={() => {
+            setOpenListMessageId(null);
+            onClose();
+          }}
         >
           <X className="h-[15px] w-[15px]" />
         </button>
@@ -187,6 +220,21 @@ export function ChatbotFlowSimulator({
                     ))}
                   </div>
                 )}
+                {message.list && (
+                  <button
+                    type="button"
+                    disabled={
+                      pending ||
+                      session.status !== "waiting" ||
+                      message.id !== actionableMessageId
+                    }
+                    onClick={() => setOpenListMessageId(message.id)}
+                    className="mt-[8px] flex w-full items-center justify-center gap-[6px] border-t border-border pt-[8px] font-semibold text-primary hover:text-primary/80 disabled:cursor-default disabled:opacity-55"
+                  >
+                    <ListIcon className="h-[12px] w-[12px]" />
+                    {message.list.buttonText}
+                  </button>
+                )}
               </div>
               {message.role === "user" && (
                 <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -246,8 +294,72 @@ export function ChatbotFlowSimulator({
       {session.waitingFor !== "free_text" && (
         <div className="border-t border-border px-[12px] py-[10px] text-center text-[10px] text-muted-foreground">
           {session.status === "waiting"
-            ? t("SeleccionÃ¡ una opciÃ³n para continuar")
+            ? t("Seleccioná una opción para continuar")
             : t("Esperando al flujo")}
+        </div>
+      )}
+      {openListMessage?.list && (
+        <div
+          className="absolute inset-0 z-40 flex items-end bg-black/45 p-[10px]"
+          onClick={() => setOpenListMessageId(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={openListMessage.list.buttonText}
+            className="max-h-[78%] w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center gap-[8px] border-b border-border px-[13px] py-[11px]">
+              <ListIcon className="h-[14px] w-[14px] text-primary" />
+              <div className="min-w-0 flex-1 truncate text-[12px] font-semibold">
+                {openListMessage.list.buttonText}
+              </div>
+              <button
+                type="button"
+                title={t("Cerrar panel")}
+                aria-label={t("Cerrar panel")}
+                onClick={() => setOpenListMessageId(null)}
+                className="flex h-[27px] w-[27px] items-center justify-center rounded-full hover:bg-muted"
+              >
+                <X className="h-[13px] w-[13px]" />
+              </button>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto p-[9px]">
+              {openListMessage.list.sections.map((section, sectionIndex) => (
+                <div
+                  key={`${openListMessage.id}:section:${sectionIndex}`}
+                  className="mb-[9px] last:mb-0"
+                >
+                  <div className="px-[5px] pb-[4px] text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    {section.title}
+                  </div>
+                  <div className="overflow-hidden rounded-xl border border-border">
+                    {section.options.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setOpenListMessageId(null);
+                          onSelect(option);
+                        }}
+                        className="block w-full border-b border-border px-[11px] py-[9px] text-left last:border-b-0 hover:bg-muted/55"
+                      >
+                        <span className="block text-[11px] font-medium">
+                          {option.title}
+                        </span>
+                        {option.description && (
+                          <span className="mt-[2px] block text-[9px] leading-relaxed text-muted-foreground">
+                            {option.description}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </aside>
