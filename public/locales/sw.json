@@ -928,5 +928,16 @@
   "Seleccioná una opción para continuar": "Chagua chaguo ili kuendelea",
   "Insertar variable": "Weka kigezo",
   "No hay variables disponibles en este punto.": "Hakuna vigezo vinavyopatikana katika hatua hii.",
-  "Usa variables recopiladas anteriormente con {{variable}}.": "Tumia vigezo vilivyokusanywa awali kwa {{variable}}."
+  "Usa variables recopiladas anteriormente con {{variable}}.": "Tumia vigezo vilivyokusanywa awali kwa {{variable}}.",
+  "Activar chatbot": "Washa chatbot",
+  "Elegí qué versión publicada responderá en cada número de WhatsApp.": "Chagua toleo lililochapishwa litakalojibu kwa kila nambari ya WhatsApp.",
+  "No se pudieron cargar las opciones de activación.": "Imeshindikana kupakia chaguo za uanzishaji.",
+  "Activaciones actuales": "Uanzishaji wa sasa",
+  "Desactivar": "Zima",
+  "Número de WhatsApp": "Nambari ya WhatsApp",
+  "Agente de IA": "Wakala wa AI",
+  "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.": "Unahitaji nambari ya WhatsApp iliyounganishwa, toleo lililochapishwa, na wakala wa AI anayetumika.",
+  "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Imeshindikana kubadilisha uanzishaji. Kagua chaguo na ujaribu tena.",
+  "Activar": "Washa",
+  "Desactivar chatbot": "Zima chatbot"
 }

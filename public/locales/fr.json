@@ -928,5 +928,16 @@
   "Seleccioná una opción para continuar": "Sélectionnez une option pour continuer",
   "Insertar variable": "Insérer une variable",
   "No hay variables disponibles en este punto.": "Aucune variable n’est disponible à ce stade.",
-  "Usa variables recopiladas anteriormente con {{variable}}.": "Utilisez les variables collectées précédemment avec {{variable}}."
+  "Usa variables recopiladas anteriormente con {{variable}}.": "Utilisez les variables collectées précédemment avec {{variable}}.",
+  "Activar chatbot": "Activer le chatbot",
+  "Elegí qué versión publicada responderá en cada número de WhatsApp.": "Choisissez la version publiée qui répondra pour chaque numéro WhatsApp.",
+  "No se pudieron cargar las opciones de activación.": "Impossible de charger les options d’activation.",
+  "Activaciones actuales": "Activations actuelles",
+  "Desactivar": "Désactiver",
+  "Número de WhatsApp": "Numéro WhatsApp",
+  "Agente de IA": "Agent IA",
+  "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.": "Vous avez besoin d’un numéro WhatsApp connecté, d’une version publiée et d’un agent IA actif.",
+  "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Impossible de modifier l’activation. Vérifiez les options et réessayez.",
+  "Activar": "Activer",
+  "Desactivar chatbot": "Désactiver le chatbot"
 }
