@@ -35,7 +35,9 @@ import {
   FlaskConical,
   GitBranch,
   Info,
+  List,
   MessageSquareText,
+  MousePointerClick,
   MousePointer2,
   PanelLeft,
   PanelRight,
@@ -82,18 +84,31 @@ import {
 import type { AIAgentRow } from "@/supabase/client";
 import {
   appendChatbotSimulationInput,
+  appendChatbotSimulationOption,
   applyChatbotSimulationStep,
   createChatbotSimulationSession,
   type ChatbotSimulationSession,
+  type ChatbotSimulationOption,
 } from "@/utils/ChatbotSimulationUtils";
 import {
   addChatbotConditionBranch,
   ChatbotDraftConflictError,
   ChatbotPublishValidationError,
   CHATBOT_INPUT_MAX_LENGTH,
+  CHATBOT_INTERACTIVE_BODY_MAX_LENGTH,
+  CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH,
+  CHATBOT_LIST_MAX_ROWS,
+  CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH,
+  CHATBOT_LIST_ROW_TITLE_MAX_LENGTH,
+  CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  CHATBOT_REPLY_BUTTON_MAX_COUNT,
+  CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH,
   chatbotConditionOperators,
   createChatbotNode,
+  createChatbotListRow,
+  createChatbotListSection,
+  createChatbotReplyButton,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
@@ -103,6 +118,7 @@ import {
   getChatbotEditorGraphFingerprint,
   getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
+  getChatbotNodeOptionIds,
   isValidChatbotConnection,
   normalizeChatbotEditorGraph,
   removeChatbotConditionBranch,
@@ -111,12 +127,16 @@ import {
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  type ChatbotListSection,
+  type ChatbotNodeConfig,
+  type ChatbotReplyButton,
   type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotInteractiveConfig,
 } from "@/utils/ChatbotFlowUtils";
 
 export const Route = createFileRoute("/_auth/chatbots/$flowId")({
@@ -301,12 +321,16 @@ function FlowEditorWorkspace({
 
   const runSimulation = async (
     baseSession: ChatbotSimulationSession,
-    freeTextInput?: string,
+    input?: {
+      freeTextInput?: string;
+      option?: ChatbotSimulationOption;
+    },
   ) => {
-    const requestSession =
-      freeTextInput === undefined
+    const requestSession = input?.option
+      ? appendChatbotSimulationOption(baseSession, input.option)
+      : input?.freeTextInput === undefined
         ? baseSession
-        : appendChatbotSimulationInput(baseSession, freeTextInput);
+        : appendChatbotSimulationInput(baseSession, input.freeTextInput);
     setSimulationSession(requestSession);
 
     try {
@@ -315,7 +339,10 @@ function FlowEditorWorkspace({
         editorGraph,
         currentNodeId: requestSession.currentNodeId,
         variables: requestSession.variables,
-        freeTextInput,
+        freeTextInput: input?.freeTextInput,
+        optionInput: input?.option
+          ? { kind: input.option.kind, id: input.option.id }
+          : undefined,
       });
       setSimulationSession((current) =>
         applyChatbotSimulationStep(current, step),
@@ -503,7 +530,14 @@ function FlowEditorWorkspace({
               operator: conditionBranch.operator,
               value: conditionBranch.value,
             }
-          : { kind: "default" as const };
+          : (sourceNode?.data.node_type === "interactive_buttons" ||
+                sourceNode?.data.node_type === "list_message") &&
+              connection.sourceHandle
+            ? {
+                kind: "option" as const,
+                option_id: connection.sourceHandle,
+              }
+            : { kind: "default" as const };
       const isConditionEdge = sourceNode?.data.node_type === "condition";
 
       setEdges((currentEdges) =>
@@ -547,6 +581,8 @@ function FlowEditorWorkspace({
       const type = event.dataTransfer.getData(CHATBOT_NODE_DRAG_TYPE);
       if (
         type !== "send_message" &&
+        type !== "interactive_buttons" &&
+        type !== "list_message" &&
         type !== "collect_input" &&
         type !== "condition" &&
         type !== "end"
@@ -609,6 +645,29 @@ function FlowEditorWorkspace({
       );
     },
     [setNodes],
+  );
+
+  const updateInteractive = useCallback(
+    (nodeId: string, updates: Partial<ChatbotNodeConfig>) => {
+      const sourceNode = nodes.find((node) => node.id === nodeId);
+      if (!sourceNode) return;
+      const updatedNode = updateChatbotInteractiveConfig(sourceNode, updates);
+      const optionIds = new Set(getChatbotNodeOptionIds(updatedNode));
+
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => (node.id === nodeId ? updatedNode : node)),
+      );
+      setEdges((currentEdges) =>
+        currentEdges.filter(
+          (edge) =>
+            edge.source !== nodeId ||
+            edge.data?.kind !== "option" ||
+            (typeof edge.sourceHandle === "string" &&
+              optionIds.has(edge.sourceHandle)),
+        ),
+      );
+    },
+    [nodes, setEdges, setNodes],
   );
 
   const updateConditionVariable = useCallback(
@@ -1127,7 +1186,12 @@ function FlowEditorWorkspace({
             session={simulationSession}
             pending={simulateFlow.isPending}
             error={simulateFlow.isError}
-            onSend={(text) => void runSimulation(simulationSession, text)}
+            onSend={(text) =>
+              void runSimulation(simulationSession, { freeTextInput: text })
+            }
+            onSelect={(option) =>
+              void runSimulation(simulationSession, { option })
+            }
             onReset={startSimulation}
             onClose={() => setSimulatorOpen(false)}
           />
@@ -1138,6 +1202,7 @@ function FlowEditorWorkspace({
             onClose={() => setMobilePanel(null)}
             onMessageTextChange={updateMessageText}
             onCollectInputChange={updateCollectInput}
+            onInteractiveChange={updateInteractive}
             availableVariables={availableVariables}
             onConditionVariableChange={updateConditionVariable}
             onConditionBranchAdd={addConditionBranch}
@@ -1263,6 +1328,20 @@ function NodeLibrary({
       locked: false,
     },
     {
+      type: "interactive_buttons" as const,
+      label: t("Botones interactivos"),
+      description: t("Ofrece hasta tres respuestas rápidas"),
+      icon: MousePointerClick,
+      locked: false,
+    },
+    {
+      type: "list_message" as const,
+      label: t("Mensaje de lista"),
+      description: t("Ofrece un menú de hasta diez opciones"),
+      icon: List,
+      locked: false,
+    },
+    {
       type: "collect_input" as const,
       label: t("Recopilar respuesta"),
       description: t("Pregunta y guarda una variable"),
@@ -1379,6 +1458,7 @@ function NodeInspector({
   onClose,
   onMessageTextChange,
   onCollectInputChange,
+  onInteractiveChange,
   availableVariables,
   onConditionVariableChange,
   onConditionBranchAdd,
@@ -1394,6 +1474,10 @@ function NodeInspector({
   onCollectInputChange: (
     nodeId: string,
     updates: Record<string, unknown>,
+  ) => void;
+  onInteractiveChange: (
+    nodeId: string,
+    updates: Partial<ChatbotNodeConfig>,
   ) => void;
   availableVariables: string[];
   onConditionVariableChange: (nodeId: string, variable: string) => void;
@@ -1411,6 +1495,8 @@ function NodeInspector({
   const nodeType = node?.data.node_type ?? t("Nodo");
   const isStart = nodeType === "start";
   const isMessage = nodeType === "send_message";
+  const isButtons = nodeType === "interactive_buttons";
+  const isListMessage = nodeType === "list_message";
   const isCollectInput = nodeType === "collect_input";
   const isCondition = nodeType === "condition";
   const messageText =
@@ -1503,6 +1589,16 @@ function NodeInspector({
               node={node}
               onChange={(updates) => onCollectInputChange(node.id, updates)}
             />
+          ) : isButtons ? (
+            <InteractiveButtonsInspector
+              node={node}
+              onChange={(updates) => onInteractiveChange(node.id, updates)}
+            />
+          ) : isListMessage ? (
+            <ListMessageInspector
+              node={node}
+              onChange={(updates) => onInteractiveChange(node.id, updates)}
+            />
           ) : isCondition ? (
             <ConditionInspector
               node={node}
@@ -1562,6 +1658,361 @@ function NodeInspector({
         </div>
       )}
     </aside>
+  );
+}
+
+function InteractiveButtonsInspector({
+  node,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const body =
+    typeof node.data.config.body === "string" ? node.data.config.body : "";
+  const buttons = node.data.config.buttons ?? [];
+
+  const updateButton = (
+    buttonId: string,
+    updates: Partial<ChatbotReplyButton>,
+  ) => {
+    onChange({
+      buttons: buttons.map((button) =>
+        button.id === buttonId ? { ...button, ...updates } : button,
+      ),
+    });
+  };
+
+  return (
+    <div className="space-y-[14px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del mensaje")}
+        </span>
+        <textarea
+          value={body}
+          rows={4}
+          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          aria-invalid={!body.trim()}
+          onChange={(event) => onChange({ body: event.target.value })}
+          placeholder={t("Elegí una opción para continuar")}
+          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed outline-none ${
+            body.trim()
+              ? "border-border focus:border-primary"
+              : "border-destructive"
+          }`}
+        />
+        <span className="mt-[4px] flex justify-between text-[10px] text-muted-foreground">
+          <span className={!body.trim() ? "text-destructive" : ""}>
+            {!body.trim() ? t("El mensaje es obligatorio") : t("Mensaje listo")}
+          </span>
+          <span>
+            {body.length}/{CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          </span>
+        </span>
+      </label>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium">{t("Botones")}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {buttons.length}/{CHATBOT_REPLY_BUTTON_MAX_COUNT}
+          </span>
+        </div>
+        <div className="mt-[7px] space-y-[8px]">
+          {buttons.map((button, index) => (
+            <div
+              key={button.id}
+              className="rounded-lg border border-border bg-background/45 p-[8px]"
+            >
+              <div className="flex gap-[6px]">
+                <input
+                  value={button.title}
+                  maxLength={CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
+                  aria-invalid={!button.title.trim()}
+                  placeholder={`${t("Botón")} ${index + 1}`}
+                  onChange={(event) =>
+                    updateButton(button.id, { title: event.target.value })
+                  }
+                  className={`h-[34px] min-w-0 flex-1 rounded-lg border bg-background px-[9px] text-[11px] ${
+                    button.title.trim() ? "border-border" : "border-destructive"
+                  }`}
+                />
+                <button
+                  type="button"
+                  title={t("Eliminar botón")}
+                  aria-label={t("Eliminar botón")}
+                  disabled={buttons.length <= 1}
+                  onClick={() =>
+                    onChange({
+                      buttons: buttons.filter(
+                        (candidate) => candidate.id !== button.id,
+                      ),
+                    })
+                  }
+                  className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                >
+                  <Trash2 className="h-[13px] w-[13px]" />
+                </button>
+              </div>
+              <div className="mt-[3px] text-right text-[9px] text-muted-foreground">
+                {button.title.length}/{CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={buttons.length >= CHATBOT_REPLY_BUTTON_MAX_COUNT}
+          onClick={() =>
+            onChange({
+              buttons: [
+                ...buttons,
+                createChatbotReplyButton(`${t("Botón")} ${buttons.length + 1}`),
+              ],
+            })
+          }
+          className="mt-[8px] flex h-[34px] w-full items-center justify-center gap-[6px] rounded-lg border border-dashed border-primary/45 text-[11px] text-primary hover:bg-primary/8 disabled:opacity-40"
+        >
+          <Plus className="h-[13px] w-[13px]" />
+          {t("Agregar botón")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ListMessageInspector({
+  node,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const body =
+    typeof node.data.config.body === "string" ? node.data.config.body : "";
+  const buttonText =
+    typeof node.data.config.button_text === "string"
+      ? node.data.config.button_text
+      : "";
+  const sections = node.data.config.sections ?? [];
+  const rowCount = sections.reduce(
+    (total, section) => total + section.rows.length,
+    0,
+  );
+
+  const updateSections = (nextSections: ChatbotListSection[]) =>
+    onChange({ sections: nextSections });
+  const updateSection = (
+    sectionId: string,
+    updater: (section: ChatbotListSection) => ChatbotListSection,
+  ) =>
+    updateSections(
+      sections.map((section) =>
+        section.id === sectionId ? updater(section) : section,
+      ),
+    );
+
+  return (
+    <div className="space-y-[14px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del mensaje")}
+        </span>
+        <textarea
+          value={body}
+          rows={4}
+          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          aria-invalid={!body.trim()}
+          onChange={(event) => onChange({ body: event.target.value })}
+          placeholder={t("Elegí una opción de la lista")}
+          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed ${
+            body.trim() ? "border-border" : "border-destructive"
+          }`}
+        />
+        <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
+          {body.length}/{CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+        </span>
+      </label>
+
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del botón para abrir la lista")}
+        </span>
+        <input
+          value={buttonText}
+          maxLength={CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
+          aria-invalid={!buttonText.trim()}
+          onChange={(event) => onChange({ button_text: event.target.value })}
+          placeholder={t("Ver opciones")}
+          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
+            buttonText.trim() ? "border-border" : "border-destructive"
+          }`}
+        />
+        <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
+          {buttonText.length}/{CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
+        </span>
+      </label>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium">
+            {t("Secciones y opciones")}
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {rowCount}/{CHATBOT_LIST_MAX_ROWS}
+          </span>
+        </div>
+        <div className="mt-[7px] space-y-[9px]">
+          {sections.map((section, sectionIndex) => (
+            <div
+              key={section.id}
+              className="rounded-lg border border-border bg-background/45 p-[8px]"
+            >
+              <div className="flex gap-[6px]">
+                <input
+                  value={section.title}
+                  maxLength={CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH}
+                  aria-invalid={!section.title.trim()}
+                  placeholder={`${t("Sección")} ${sectionIndex + 1}`}
+                  onChange={(event) =>
+                    updateSection(section.id, (current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  className={`h-[32px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] font-medium ${
+                    section.title.trim()
+                      ? "border-border"
+                      : "border-destructive"
+                  }`}
+                />
+                <button
+                  type="button"
+                  title={t("Eliminar sección")}
+                  aria-label={t("Eliminar sección")}
+                  disabled={sections.length <= 1}
+                  onClick={() =>
+                    updateSections(
+                      sections.filter(
+                        (candidate) => candidate.id !== section.id,
+                      ),
+                    )
+                  }
+                  className="flex h-[32px] w-[32px] items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                >
+                  <Trash2 className="h-[12px] w-[12px]" />
+                </button>
+              </div>
+
+              <div className="mt-[7px] space-y-[7px]">
+                {section.rows.map((row, rowIndex) => (
+                  <div
+                    key={row.id}
+                    className="rounded-md border border-dashed border-border p-[7px]"
+                  >
+                    <div className="flex gap-[5px]">
+                      <input
+                        value={row.title}
+                        maxLength={CHATBOT_LIST_ROW_TITLE_MAX_LENGTH}
+                        aria-invalid={!row.title.trim()}
+                        placeholder={`${t("Opción")} ${rowIndex + 1}`}
+                        onChange={(event) =>
+                          updateSection(section.id, (current) => ({
+                            ...current,
+                            rows: current.rows.map((candidate) =>
+                              candidate.id === row.id
+                                ? { ...candidate, title: event.target.value }
+                                : candidate,
+                            ),
+                          }))
+                        }
+                        className={`h-[31px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] ${
+                          row.title.trim()
+                            ? "border-border"
+                            : "border-destructive"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        title={t("Eliminar opción")}
+                        aria-label={t("Eliminar opción")}
+                        disabled={rowCount <= 1}
+                        onClick={() => {
+                          if (section.rows.length === 1) {
+                            updateSections(
+                              sections.filter(
+                                (candidate) => candidate.id !== section.id,
+                              ),
+                            );
+                          } else {
+                            updateSection(section.id, (current) => ({
+                              ...current,
+                              rows: current.rows.filter(
+                                (candidate) => candidate.id !== row.id,
+                              ),
+                            }));
+                          }
+                        }}
+                        className="flex h-[31px] w-[31px] items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                      >
+                        <Trash2 className="h-[12px] w-[12px]" />
+                      </button>
+                    </div>
+                    <input
+                      value={row.description ?? ""}
+                      maxLength={CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH}
+                      placeholder={t("Descripción opcional")}
+                      onChange={(event) =>
+                        updateSection(section.id, (current) => ({
+                          ...current,
+                          rows: current.rows.map((candidate) =>
+                            candidate.id === row.id
+                              ? {
+                                  ...candidate,
+                                  description: event.target.value,
+                                }
+                              : candidate,
+                          ),
+                        }))
+                      }
+                      className="mt-[5px] h-[29px] w-full rounded-md border border-border bg-background px-[8px] text-[9px]"
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={rowCount >= CHATBOT_LIST_MAX_ROWS}
+                onClick={() =>
+                  updateSection(section.id, (current) => ({
+                    ...current,
+                    rows: [...current.rows, createChatbotListRow()],
+                  }))
+                }
+                className="mt-[7px] flex h-[30px] w-full items-center justify-center gap-[5px] rounded-md border border-dashed border-primary/40 text-[10px] text-primary disabled:opacity-40"
+              >
+                <Plus className="h-[12px] w-[12px]" />
+                {t("Agregar opción")}
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={rowCount >= CHATBOT_LIST_MAX_ROWS}
+          onClick={() =>
+            updateSections([...sections, createChatbotListSection()])
+          }
+          className="mt-[8px] flex h-[34px] w-full items-center justify-center gap-[6px] rounded-lg border border-dashed border-primary/45 text-[11px] text-primary hover:bg-primary/8 disabled:opacity-40"
+        >
+          <Plus className="h-[13px] w-[13px]" />
+          {t("Agregar sección")}
+        </button>
+      </div>
+    </div>
   );
 }
 

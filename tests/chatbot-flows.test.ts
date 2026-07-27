@@ -7,8 +7,10 @@ import {
   ChatbotDraftConflictError,
   ChatbotPublishValidationError,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  createChatbotListSection,
   createChatbotManagementError,
   createChatbotNode,
+  createChatbotReplyButton,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
@@ -32,9 +34,11 @@ import {
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotInteractiveConfig,
 } from "../src/utils/ChatbotFlowUtils.ts";
 import {
   appendChatbotSimulationInput,
+  appendChatbotSimulationOption,
   applyChatbotSimulationStep,
   createChatbotSimulationSession,
 } from "../src/utils/ChatbotSimulationUtils.ts";
@@ -95,6 +99,10 @@ void test("chatbot simulator keeps conversation state local and resettable", () 
     waiting_for: "free_text",
     variables: {},
     outgoing_texts: ["Welcome", "What is your city?"],
+    outgoing_messages: [
+      { type: "text", text: "Welcome" },
+      { type: "text", text: "What is your city?" },
+    ],
     error: null,
     transition_count: 3,
   });
@@ -106,6 +114,7 @@ void test("chatbot simulator keeps conversation state local and resettable", () 
     waiting_for: null,
     variables: { customer_city: "Lahore" },
     outgoing_texts: ["Lahore selected"],
+    outgoing_messages: [{ type: "text", text: "Lahore selected" }],
     error: null,
     transition_count: 4,
   });
@@ -122,6 +131,46 @@ void test("chatbot simulator keeps conversation state local and resettable", () 
   );
   assert.deepEqual(completed.variables, { customer_city: "Lahore" });
   assert.deepEqual(createChatbotSimulationSession(), initial);
+});
+
+void test("chatbot simulator renders and selects interactive options locally", () => {
+  const waiting = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: true,
+    status: "waiting",
+    current_node_id: "buttons",
+    waiting_for: "button",
+    variables: {},
+    outgoing_texts: [],
+    outgoing_messages: [
+      {
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "Choose a team" },
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: { id: "support", title: "Support" },
+              },
+            ],
+          },
+        },
+      },
+    ],
+    error: null,
+    transition_count: 2,
+  });
+  const selected = appendChatbotSimulationOption(
+    waiting,
+    waiting.messages[0]!.options![0]!,
+  );
+
+  assert.equal(waiting.waitingFor, "button");
+  assert.deepEqual(waiting.messages[0]?.options, [
+    { id: "support", title: "Support", kind: "button" },
+  ]);
+  assert.equal(selected.messages.at(-1)?.text, "Support");
 });
 
 void test("chatbot simulator exposes invalid graph issues without runtime state", () => {
@@ -573,6 +622,24 @@ void test("input and condition nodes use the exact compiler-compatible contract"
   ]);
 });
 
+void test("interactive nodes keep stable option IDs and compiler-compatible config", () => {
+  const buttons = createChatbotNode(
+    "interactive_buttons",
+    { x: 0, y: 0 },
+    "buttons",
+  );
+  const list = createChatbotNode("list_message", { x: 200, y: 0 }, "list");
+  const configured = updateChatbotInteractiveConfig(buttons, {
+    body: "Choose",
+    buttons: [createChatbotReplyButton("Support")],
+  });
+
+  assert.equal(configured.data.config.body, "Choose");
+  assert.match(configured.data.config.buttons![0]!.id, /^button-/);
+  assert.equal(list.data.config.sections?.length, 1);
+  assert.match(createChatbotListSection().rows[0]!.id, /^row-/);
+});
+
 void test("input and condition inspector updates preserve node contracts", () => {
   const input = updateChatbotCollectInputConfig(
     createChatbotNode("collect_input", { x: 0, y: 0 }, "input"),
@@ -726,6 +793,54 @@ void test("condition connections require one edge per branch and a fallback", ()
       [conditionalEdge],
     ),
     true,
+  );
+});
+
+void test("interactive connections require one edge per stable option handle", () => {
+  const buttons = updateChatbotInteractiveConfig(
+    createChatbotNode("interactive_buttons", { x: 0, y: 0 }, "buttons"),
+    {
+      body: "Choose",
+      buttons: [{ id: "support", title: "Support" }],
+    },
+  );
+  const end = createChatbotNode("end", { x: 300, y: 0 }, "end");
+  const nodes = [buttons, end];
+
+  assert.equal(
+    isValidChatbotConnection({ source: "buttons", target: "end" }, nodes, []),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "support" },
+      nodes,
+      [],
+    ),
+    true,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "unknown" },
+      nodes,
+      [],
+    ),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "support" },
+      nodes,
+      [
+        {
+          id: "support-edge",
+          source: "buttons",
+          sourceHandle: "support",
+          target: "end",
+        },
+      ],
+    ),
+    false,
   );
 });
 
@@ -937,6 +1052,27 @@ void test("input and condition editor labels exist in every supported locale", (
     "Escribí una respuesta",
     "Esperando al flujo",
     "Enviar respuesta",
+    "Botones interactivos",
+    "Ofrece hasta tres respuestas rápidas",
+    "Mensaje de lista",
+    "Ofrece un menú de hasta diez opciones",
+    "Elegí una opción para continuar",
+    "Botones",
+    "Botón",
+    "Eliminar botón",
+    "Agregar botón",
+    "Elegí una opción de la lista",
+    "Texto del botón para abrir la lista",
+    "Ver opciones",
+    "Secciones y opciones",
+    "Sección",
+    "Eliminar sección",
+    "Opción",
+    "Eliminar opción",
+    "Descripción opcional",
+    "Agregar opción",
+    "Agregar sección",
+    "Seleccioná una opción para continuar",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

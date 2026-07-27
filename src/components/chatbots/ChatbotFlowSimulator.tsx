@@ -10,13 +10,17 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { ChatbotSimulationSession } from "@/utils/ChatbotSimulationUtils";
+import type {
+  ChatbotSimulationOption,
+  ChatbotSimulationSession,
+} from "@/utils/ChatbotSimulationUtils";
 
 export function ChatbotFlowSimulator({
   session,
   pending,
   error,
   onSend,
+  onSelect,
   onReset,
   onClose,
 }: {
@@ -24,12 +28,16 @@ export function ChatbotFlowSimulator({
   pending: boolean;
   error: boolean;
   onSend: (text: string) => void;
+  onSelect: (option: ChatbotSimulationOption) => void;
   onReset: () => void;
   onClose: () => void;
 }) {
   const { translate: t } = useTranslation();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const actionableMessageId = [...session.messages]
+    .reverse()
+    .find((message) => message.options?.length)?.id;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -152,7 +160,33 @@ export function ChatbotFlowSimulator({
                       : "border border-border bg-background"
                 }`}
               >
-                {message.text}
+                <div>{message.text}</div>
+                {message.options && message.options.length > 0 && (
+                  <div className="mt-[8px] space-y-[5px] border-t border-border pt-[7px]">
+                    {message.options.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        disabled={
+                          pending ||
+                          session.status !== "waiting" ||
+                          message.id !== actionableMessageId
+                        }
+                        onClick={() => onSelect(option)}
+                        className="block w-full rounded-lg border border-primary/35 bg-primary/5 px-[8px] py-[6px] text-left text-primary hover:bg-primary/10 disabled:cursor-default disabled:opacity-55"
+                      >
+                        <span className="block text-[10px] font-semibold">
+                          {option.title}
+                        </span>
+                        {option.description && (
+                          <span className="mt-[2px] block text-[9px] leading-relaxed text-muted-foreground">
+                            {option.description}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {message.role === "user" && (
                 <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -178,13 +212,19 @@ export function ChatbotFlowSimulator({
       )}
 
       <form
-        className="flex gap-[7px] border-t border-border p-[11px]"
+        className={`gap-[7px] border-t border-border p-[11px] ${
+          session.waitingFor === "free_text" ? "flex" : "hidden"
+        }`}
         onSubmit={submit}
       >
         <input
           value={input}
           maxLength={4096}
-          disabled={pending || session.status !== "waiting"}
+          disabled={
+            pending ||
+            session.status !== "waiting" ||
+            session.waitingFor !== "free_text"
+          }
           placeholder={
             session.status === "waiting"
               ? t("Escribí una respuesta")
@@ -203,6 +243,13 @@ export function ChatbotFlowSimulator({
           <Send className="h-[14px] w-[14px]" />
         </button>
       </form>
+      {session.waitingFor !== "free_text" && (
+        <div className="border-t border-border px-[12px] py-[10px] text-center text-[10px] text-muted-foreground">
+          {session.status === "waiting"
+            ? t("SeleccionÃ¡ una opciÃ³n para continuar")
+            : t("Esperando al flujo")}
+        </div>
+      )}
     </aside>
   );
 }
