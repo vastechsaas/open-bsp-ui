@@ -1166,6 +1166,17 @@ void test("input and condition editor labels exist in every supported locale", (
     "Agregar opción",
     "Agregar sección",
     "Seleccioná una opción para continuar",
+    "Activar chatbot",
+    "Elegí qué versión publicada responderá en cada número de WhatsApp.",
+    "No se pudieron cargar las opciones de activación.",
+    "Activaciones actuales",
+    "Desactivar",
+    "Número de WhatsApp",
+    "Agente de IA",
+    "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.",
+    "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.",
+    "Activar",
+    "Desactivar chatbot",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {
