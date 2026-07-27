@@ -5,6 +5,7 @@ export type ChatbotSimulationMessage = {
   role: "bot" | "user" | "system";
   text: string;
   options?: ChatbotSimulationOption[];
+  list?: ChatbotSimulationList;
 };
 
 export type ChatbotSimulationOption = {
@@ -12,6 +13,14 @@ export type ChatbotSimulationOption = {
   title: string;
   description?: string;
   kind: "button" | "list_selection";
+};
+
+export type ChatbotSimulationList = {
+  buttonText: string;
+  sections: Array<{
+    title: string;
+    options: ChatbotSimulationOption[];
+  }>;
 };
 
 export type ChatbotSimulationSession = {
@@ -141,26 +150,35 @@ export function applyChatbotSimulationStep(
     }
 
     const interactive = message.interactive;
-    const options: ChatbotSimulationOption[] =
-      interactive.type === "button"
-        ? interactive.action.buttons.map((button) => ({
-            id: button.reply.id,
-            title: button.reply.title,
-            kind: "button",
-          }))
-        : interactive.action.sections.flatMap((section) =>
-            section.rows.map((row) => ({
-              id: row.id,
-              title: row.title,
-              description: row.description,
-              kind: "list_selection" as const,
-            })),
-          );
+    if (interactive.type === "button") {
+      return {
+        id: `simulation-message-${session.messages.length + index + 1}`,
+        role: "bot" as const,
+        text: interactive.body.text,
+        options: interactive.action.buttons.map((button) => ({
+          id: button.reply.id,
+          title: button.reply.title,
+          kind: "button" as const,
+        })),
+      };
+    }
+
     return {
       id: `simulation-message-${session.messages.length + index + 1}`,
       role: "bot" as const,
       text: interactive.body.text,
-      options,
+      list: {
+        buttonText: interactive.action.button,
+        sections: interactive.action.sections.map((section) => ({
+          title: section.title,
+          options: section.rows.map((row) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            kind: "list_selection" as const,
+          })),
+        })),
+      },
     };
   });
   const failureMessage = step.error
