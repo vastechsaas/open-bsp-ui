@@ -925,5 +925,8 @@
   "Descripción opcional": "Maelezo ya hiari",
   "Agregar opción": "Ongeza chaguo",
   "Agregar sección": "Ongeza sehemu",
-  "Seleccioná una opción para continuar": "Chagua chaguo ili kuendelea"
+  "Seleccioná una opción para continuar": "Chagua chaguo ili kuendelea",
+  "Insertar variable": "Weka kigezo",
+  "No hay variables disponibles en este punto.": "Hakuna vigezo vinavyopatikana katika hatua hii.",
+  "Usa variables recopiladas anteriormente con {{variable}}.": "Tumia vigezo vilivyokusanywa awali kwa {{variable}}."
 }

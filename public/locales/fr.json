@@ -925,5 +925,8 @@
   "Descripción opcional": "Description facultative",
   "Agregar opción": "Ajouter une option",
   "Agregar sección": "Ajouter une section",
-  "Seleccioná una opción para continuar": "Sélectionnez une option pour continuer"
+  "Seleccioná una opción para continuar": "Sélectionnez une option pour continuer",
+  "Insertar variable": "Insérer une variable",
+  "No hay variables disponibles en este punto.": "Aucune variable n’est disponible à ce stade.",
+  "Usa variables recopiladas anteriormente con {{variable}}.": "Utilisez les variables collectées précédemment avec {{variable}}."
 }

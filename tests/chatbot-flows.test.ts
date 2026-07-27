@@ -14,6 +14,7 @@ import {
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
+  insertChatbotTemplateVariable,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
   getChatbotEditorActionAvailability,
@@ -877,6 +878,21 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "message-condition", source: "message", target: "condition" },
     ]),
     [],
+  );
+});
+
+void test("template variables insert at the requested selection", () => {
+  assert.equal(
+    insertChatbotTemplateVariable("Hello name", "customer_name", 6, 10),
+    "Hello {{customer_name}}",
+  );
+  assert.equal(
+    insertChatbotTemplateVariable("City: ", "customer_city"),
+    "City: {{customer_city}}",
+  );
+  assert.equal(
+    insertChatbotTemplateVariable("Hello", "contact.name"),
+    "Hello",
   );
 });
 
