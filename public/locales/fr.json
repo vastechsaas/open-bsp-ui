@@ -935,8 +935,7 @@
   "Activaciones actuales": "Activations actuelles",
   "Desactivar": "Désactiver",
   "Número de WhatsApp": "Numéro WhatsApp",
-  "Agente de IA": "Agent IA",
-  "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.": "Vous avez besoin d’un numéro WhatsApp connecté, d’une version publiée et d’un agent IA actif.",
+  "Necesitás un número de WhatsApp conectado y una versión publicada.": "Vous avez besoin d’un numéro WhatsApp connecté et d’une version publiée.",
   "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Impossible de modifier l’activation. Vérifiez les options et réessayez.",
   "Activar": "Activer",
   "Desactivar chatbot": "Désactiver le chatbot"

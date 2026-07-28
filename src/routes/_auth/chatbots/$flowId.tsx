@@ -66,7 +66,7 @@ import {
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
+import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type ChatbotFlowEditorData,
@@ -81,7 +81,6 @@ import {
   useSimulateChatbotFlow,
   useValidateChatbotFlow,
 } from "@/queries/useChatbotFlows";
-import type { AIAgentRow } from "@/supabase/client";
 import {
   appendChatbotSimulationInput,
   appendChatbotSimulationOption,
@@ -283,14 +282,9 @@ function FlowEditorWorkspace({
   );
   const deploymentsQuery = useChatbotFlowDeployments(editor.flow.id);
   const addressesQuery = useOrganizationsAddresses();
-  const agentsQuery = useCurrentAgents();
   const connectedWhatsAppAddresses = (addressesQuery.data ?? []).filter(
     (address) =>
       address.service === "whatsapp" && address.status === "connected",
-  );
-  const activeAiAgents = (agentsQuery.data ?? []).filter(
-    (agent): agent is AIAgentRow =>
-      agent.ai && agent.extra?.mode !== "inactive",
   );
   const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
@@ -1258,18 +1252,15 @@ function FlowEditorWorkspace({
         deployments={deploymentsQuery.data ?? []}
         versions={versionsQuery.data ?? []}
         addresses={connectedWhatsAppAddresses}
-        agents={activeAiAgents}
         loading={
           deploymentsQuery.isLoading ||
           versionsQuery.isLoading ||
-          addressesQuery.isLoading ||
-          agentsQuery.isLoading
+          addressesQuery.isLoading
         }
         error={
           deploymentsQuery.isError ||
           versionsQuery.isError ||
-          addressesQuery.isError ||
-          agentsQuery.isError
+          addressesQuery.isError
         }
         actionError={activateFlow.isError || deactivateFlow.isError}
         pending={activateFlow.isPending || deactivateFlow.isPending}
@@ -1283,7 +1274,6 @@ function FlowEditorWorkspace({
             deploymentsQuery.refetch(),
             versionsQuery.refetch(),
             addressesQuery.refetch(),
-            agentsQuery.refetch(),
           ]);
         }}
         onActivate={(input) =>

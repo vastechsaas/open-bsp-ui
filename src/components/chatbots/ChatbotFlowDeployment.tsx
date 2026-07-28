@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { AIAgentRow, OrganizationAddressRow } from "@/supabase/client";
+import type { OrganizationAddressRow } from "@/supabase/client";
 import type {
   ChatbotFlowDeployment,
   ChatbotFlowVersion,
@@ -19,7 +19,6 @@ export function ChatbotFlowDeploymentDialog({
   deployments,
   versions,
   addresses,
-  agents,
   loading,
   error,
   actionError,
@@ -33,7 +32,6 @@ export function ChatbotFlowDeploymentDialog({
   deployments: ChatbotFlowDeployment[];
   versions: ChatbotFlowVersion[];
   addresses: OrganizationAddressRow[];
-  agents: AIAgentRow[];
   loading: boolean;
   error: boolean;
   actionError: boolean;
@@ -43,7 +41,6 @@ export function ChatbotFlowDeploymentDialog({
   onActivate: (input: {
     organizationAddress: string;
     versionId: string;
-    agentId: string;
   }) => void;
   onDeactivate: (organizationAddress: string) => void;
 }) {
@@ -54,14 +51,12 @@ export function ChatbotFlowDeploymentDialog({
   );
   const [organizationAddress, setOrganizationAddress] = useState("");
   const [versionId, setVersionId] = useState("");
-  const [agentId, setAgentId] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setOrganizationAddress((current) => current || addresses[0]?.address || "");
     setVersionId((current) => current || publishedVersions[0]?.id || "");
-    setAgentId((current) => current || agents[0]?.id || "");
-  }, [addresses, agents, open, publishedVersions]);
+  }, [addresses, open, publishedVersions]);
 
   useEffect(() => {
     const deployment = deployments.find(
@@ -69,12 +64,11 @@ export function ChatbotFlowDeploymentDialog({
     );
     if (!deployment) return;
     setVersionId(deployment.flow_version_id);
-    setAgentId(deployment.agent_id);
   }, [deployments, organizationAddress]);
 
   if (!open) return null;
 
-  const canActivate = Boolean(organizationAddress && versionId && agentId);
+  const canActivate = Boolean(organizationAddress && versionId);
 
   return (
     <div
@@ -177,7 +171,7 @@ export function ChatbotFlowDeploymentDialog({
               </div>
             )}
 
-            <div className="mt-[18px] grid gap-[12px] sm:grid-cols-3">
+            <div className="mt-[18px] grid gap-[12px] sm:grid-cols-2">
               <DeploymentField label={t("Número de WhatsApp")}>
                 <select
                   value={organizationAddress}
@@ -206,27 +200,13 @@ export function ChatbotFlowDeploymentDialog({
                   ))}
                 </select>
               </DeploymentField>
-              <DeploymentField label={t("Agente de IA")}>
-                <select
-                  value={agentId}
-                  className="h-[40px] w-full rounded-lg border border-border bg-background px-[10px] text-[12px]"
-                  onChange={(event) => setAgentId(event.target.value)}
-                >
-                  {agents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </option>
-                  ))}
-                </select>
-              </DeploymentField>
             </div>
 
             {addresses.length === 0 ||
-            publishedVersions.length === 0 ||
-            agents.length === 0 ? (
+            publishedVersions.length === 0 ? (
               <div className="mt-[14px] rounded-lg border border-amber-500/30 bg-amber-500/8 px-[11px] py-[9px] text-[11px] text-amber-600 dark:text-amber-400">
                 {t(
-                  "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.",
+                  "Necesitás un número de WhatsApp conectado y una versión publicada.",
                 )}
               </div>
             ) : null}
@@ -256,7 +236,7 @@ export function ChatbotFlowDeploymentDialog({
                 disabled={pending || !canActivate}
                 className="primary flex min-w-[112px] items-center justify-center gap-[7px] px-[16px] py-[8px] text-[12px] disabled:opacity-50"
                 onClick={() =>
-                  onActivate({ organizationAddress, versionId, agentId })
+                  onActivate({ organizationAddress, versionId })
                 }
               >
                 {pending ? (

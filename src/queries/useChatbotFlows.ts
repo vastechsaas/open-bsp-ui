@@ -113,7 +113,6 @@ type ActivateChatbotFlowInput = {
   flowId: string;
   organizationAddress: string;
   versionId: string;
-  agentId: string;
 };
 
 type DeactivateChatbotFlowInput = {
@@ -368,7 +367,6 @@ export function useActivateChatbotFlow() {
       flowId,
       organizationAddress,
       versionId,
-      agentId,
     }: ActivateChatbotFlowInput) => {
       if (!orgId) throw new Error("No active organization");
       return await invokeChatbotManagement<{
@@ -379,7 +377,6 @@ export function useActivateChatbotFlow() {
           organization_id: orgId,
           organization_address: organizationAddress,
           version_id: versionId,
-          agent_id: agentId,
         },
         "PUT",
       );

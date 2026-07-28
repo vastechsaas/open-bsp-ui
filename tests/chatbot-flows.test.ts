@@ -272,6 +272,27 @@ void test("chatbot duplication uses a predictable editable name", () => {
   assert.equal(getChatbotFlowDuplicateName("  Ventas  "), "Ventas (copia)");
 });
 
+void test("chatbot activation uses the server-owned runtime identity", () => {
+  const deploymentDialog = readFileSync(
+    new URL(
+      "../src/components/chatbots/ChatbotFlowDeployment.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const flowQueries = readFileSync(
+    new URL("../src/queries/useChatbotFlows.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(deploymentDialog, /Agente de IA|agentId|agents:/);
+  assert.match(
+    deploymentDialog,
+    /Necesitás un número de WhatsApp conectado y una versión publicada\./,
+  );
+  assert.doesNotMatch(flowQueries, /agent_id:\s*agentId/);
+});
+
 void test("chatbot editor graph normalization keeps safe connected elements", () => {
   const graph = normalizeChatbotEditorGraph({
     nodes: [
@@ -1172,8 +1193,7 @@ void test("input and condition editor labels exist in every supported locale", (
     "Activaciones actuales",
     "Desactivar",
     "Número de WhatsApp",
-    "Agente de IA",
-    "Necesitás un número de WhatsApp conectado, una versión publicada y un agente de IA activo.",
+    "Necesitás un número de WhatsApp conectado y una versión publicada.",
     "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.",
     "Activar",
     "Desactivar chatbot",
