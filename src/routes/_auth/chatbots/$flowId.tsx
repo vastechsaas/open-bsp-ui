@@ -53,6 +53,7 @@ import {
   Plus,
   TextCursorInput,
   Trash2,
+  UserRoundCheck,
   X,
 } from "lucide-react";
 import { ChatbotFlowDeploymentDialog } from "@/components/chatbots/ChatbotFlowDeployment";
@@ -66,7 +67,7 @@ import {
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type ChatbotFlowEditorData,
@@ -133,11 +134,13 @@ import {
   type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
+  updateChatbotAssignAgent,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
   updateChatbotInteractiveConfig,
 } from "@/utils/ChatbotFlowUtils";
+import type { AgentRow } from "@/supabase/client";
 
 export const Route = createFileRoute("/_auth/chatbots/$flowId")({
   component: ChatbotFlowEditor,
@@ -146,6 +149,22 @@ export const Route = createFileRoute("/_auth/chatbots/$flowId")({
 type MobilePanel = "library" | "inspector" | null;
 const CHATBOT_NODE_DRAG_TYPE = "application/openbsp-chatbot-node";
 const chatbotNodeTypes: NodeTypes = { chatbotNode: ChatbotFlowNode };
+type ChatbotHandoffAgent = Pick<AgentRow, "id" | "name">;
+
+function isActiveHumanAgent(agent: AgentRow) {
+  if (agent.ai || !agent.user_id) return false;
+  const extra = agent.extra;
+  if (
+    !extra ||
+    typeof extra !== "object" ||
+    Array.isArray(extra) ||
+    !("invitation" in extra) ||
+    !extra.invitation
+  ) {
+    return true;
+  }
+  return extra.invitation.status === "accepted";
+}
 
 function ChatbotFlowEditor() {
   const { flowId } = Route.useParams();
@@ -156,6 +175,10 @@ function ChatbotFlowEditor() {
     number | null
   >(null);
   const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
+  const { data: agents, isLoading: agentsLoading } = useCurrentAgents();
+  const handoffAgents = (agents ?? [])
+    .filter(isActiveHumanAgent)
+    .map(({ id, name }) => ({ id, name }));
   const canManage =
     currentAgent?.extra?.role === "owner" ||
     currentAgent?.extra?.role === "admin";
@@ -169,7 +192,7 @@ function ChatbotFlowEditor() {
     }
   };
 
-  if (agentLoading) {
+  if (agentLoading || agentsLoading) {
     return <EditorLoading label={t("Cargando editor")} />;
   }
 
@@ -217,6 +240,7 @@ function ChatbotFlowEditor() {
         lastPublishedVersion={lastPublishedVersion}
         onPublished={setLastPublishedVersion}
         onDismissPublished={() => setLastPublishedVersion(null)}
+        handoffAgents={handoffAgents}
       />
     </ReactFlowProvider>
   );
@@ -231,6 +255,7 @@ function FlowEditorWorkspace({
   lastPublishedVersion,
   onPublished,
   onDismissPublished,
+  handoffAgents,
 }: {
   editor: ChatbotFlowEditorData;
   graph: ChatbotEditorGraph;
@@ -240,6 +265,7 @@ function FlowEditorWorkspace({
   lastPublishedVersion: number | null;
   onPublished: (version: number) => void;
   onDismissPublished: () => void;
+  handoffAgents: ChatbotHandoffAgent[];
 }) {
   const { translate: t } = useTranslation();
   const initialGraph = ensureChatbotStartNode(graph);
@@ -580,6 +606,7 @@ function FlowEditorWorkspace({
         type !== "list_message" &&
         type !== "collect_input" &&
         type !== "condition" &&
+        type !== "assign_agent" &&
         type !== "end"
       ) {
         return;
@@ -636,6 +663,17 @@ function FlowEditorWorkspace({
           node.id === nodeId
             ? updateChatbotCollectInputConfig(node, updates)
             : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateAssignedAgent = useCallback(
+    (nodeId: string, agentId: string) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId ? updateChatbotAssignAgent(node, agentId) : node,
         ),
       );
     },
@@ -1198,6 +1236,8 @@ function FlowEditorWorkspace({
             onMessageTextChange={updateMessageText}
             onCollectInputChange={updateCollectInput}
             onInteractiveChange={updateInteractive}
+            handoffAgents={handoffAgents}
+            onAssignedAgentChange={updateAssignedAgent}
             availableVariables={availableVariables}
             onConditionVariableChange={updateConditionVariable}
             onConditionBranchAdd={addConditionBranch}
@@ -1344,6 +1384,13 @@ function NodeLibrary({
       label: t("Condición"),
       description: t("Divide el flujo según una variable"),
       icon: GitBranch,
+      locked: false,
+    },
+    {
+      type: "assign_agent" as const,
+      label: t("Asignar agente"),
+      description: t("Transfiere la conversación a una persona"),
+      icon: UserRoundCheck,
       locked: false,
     },
     {
@@ -1495,6 +1542,8 @@ function NodeInspector({
   onMessageTextChange,
   onCollectInputChange,
   onInteractiveChange,
+  handoffAgents,
+  onAssignedAgentChange,
   availableVariables,
   onConditionVariableChange,
   onConditionBranchAdd,
@@ -1515,6 +1564,8 @@ function NodeInspector({
     nodeId: string,
     updates: Partial<ChatbotNodeConfig>,
   ) => void;
+  handoffAgents: ChatbotHandoffAgent[];
+  onAssignedAgentChange: (nodeId: string, agentId: string) => void;
   availableVariables: string[];
   onConditionVariableChange: (nodeId: string, variable: string) => void;
   onConditionBranchAdd: (nodeId: string) => void;
@@ -1535,6 +1586,7 @@ function NodeInspector({
   const isListMessage = nodeType === "list_message";
   const isCollectInput = nodeType === "collect_input";
   const isCondition = nodeType === "condition";
+  const isAssignAgent = nodeType === "assign_agent";
   const messageText =
     isMessage && typeof node?.data.config.text === "string"
       ? node.data.config.text
@@ -1647,6 +1699,12 @@ function NodeInspector({
               availableVariables={availableVariables}
               onChange={(updates) => onInteractiveChange(node.id, updates)}
             />
+          ) : isAssignAgent ? (
+            <AssignAgentInspector
+              node={node}
+              agents={handoffAgents}
+              onChange={(agentId) => onAssignedAgentChange(node.id, agentId)}
+            />
           ) : isCondition ? (
             <ConditionInspector
               node={node}
@@ -1706,6 +1764,61 @@ function NodeInspector({
         </div>
       )}
     </aside>
+  );
+}
+
+function AssignAgentInspector({
+  node,
+  agents,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  agents: ChatbotHandoffAgent[];
+  onChange: (agentId: string) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const agentId =
+    typeof node.data.config.agent_id === "string"
+      ? node.data.config.agent_id
+      : "";
+  const selectedAgentAvailable = agents.some((agent) => agent.id === agentId);
+
+  return (
+    <div className="space-y-[8px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">{t("Agente humano")}</span>
+        <select
+          value={selectedAgentAvailable ? agentId : ""}
+          aria-invalid={!selectedAgentAvailable}
+          onChange={(event) => onChange(event.target.value)}
+          className={`mt-[6px] h-[38px] w-full rounded-lg border bg-background px-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20 ${
+            selectedAgentAvailable
+              ? "border-border focus:border-primary"
+              : "border-destructive"
+          }`}
+        >
+          <option value="">{t("Seleccioná un agente")}</option>
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p
+        className={`text-[10px] leading-relaxed ${
+          selectedAgentAvailable ? "text-muted-foreground" : "text-destructive"
+        }`}
+      >
+        {agents.length === 0
+          ? t("No hay agentes humanos activos disponibles.")
+          : selectedAgentAvailable
+            ? t(
+                "La automatización terminará y la conversación quedará asignada a esta persona.",
+              )
+            : t("Seleccioná un agente humano activo.")}
+      </p>
+    </div>
   );
 }
 

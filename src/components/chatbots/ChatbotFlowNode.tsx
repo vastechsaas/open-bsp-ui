@@ -7,6 +7,7 @@ import {
   MousePointerClick,
   Play,
   TextCursorInput,
+  UserRoundCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -57,6 +58,12 @@ const nodePresentation: Record<
     accent: "border-orange-500/45",
     iconBackground: "bg-orange-500/15 text-orange-500",
   },
+  assign_agent: {
+    icon: UserRoundCheck,
+    badge: "HANDOFF",
+    accent: "border-violet-500/45",
+    iconBackground: "bg-violet-500/15 text-violet-500",
+  },
   end: {
     icon: CircleStop,
     badge: "END",
@@ -76,6 +83,8 @@ export default function ChatbotFlowNode({
   const Icon = presentation.icon;
   const isStart = data.node_type === "start";
   const isEnd = data.node_type === "end";
+  const isAssignAgent = data.node_type === "assign_agent";
+  const isTerminal = isEnd || isAssignAgent;
   const isMessage = data.node_type === "send_message";
   const isButtons = data.node_type === "interactive_buttons";
   const isList = data.node_type === "list_message";
@@ -104,6 +113,10 @@ export default function ChatbotFlowNode({
           section.rows.map((row) => ({ id: row.id, title: row.title })),
         )
       : [];
+  const assignedAgentId =
+    isAssignAgent && typeof data.config.agent_id === "string"
+      ? data.config.agent_id
+      : "";
 
   return (
     <div
@@ -246,7 +259,19 @@ export default function ChatbotFlowNode({
         </div>
       )}
 
-      {!isEnd && !isCondition && !isInteractive && (
+      {isAssignAgent && (
+        <div className="border-t border-border px-[12px] py-[9px]">
+          <p
+            className={`truncate text-[10px] ${
+              assignedAgentId ? "text-violet-500" : "text-destructive"
+            }`}
+          >
+            {assignedAgentId ? t("Agente configurado") : t("Agente requerido")}
+          </p>
+        </div>
+      )}
+
+      {!isTerminal && !isCondition && !isInteractive && (
         <Handle
           type="source"
           position={Position.Right}

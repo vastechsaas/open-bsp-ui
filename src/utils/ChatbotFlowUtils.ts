@@ -19,6 +19,7 @@ export type ChatbotCoreNodeType =
   | "list_message"
   | "collect_input"
   | "condition"
+  | "assign_agent"
   | "end";
 
 export type ChatbotConditionOperator =
@@ -62,6 +63,7 @@ export type ChatbotNodeConfig = {
   buttons?: ChatbotReplyButton[];
   button_text?: string;
   sections?: ChatbotListSection[];
+  agent_id?: string;
   [key: string]: unknown;
 };
 
@@ -410,6 +412,7 @@ const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
   INPUT: "collect_input",
   COLLECT_INPUT: "collect_input",
   CONDITION: "condition",
+  ASSIGN_AGENT: "assign_agent",
   END: "end",
 };
 
@@ -437,6 +440,7 @@ export function isChatbotCoreNodeType(
     value === "list_message" ||
     value === "collect_input" ||
     value === "condition" ||
+    value === "assign_agent" ||
     value === "end"
   );
 }
@@ -448,6 +452,7 @@ export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "list_message") return "Mensaje de lista";
   if (type === "collect_input") return "Recopilar respuesta";
   if (type === "condition") return "Condición";
+  if (type === "assign_agent") return "Asignar agente";
   return "Fin";
 }
 
@@ -518,7 +523,9 @@ export function createChatbotNode(
                 ? { prompt: "", variable: "", required: true }
                 : type === "condition"
                   ? { variable: "" }
-                  : {},
+                  : type === "assign_agent"
+                    ? { agent_id: "" }
+                    : {},
       ...(type === "condition"
         ? { branches: [createChatbotConditionBranch()] }
         : {}),
@@ -574,6 +581,21 @@ export function updateChatbotCollectInputConfig(
         ...node.data.config,
         ...updates,
       },
+    },
+  };
+}
+
+export function updateChatbotAssignAgent(
+  node: ChatbotFlowNode,
+  agentId: string,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "assign_agent") return node;
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: { ...node.data.config, agent_id: agentId },
     },
   };
 }
@@ -797,7 +819,12 @@ export function isValidChatbotConnection(
   const sourceNode = nodes.find((node) => node.id === source);
   const targetNode = nodes.find((node) => node.id === target);
   if (!sourceNode || !targetNode) return false;
-  if (sourceNode.data.node_type === "end") return false;
+  if (
+    sourceNode.data.node_type === "end" ||
+    sourceNode.data.node_type === "assign_agent"
+  ) {
+    return false;
+  }
   if (targetNode.data.node_type === "start") return false;
 
   if (

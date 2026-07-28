@@ -938,5 +938,15 @@
   "Necesitás un número de WhatsApp conectado y una versión publicada.": "Vous avez besoin d’un numéro WhatsApp connecté et d’une version publiée.",
   "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Impossible de modifier l’activation. Vérifiez les options et réessayez.",
   "Activar": "Activer",
-  "Desactivar chatbot": "Désactiver le chatbot"
+  "Desactivar chatbot": "Désactiver le chatbot",
+  "Asignar agente": "Affecter un agent",
+  "Transfiere la conversación a una persona": "Transfère la conversation à une personne",
+  "Agente configurado": "Agent configuré",
+  "Agente requerido": "Agent requis",
+  "Agente humano": "Agent humain",
+  "Seleccioná un agente": "Sélectionnez un agent",
+  "No hay agentes humanos activos disponibles.": "Aucun agent humain actif n’est disponible.",
+  "La automatización terminará y la conversación quedará asignada a esta persona.": "L’automatisation s’arrêtera et la conversation sera affectée à cette personne.",
+  "Seleccioná un agente humano activo.": "Sélectionnez un agent humain actif.",
+  "La simulación transfirió la conversación sin modificar datos reales.": "La simulation a transféré la conversation sans modifier les données réelles."
 }
