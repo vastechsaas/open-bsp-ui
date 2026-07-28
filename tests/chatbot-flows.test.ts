@@ -36,6 +36,7 @@ import {
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotWebhookConfig,
   updateChatbotInteractiveConfig,
 } from "../src/utils/ChatbotFlowUtils.ts";
 import {
@@ -63,6 +64,83 @@ void test("assign agent is a configured terminal builder node", () => {
       [],
     ),
     false,
+  );
+});
+
+void test("webhook node stores only a credential reference and has two outcome routes", () => {
+  const webhook = updateChatbotWebhookConfig(
+    createChatbotNode("webhook", { x: 0, y: 0 }, "webhook"),
+    {
+      method: "POST",
+      url: "https://api.example.com/customers",
+      headers: [{ name: "X-Tenant", value: "{{tenant}}" }],
+      body_template: '{"name":"{{name}}"}',
+      secret_id: "11111111-1111-4111-8111-111111111111",
+      timeout_ms: 3000,
+      retry_count: 1,
+      response_mappings: [{ variable: "status", path: "data.status" }],
+    },
+  );
+  const end = createChatbotNode("end", { x: 300, y: 0 }, "end");
+
+  assert.equal(webhook.data.config.secret_id?.startsWith("Bearer "), false);
+  assert.equal(
+    isValidChatbotConnection(
+      {
+        source: webhook.id,
+        target: end.id,
+        sourceHandle: "success",
+      },
+      [webhook, end],
+      [],
+    ),
+    true,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: webhook.id, target: end.id, sourceHandle: "other" },
+      [webhook, end],
+      [],
+    ),
+    false,
+  );
+});
+
+void test("webhook response mappings are available only after the success route", () => {
+  const webhook = updateChatbotWebhookConfig(
+    createChatbotNode("webhook", { x: 0, y: 0 }, "webhook"),
+    {
+      response_mappings: [{ variable: "customer_status", path: "data.status" }],
+    },
+  );
+  const success = createChatbotNode(
+    "send_message",
+    { x: 300, y: 0 },
+    "success",
+  );
+  const error = createChatbotNode("send_message", { x: 300, y: 200 }, "error");
+  const edges = [
+    {
+      id: "success-edge",
+      source: webhook.id,
+      target: success.id,
+      data: { kind: "webhook" as const, outcome: "success" as const },
+    },
+    {
+      id: "error-edge",
+      source: webhook.id,
+      target: error.id,
+      data: { kind: "webhook" as const, outcome: "error" as const },
+    },
+  ];
+
+  assert.deepEqual(
+    getAvailableChatbotVariables(success.id, [webhook, success, error], edges),
+    ["customer_status"],
+  );
+  assert.deepEqual(
+    getAvailableChatbotVariables(error.id, [webhook, success, error], edges),
+    [],
   );
 });
 

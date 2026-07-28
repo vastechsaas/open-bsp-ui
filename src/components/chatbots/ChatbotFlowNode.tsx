@@ -8,6 +8,7 @@ import {
   Play,
   TextCursorInput,
   UserRoundCheck,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -64,6 +65,12 @@ const nodePresentation: Record<
     accent: "border-violet-500/45",
     iconBackground: "bg-violet-500/15 text-violet-500",
   },
+  webhook: {
+    icon: Webhook,
+    badge: "WEBHOOK",
+    accent: "border-cyan-500/45",
+    iconBackground: "bg-cyan-500/15 text-cyan-500",
+  },
   end: {
     icon: CircleStop,
     badge: "END",
@@ -84,6 +91,7 @@ export default function ChatbotFlowNode({
   const isStart = data.node_type === "start";
   const isEnd = data.node_type === "end";
   const isAssignAgent = data.node_type === "assign_agent";
+  const isWebhook = data.node_type === "webhook";
   const isTerminal = isEnd || isAssignAgent;
   const isMessage = data.node_type === "send_message";
   const isButtons = data.node_type === "interactive_buttons";
@@ -117,6 +125,8 @@ export default function ChatbotFlowNode({
     isAssignAgent && typeof data.config.agent_id === "string"
       ? data.config.agent_id
       : "";
+  const webhookUrl =
+    isWebhook && typeof data.config.url === "string" ? data.config.url : "";
 
   return (
     <div
@@ -271,7 +281,47 @@ export default function ChatbotFlowNode({
         </div>
       )}
 
-      {!isTerminal && !isCondition && !isInteractive && (
+      {isWebhook && (
+        <div className="border-t border-border">
+          <div className="px-[12px] py-[8px]">
+            <div className="text-[9px] font-bold text-cyan-500">
+              {data.config.method ?? "POST"}
+            </div>
+            <p
+              className={`mt-[3px] truncate text-[10px] ${
+                webhookUrl ? "text-muted-foreground" : "text-destructive"
+              }`}
+            >
+              {webhookUrl || t("URL requerida")}
+            </p>
+          </div>
+          {(["success", "error"] as const).map((outcome) => (
+            <div
+              key={outcome}
+              className="relative flex items-center justify-between border-t border-border/70 px-[12px] py-[7px]"
+            >
+              <span
+                className={`text-[9px] font-medium ${
+                  outcome === "success" ? "text-emerald-500" : "text-rose-500"
+                }`}
+              >
+                {outcome === "success" ? t("Éxito") : t("Error")}
+              </span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={outcome}
+                isConnectable={isConnectable}
+                className={`!right-[-5px] !h-[9px] !w-[9px] !border-2 !border-card ${
+                  outcome === "success" ? "!bg-emerald-500" : "!bg-rose-500"
+                }`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isTerminal && !isCondition && !isInteractive && !isWebhook && (
         <Handle
           type="source"
           position={Position.Right}

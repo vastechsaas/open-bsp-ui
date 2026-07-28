@@ -43,6 +43,10 @@ export type ChatbotFlowVersion = Pick<
 
 export type ChatbotFlowDeployment =
   Database["public"]["Tables"]["chatbot_flow_deployments"]["Row"];
+export type ChatbotWebhookCredential = Pick<
+  Database["public"]["Tables"]["chatbot_webhook_credentials"]["Row"],
+  "id" | "name" | "created_at" | "updated_at"
+>;
 
 export type ChatbotFlowEditorData = {
   flow: Pick<
@@ -107,6 +111,14 @@ type SimulateChatbotFlowInput = {
     kind: "button" | "list_selection";
     id: string;
   };
+  webhookMocks?: Record<
+    string,
+    {
+      outcome: "success" | "error";
+      status_code: number;
+      body: unknown;
+    }
+  >;
 };
 
 type ActivateChatbotFlowInput = {
@@ -260,6 +272,7 @@ export function useSimulateChatbotFlow() {
       variables,
       freeTextInput,
       optionInput,
+      webhookMocks,
     }: SimulateChatbotFlowInput) => {
       if (!orgId) throw new Error("No active organization");
       return await invokeChatbotManagement<ChatbotSimulationStep>(
@@ -273,8 +286,55 @@ export function useSimulateChatbotFlow() {
             ? {}
             : { free_text_input: freeTextInput }),
           ...(optionInput === undefined ? {} : { option_input: optionInput }),
+          webhook_mocks: webhookMocks ?? {},
         },
       );
+    },
+  });
+}
+
+export function useChatbotWebhookCredentials() {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  return useQuery<ChatbotWebhookCredential[]>({
+    queryKey: queryKeys.chatbotFlows.webhookCredentials(orgId),
+    queryFn: async () => {
+      const response = await invokeChatbotManagement<{
+        credentials: ChatbotWebhookCredential[];
+      }>(
+        `webhook-credentials?organization_id=${encodeURIComponent(orgId!)}`,
+        undefined,
+        "GET",
+      );
+      return response.credentials;
+    },
+    enabled: !!orgId,
+  });
+}
+
+export function useCreateChatbotWebhookCredential() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  return useMutation({
+    mutationFn: async ({
+      name,
+      headers,
+    }: {
+      name: string;
+      headers: Record<string, string>;
+    }) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<{
+        credential: ChatbotWebhookCredential;
+      }>("webhook-credentials", {
+        organization_id: orgId,
+        name,
+        headers,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.chatbotFlows.webhookCredentials(orgId),
+      });
     },
   });
 }
