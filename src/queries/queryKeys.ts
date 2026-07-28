@@ -78,6 +78,8 @@ export const queryKeys = {
       [orgId, "chatbot_flows", flowId, "versions"] as const,
     deployments: (orgId: NullableId, flowId: NullableId) =>
       [orgId, "chatbot_flows", flowId, "deployments"] as const,
+    webhookCredentials: (orgId: NullableId) =>
+      [orgId, "chatbot_flows", "webhook_credentials"] as const,
   },
   members: {
     all: (orgId: NullableId) => [orgId, "members"] as const,

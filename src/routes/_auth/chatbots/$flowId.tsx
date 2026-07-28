@@ -54,6 +54,7 @@ import {
   TextCursorInput,
   Trash2,
   UserRoundCheck,
+  Webhook,
   X,
 } from "lucide-react";
 import { ChatbotFlowDeploymentDialog } from "@/components/chatbots/ChatbotFlowDeployment";
@@ -72,11 +73,14 @@ import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type ChatbotFlowEditorData,
   type ChatbotFlowVersion,
+  type ChatbotWebhookCredential,
   useActivateChatbotFlow,
   useChatbotFlowDraft,
   useChatbotFlowDeployments,
   useChatbotFlowVersions,
   useDeactivateChatbotFlow,
+  useChatbotWebhookCredentials,
+  useCreateChatbotWebhookCredential,
   usePublishChatbotFlow,
   useSaveChatbotFlowDraft,
   useSimulateChatbotFlow,
@@ -139,6 +143,7 @@ import {
   updateChatbotConditionVariable,
   updateChatbotMessageText,
   updateChatbotInteractiveConfig,
+  updateChatbotWebhookConfig,
 } from "@/utils/ChatbotFlowUtils";
 import type { AgentRow } from "@/supabase/client";
 
@@ -150,6 +155,35 @@ type MobilePanel = "library" | "inspector" | null;
 const CHATBOT_NODE_DRAG_TYPE = "application/openbsp-chatbot-node";
 const chatbotNodeTypes: NodeTypes = { chatbotNode: ChatbotFlowNode };
 type ChatbotHandoffAgent = Pick<AgentRow, "id" | "name">;
+
+function createWebhookSimulationMocks(nodes: ChatbotFlowNodeType[]) {
+  return Object.fromEntries(
+    nodes
+      .filter((node) => node.data.node_type === "webhook")
+      .map((node) => {
+        const body: Record<string, unknown> = {};
+        for (const mapping of node.data.config.response_mappings ?? []) {
+          const parts = mapping.path.split(".");
+          let target = body;
+          parts.forEach((part, index) => {
+            if (index === parts.length - 1) {
+              target[part] = "sample";
+            } else {
+              const next = target[part];
+              if (!next || typeof next !== "object" || Array.isArray(next)) {
+                target[part] = {};
+              }
+              target = target[part] as Record<string, unknown>;
+            }
+          });
+        }
+        return [
+          node.id,
+          { outcome: "success" as const, status_code: 200, body },
+        ];
+      }),
+  );
+}
 
 function isActiveHumanAgent(agent: AgentRow) {
   if (agent.ai || !agent.user_id) return false;
@@ -176,6 +210,7 @@ function ChatbotFlowEditor() {
   >(null);
   const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
   const { data: agents, isLoading: agentsLoading } = useCurrentAgents();
+  const webhookCredentialsQuery = useChatbotWebhookCredentials();
   const handoffAgents = (agents ?? [])
     .filter(isActiveHumanAgent)
     .map(({ id, name }) => ({ id, name }));
@@ -241,6 +276,7 @@ function ChatbotFlowEditor() {
         onPublished={setLastPublishedVersion}
         onDismissPublished={() => setLastPublishedVersion(null)}
         handoffAgents={handoffAgents}
+        webhookCredentials={webhookCredentialsQuery.data ?? []}
       />
     </ReactFlowProvider>
   );
@@ -256,6 +292,7 @@ function FlowEditorWorkspace({
   onPublished,
   onDismissPublished,
   handoffAgents,
+  webhookCredentials,
 }: {
   editor: ChatbotFlowEditorData;
   graph: ChatbotEditorGraph;
@@ -266,6 +303,7 @@ function FlowEditorWorkspace({
   onPublished: (version: number) => void;
   onDismissPublished: () => void;
   handoffAgents: ChatbotHandoffAgent[];
+  webhookCredentials: ChatbotWebhookCredential[];
 }) {
   const { translate: t } = useTranslation();
   const initialGraph = ensureChatbotStartNode(graph);
@@ -302,6 +340,7 @@ function FlowEditorWorkspace({
   const activateFlow = useActivateChatbotFlow();
   const deactivateFlow = useDeactivateChatbotFlow();
   const simulateFlow = useSimulateChatbotFlow();
+  const createWebhookCredential = useCreateChatbotWebhookCredential();
   const versionsQuery = useChatbotFlowVersions(
     editor.flow.id,
     versionsOpen || deploymentOpen,
@@ -360,6 +399,7 @@ function FlowEditorWorkspace({
         editorGraph,
         currentNodeId: requestSession.currentNodeId,
         variables: requestSession.variables,
+        webhookMocks: createWebhookSimulationMocks(nodes),
         freeTextInput: input?.freeTextInput,
         optionInput: input?.option
           ? { kind: input.option.kind, id: input.option.id }
@@ -558,7 +598,14 @@ function FlowEditorWorkspace({
                 kind: "option" as const,
                 option_id: connection.sourceHandle,
               }
-            : { kind: "default" as const };
+            : sourceNode?.data.node_type === "webhook" &&
+                (connection.sourceHandle === "success" ||
+                  connection.sourceHandle === "error")
+              ? {
+                  kind: "webhook" as const,
+                  outcome: connection.sourceHandle as "success" | "error",
+                }
+              : { kind: "default" as const };
       const isConditionEdge = sourceNode?.data.node_type === "condition";
 
       setEdges((currentEdges) =>
@@ -607,6 +654,7 @@ function FlowEditorWorkspace({
         type !== "collect_input" &&
         type !== "condition" &&
         type !== "assign_agent" &&
+        type !== "webhook" &&
         type !== "end"
       ) {
         return;
@@ -674,6 +722,17 @@ function FlowEditorWorkspace({
       setNodes((currentNodes) =>
         currentNodes.map((node) =>
           node.id === nodeId ? updateChatbotAssignAgent(node, agentId) : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateWebhook = useCallback(
+    (nodeId: string, updates: Partial<ChatbotNodeConfig>) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId ? updateChatbotWebhookConfig(node, updates) : node,
         ),
       );
     },
@@ -1238,6 +1297,16 @@ function FlowEditorWorkspace({
             onInteractiveChange={updateInteractive}
             handoffAgents={handoffAgents}
             onAssignedAgentChange={updateAssignedAgent}
+            webhookCredentials={webhookCredentials}
+            creatingWebhookCredential={createWebhookCredential.isPending}
+            onWebhookChange={updateWebhook}
+            onCreateWebhookCredential={async (name, headers) => {
+              const result = await createWebhookCredential.mutateAsync({
+                name,
+                headers,
+              });
+              return result.credential;
+            }}
             availableVariables={availableVariables}
             onConditionVariableChange={updateConditionVariable}
             onConditionBranchAdd={addConditionBranch}
@@ -1394,6 +1463,13 @@ function NodeLibrary({
       locked: false,
     },
     {
+      type: "webhook" as const,
+      label: t("Webhook / API"),
+      description: t("Llama a una API segura y divide por resultado"),
+      icon: Webhook,
+      locked: false,
+    },
+    {
       type: "end" as const,
       label: t("Fin"),
       description: t("Finaliza la conversación"),
@@ -1544,6 +1620,10 @@ function NodeInspector({
   onInteractiveChange,
   handoffAgents,
   onAssignedAgentChange,
+  webhookCredentials,
+  creatingWebhookCredential,
+  onWebhookChange,
+  onCreateWebhookCredential,
   availableVariables,
   onConditionVariableChange,
   onConditionBranchAdd,
@@ -1566,6 +1646,16 @@ function NodeInspector({
   ) => void;
   handoffAgents: ChatbotHandoffAgent[];
   onAssignedAgentChange: (nodeId: string, agentId: string) => void;
+  webhookCredentials: ChatbotWebhookCredential[];
+  creatingWebhookCredential: boolean;
+  onWebhookChange: (
+    nodeId: string,
+    updates: Partial<ChatbotNodeConfig>,
+  ) => void;
+  onCreateWebhookCredential: (
+    name: string,
+    headers: Record<string, string>,
+  ) => Promise<ChatbotWebhookCredential>;
   availableVariables: string[];
   onConditionVariableChange: (nodeId: string, variable: string) => void;
   onConditionBranchAdd: (nodeId: string) => void;
@@ -1587,6 +1677,7 @@ function NodeInspector({
   const isCollectInput = nodeType === "collect_input";
   const isCondition = nodeType === "condition";
   const isAssignAgent = nodeType === "assign_agent";
+  const isWebhook = nodeType === "webhook";
   const messageText =
     isMessage && typeof node?.data.config.text === "string"
       ? node.data.config.text
@@ -1705,6 +1796,15 @@ function NodeInspector({
               agents={handoffAgents}
               onChange={(agentId) => onAssignedAgentChange(node.id, agentId)}
             />
+          ) : isWebhook ? (
+            <WebhookInspector
+              node={node}
+              credentials={webhookCredentials}
+              creatingCredential={creatingWebhookCredential}
+              availableVariables={availableVariables}
+              onChange={(updates) => onWebhookChange(node.id, updates)}
+              onCreateCredential={onCreateWebhookCredential}
+            />
           ) : isCondition ? (
             <ConditionInspector
               node={node}
@@ -1817,6 +1917,366 @@ function AssignAgentInspector({
                 "La automatización terminará y la conversación quedará asignada a esta persona.",
               )
             : t("Seleccioná un agente humano activo.")}
+      </p>
+    </div>
+  );
+}
+
+function WebhookInspector({
+  node,
+  credentials,
+  creatingCredential,
+  availableVariables,
+  onChange,
+  onCreateCredential,
+}: {
+  node: ChatbotFlowNodeType;
+  credentials: ChatbotWebhookCredential[];
+  creatingCredential: boolean;
+  availableVariables: string[];
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+  onCreateCredential: (
+    name: string,
+    headers: Record<string, string>,
+  ) => Promise<ChatbotWebhookCredential>;
+}) {
+  const { translate: t } = useTranslation();
+  const config = node.data.config;
+  const headers = config.headers ?? [];
+  const mappings = config.response_mappings ?? [];
+  const [credentialName, setCredentialName] = useState("");
+  const [credentialHeader, setCredentialHeader] = useState("Authorization");
+  const [credentialValue, setCredentialValue] = useState("");
+  const [credentialError, setCredentialError] = useState(false);
+
+  const createCredential = async () => {
+    if (
+      !credentialName.trim() ||
+      !credentialHeader.trim() ||
+      !credentialValue
+    ) {
+      setCredentialError(true);
+      return;
+    }
+    try {
+      const credential = await onCreateCredential(credentialName.trim(), {
+        [credentialHeader.trim()]: credentialValue,
+      });
+      onChange({ secret_id: credential.id });
+      setCredentialName("");
+      setCredentialValue("");
+      setCredentialError(false);
+    } catch {
+      setCredentialError(true);
+    }
+  };
+
+  return (
+    <div className="space-y-[14px]">
+      <div className="grid grid-cols-[90px_1fr] gap-[8px]">
+        <label>
+          <span className="text-[10px] font-medium">{t("Método")}</span>
+          <select
+            value={config.method ?? "POST"}
+            onChange={(event) =>
+              onChange({
+                method: event.target.value as ChatbotNodeConfig["method"],
+              })
+            }
+            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+          >
+            {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => (
+              <option key={method}>{method}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="text-[10px] font-medium">{t("URL HTTPS")}</span>
+          <input
+            value={config.url ?? ""}
+            maxLength={2048}
+            onChange={(event) => onChange({ url: event.target.value })}
+            placeholder="https://api.example.com/..."
+            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+          />
+        </label>
+      </div>
+      <TemplateVariableControls
+        availableVariables={availableVariables}
+        onInsert={(variable) =>
+          onChange({
+            url: appendTemplateVariable(config.url ?? "", variable),
+          })
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-[8px]">
+        <label>
+          <span className="text-[10px] font-medium">{t("Tiempo límite")}</span>
+          <select
+            value={config.timeout_ms ?? 3000}
+            onChange={(event) =>
+              onChange({ timeout_ms: Number(event.target.value) })
+            }
+            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+          >
+            {[1000, 3000, 5000, 10000].map((timeout) => (
+              <option key={timeout} value={timeout}>
+                {timeout / 1000}s
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="text-[10px] font-medium">{t("Reintentos")}</span>
+          <select
+            value={config.retry_count ?? 0}
+            onChange={(event) =>
+              onChange({ retry_count: Number(event.target.value) })
+            }
+            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+          >
+            {[0, 1, 2].map((retry) => (
+              <option key={retry} value={retry}>
+                {retry}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {!["GET", "DELETE"].includes(config.method ?? "POST") && (
+        <label className="block">
+          <span className="text-[10px] font-medium">{t("Cuerpo JSON")}</span>
+          <textarea
+            value={config.body_template ?? ""}
+            rows={4}
+            maxLength={16384}
+            onChange={(event) =>
+              onChange({ body_template: event.target.value })
+            }
+            className="mt-[5px] w-full rounded-lg border border-border bg-background px-[8px] py-[7px] font-mono text-[10px]"
+          />
+          <TemplateVariableControls
+            availableVariables={availableVariables}
+            onInsert={(variable) =>
+              onChange({
+                body_template: appendTemplateVariable(
+                  config.body_template ?? "",
+                  variable,
+                ),
+              })
+            }
+          />
+        </label>
+      )}
+
+      <div className="space-y-[7px]">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium">
+            {t("Encabezados públicos")}
+          </span>
+          <button
+            type="button"
+            className="text-[10px] font-medium text-primary"
+            onClick={() =>
+              onChange({
+                headers: [...headers, { name: "X-Header", value: "" }],
+              })
+            }
+          >
+            + {t("Agregar")}
+          </button>
+        </div>
+        {headers.map((header, index) => (
+          <div
+            key={`${index}-${header.name}`}
+            className="grid grid-cols-2 gap-[5px]"
+          >
+            <input
+              value={header.name}
+              onChange={(event) =>
+                onChange({
+                  headers: headers.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, name: event.target.value }
+                      : item,
+                  ),
+                })
+              }
+              className="h-[32px] rounded-md border border-border bg-background px-[7px] text-[10px]"
+            />
+            <div className="flex gap-[4px]">
+              <input
+                value={header.value}
+                onChange={(event) =>
+                  onChange({
+                    headers: headers.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, value: event.target.value }
+                        : item,
+                    ),
+                  })
+                }
+                className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] text-[10px]"
+              />
+              <button
+                type="button"
+                aria-label={t("Eliminar")}
+                onClick={() =>
+                  onChange({
+                    headers: headers.filter(
+                      (_, itemIndex) => itemIndex !== index,
+                    ),
+                  })
+                }
+                className="text-destructive"
+              >
+                <X className="h-[13px] w-[13px]" />
+              </button>
+            </div>
+          </div>
+        ))}
+        <p className="text-[9px] leading-relaxed text-muted-foreground">
+          {t(
+            "Authorization, cookies y claves API deben guardarse como credenciales protegidas.",
+          )}
+        </p>
+      </div>
+
+      <div className="space-y-[7px] rounded-lg border border-border p-[9px]">
+        <label className="block">
+          <span className="text-[10px] font-medium">
+            {t("Credencial protegida")}
+          </span>
+          <select
+            value={config.secret_id ?? ""}
+            onChange={(event) =>
+              onChange({ secret_id: event.target.value || undefined })
+            }
+            className="mt-[5px] h-[34px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+          >
+            <option value="">{t("Sin credencial")}</option>
+            {credentials.map((credential) => (
+              <option key={credential.id} value={credential.id}>
+                {credential.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <details>
+          <summary className="cursor-pointer text-[10px] font-medium text-primary">
+            {t("Crear credencial")}
+          </summary>
+          <div className="mt-[7px] space-y-[5px]">
+            <input
+              value={credentialName}
+              onChange={(event) => setCredentialName(event.target.value)}
+              placeholder={t("Nombre")}
+              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+            />
+            <input
+              value={credentialHeader}
+              onChange={(event) => setCredentialHeader(event.target.value)}
+              placeholder="Authorization"
+              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+            />
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={credentialValue}
+              onChange={(event) => setCredentialValue(event.target.value)}
+              placeholder={t("Valor secreto")}
+              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+            />
+            <button
+              type="button"
+              disabled={creatingCredential}
+              onClick={() => void createCredential()}
+              className="h-[32px] w-full rounded-md bg-primary text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {creatingCredential ? t("Guardando") : t("Guardar credencial")}
+            </button>
+            {credentialError && (
+              <p className="text-[9px] text-destructive">
+                {t("No se pudo guardar la credencial.")}
+              </p>
+            )}
+          </div>
+        </details>
+      </div>
+
+      <div className="space-y-[7px]">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium">
+            {t("Mapear respuesta")}
+          </span>
+          <button
+            type="button"
+            className="text-[10px] font-medium text-primary"
+            onClick={() =>
+              onChange({
+                response_mappings: [...mappings, { variable: "", path: "" }],
+              })
+            }
+          >
+            + {t("Agregar")}
+          </button>
+        </div>
+        {mappings.map((mapping, index) => (
+          <div key={index} className="grid grid-cols-2 gap-[5px]">
+            <input
+              value={mapping.path}
+              placeholder="data.status"
+              onChange={(event) =>
+                onChange({
+                  response_mappings: mappings.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, path: event.target.value }
+                      : item,
+                  ),
+                })
+              }
+              className="h-[32px] rounded-md border border-border bg-background px-[7px] font-mono text-[9px]"
+            />
+            <div className="flex gap-[4px]">
+              <input
+                value={mapping.variable}
+                placeholder="customer_status"
+                onChange={(event) =>
+                  onChange({
+                    response_mappings: mappings.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, variable: event.target.value }
+                        : item,
+                    ),
+                  })
+                }
+                className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] font-mono text-[9px]"
+              />
+              <button
+                type="button"
+                aria-label={t("Eliminar")}
+                onClick={() =>
+                  onChange({
+                    response_mappings: mappings.filter(
+                      (_, itemIndex) => itemIndex !== index,
+                    ),
+                  })
+                }
+                className="text-destructive"
+              >
+                <X className="h-[13px] w-[13px]" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="rounded-lg bg-cyan-500/10 p-[8px] text-[9px] leading-relaxed text-cyan-700 dark:text-cyan-300">
+        {t(
+          "El simulador usa una respuesta falsa; nunca llama a esta URL. En producción se bloquean redes privadas, redirecciones inseguras y respuestas grandes.",
+        )}
       </p>
     </div>
   );

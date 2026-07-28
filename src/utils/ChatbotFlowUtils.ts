@@ -11,6 +11,8 @@ export const CHATBOT_LIST_MAX_ROWS = 10;
 export const CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH = 24;
 export const CHATBOT_LIST_ROW_TITLE_MAX_LENGTH = 24;
 export const CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH = 72;
+export const CHATBOT_WEBHOOK_URL_MAX_LENGTH = 2048;
+export const CHATBOT_WEBHOOK_BODY_MAX_LENGTH = 16384;
 
 export type ChatbotCoreNodeType =
   | "start"
@@ -20,6 +22,7 @@ export type ChatbotCoreNodeType =
   | "collect_input"
   | "condition"
   | "assign_agent"
+  | "webhook"
   | "end";
 
 export type ChatbotConditionOperator =
@@ -52,6 +55,12 @@ export type ChatbotListSection = {
   rows: ChatbotListRow[];
 };
 
+export type ChatbotWebhookHeader = { name: string; value: string };
+export type ChatbotWebhookResponseMapping = {
+  variable: string;
+  path: string;
+};
+
 export type ChatbotNodeConfig = {
   text?: string;
   prompt?: string;
@@ -64,6 +73,14 @@ export type ChatbotNodeConfig = {
   button_text?: string;
   sections?: ChatbotListSection[];
   agent_id?: string;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  url?: string;
+  headers?: ChatbotWebhookHeader[];
+  body_template?: string;
+  secret_id?: string;
+  timeout_ms?: number;
+  retry_count?: number;
+  response_mappings?: ChatbotWebhookResponseMapping[];
   [key: string]: unknown;
 };
 
@@ -82,6 +99,7 @@ export type ChatbotFlowEdge = Edge<{
   operator?: ChatbotConditionOperator;
   value?: string;
   option_id?: string;
+  outcome?: "success" | "error";
   [key: string]: unknown;
 }>;
 
@@ -286,7 +304,14 @@ export function serializeChatbotEditorGraph(
                 kind: "option",
                 option_id: edge.data.option_id ?? edge.sourceHandle ?? "",
               }
-            : { kind: "default" },
+            : edge.data?.kind === "webhook"
+              ? {
+                  kind: "webhook",
+                  outcome: (edge.data.outcome ??
+                    edge.sourceHandle ??
+                    "error") as "success" | "error",
+                }
+              : { kind: "default" },
     })),
     ...(graph.viewport
       ? {
@@ -413,6 +438,8 @@ const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
   COLLECT_INPUT: "collect_input",
   CONDITION: "condition",
   ASSIGN_AGENT: "assign_agent",
+  WEBHOOK: "webhook",
+  API: "webhook",
   END: "end",
 };
 
@@ -441,6 +468,7 @@ export function isChatbotCoreNodeType(
     value === "collect_input" ||
     value === "condition" ||
     value === "assign_agent" ||
+    value === "webhook" ||
     value === "end"
   );
 }
@@ -453,6 +481,7 @@ export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "collect_input") return "Recopilar respuesta";
   if (type === "condition") return "Condición";
   if (type === "assign_agent") return "Asignar agente";
+  if (type === "webhook") return "Webhook / API";
   return "Fin";
 }
 
@@ -525,7 +554,17 @@ export function createChatbotNode(
                   ? { variable: "" }
                   : type === "assign_agent"
                     ? { agent_id: "" }
-                    : {},
+                    : type === "webhook"
+                      ? {
+                          method: "POST",
+                          url: "",
+                          headers: [],
+                          body_template: "{}",
+                          timeout_ms: 3000,
+                          retry_count: 0,
+                          response_mappings: [],
+                        }
+                      : {},
       ...(type === "condition"
         ? { branches: [createChatbotConditionBranch()] }
         : {}),
@@ -596,6 +635,20 @@ export function updateChatbotAssignAgent(
     data: {
       ...node.data,
       config: { ...node.data.config, agent_id: agentId },
+    },
+  };
+}
+
+export function updateChatbotWebhookConfig(
+  node: ChatbotFlowNode,
+  updates: Partial<ChatbotNodeConfig>,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "webhook") return node;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: { ...node.data.config, ...updates },
     },
   };
 }
@@ -854,6 +907,24 @@ export function isValidChatbotConnection(
     }
   }
 
+  if (sourceNode.data.node_type === "webhook") {
+    if (
+      connection.sourceHandle !== "success" &&
+      connection.sourceHandle !== "error"
+    ) {
+      return false;
+    }
+    if (
+      edges.some(
+        (edge) =>
+          edge.source === source &&
+          edge.sourceHandle === connection.sourceHandle,
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (
     sourceNode.data.node_type === "interactive_buttons" ||
     sourceNode.data.node_type === "list_message"
@@ -906,10 +977,10 @@ export function getAvailableChatbotVariables(
   edges: ReadonlyArray<Edge>,
 ) {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const incoming = new Map<string, string[]>();
+  const incoming = new Map<string, Edge[]>();
   edges.forEach((edge) => {
     const sources = incoming.get(edge.target) ?? [];
-    sources.push(edge.source);
+    sources.push(edge);
     incoming.set(edge.target, sources);
   });
   const memo = new Map<string, ReadonlySet<string>>();
@@ -921,9 +992,20 @@ export function getAvailableChatbotVariables(
     if (active.has(currentNodeId)) return new Set();
     active.add(currentNodeId);
 
-    const predecessorSets = (incoming.get(currentNodeId) ?? []).map(
-      variablesAfterNode,
-    );
+    const predecessorSets = (incoming.get(currentNodeId) ?? []).map((edge) => {
+      const variables = new Set(variablesAfterNode(edge.source));
+      const sourceNode = nodeById.get(edge.source);
+      if (
+        sourceNode?.data.node_type === "webhook" &&
+        edge.data?.kind === "webhook" &&
+        edge.data.outcome === "error"
+      ) {
+        for (const mapping of sourceNode.data.config.response_mappings ?? []) {
+          variables.delete(mapping.variable);
+        }
+      }
+      return variables;
+    });
     const available = intersectVariableSets(predecessorSets);
     const currentNode = nodeById.get(currentNodeId);
     const variable = currentNode?.data.config.variable;
@@ -934,13 +1016,33 @@ export function getAvailableChatbotVariables(
     ) {
       available.add(variable);
     }
+    if (currentNode?.data.node_type === "webhook") {
+      for (const mapping of currentNode.data.config.response_mappings ?? []) {
+        if (/^[a-z][a-z0-9_]*$/.test(mapping.variable)) {
+          available.add(mapping.variable);
+        }
+      }
+    }
 
     active.delete(currentNodeId);
     memo.set(currentNodeId, available);
     return available;
   };
 
-  const predecessorSets = (incoming.get(nodeId) ?? []).map(variablesAfterNode);
+  const predecessorSets = (incoming.get(nodeId) ?? []).map((edge) => {
+    const variables = new Set(variablesAfterNode(edge.source));
+    const sourceNode = nodeById.get(edge.source);
+    if (
+      sourceNode?.data.node_type === "webhook" &&
+      edge.data?.kind === "webhook" &&
+      edge.data.outcome === "error"
+    ) {
+      for (const mapping of sourceNode.data.config.response_mappings ?? []) {
+        variables.delete(mapping.variable);
+      }
+    }
+    return variables;
+  });
   return [...intersectVariableSets(predecessorSets)].sort();
 }
 
@@ -1095,7 +1197,9 @@ export function normalizeChatbotEditorGraph(
           ? "condition"
           : sourceData.kind === "option"
             ? "option"
-            : "default";
+            : sourceData.kind === "webhook"
+              ? "webhook"
+              : "default";
       const operator = isConditionOperator(sourceData.operator)
         ? sourceData.operator
         : "equals";
@@ -1104,6 +1208,7 @@ export function normalizeChatbotEditorGraph(
       const sourceIsInteractive =
         sourceNode?.data.node_type === "interactive_buttons" ||
         sourceNode?.data.node_type === "list_message";
+      const sourceIsWebhook = sourceNode?.data.node_type === "webhook";
       const sourceHandle = sourceIsCondition
         ? kind === "default"
           ? "default"
@@ -1116,9 +1221,15 @@ export function normalizeChatbotEditorGraph(
             : typeof sourceData.option_id === "string"
               ? sourceData.option_id
               : null
-          : typeof edge.sourceHandle === "string"
-            ? edge.sourceHandle
-            : null;
+          : sourceIsWebhook && kind === "webhook"
+            ? edge.sourceHandle === "success" || edge.sourceHandle === "error"
+              ? edge.sourceHandle
+              : sourceData.outcome === "success"
+                ? "success"
+                : "error"
+            : typeof edge.sourceHandle === "string"
+              ? edge.sourceHandle
+              : null;
 
       return [
         {
@@ -1136,6 +1247,9 @@ export function normalizeChatbotEditorGraph(
             ...(kind === "condition" ? { operator, value: edgeValue } : {}),
             ...(kind === "option" && sourceHandle
               ? { option_id: sourceHandle }
+              : {}),
+            ...(kind === "webhook" && sourceHandle
+              ? { outcome: sourceHandle as "success" | "error" }
               : {}),
           },
           ...(sourceIsCondition
