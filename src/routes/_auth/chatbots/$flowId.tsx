@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, type DragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+} from "react";
 import {
   createFileRoute,
   useBlocker,
@@ -26,15 +32,19 @@ import {
   Boxes,
   CircleStop,
   FileClock,
+  FlaskConical,
   GitBranch,
   Info,
+  List,
   MessageSquareText,
+  MousePointerClick,
   MousePointer2,
   PanelLeft,
   PanelRight,
   Play,
   RefreshCw,
   Rocket,
+  RadioTower,
   Save,
   ShieldCheck,
   Copy,
@@ -45,6 +55,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { ChatbotFlowDeploymentDialog } from "@/components/chatbots/ChatbotFlowDeployment";
+import { ChatbotFlowSimulator } from "@/components/chatbots/ChatbotFlowSimulator";
 import {
   PublishChatbotDialog,
   ValidationResultsDialog,
@@ -55,31 +67,59 @@ import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   type ChatbotFlowEditorData,
   type ChatbotFlowVersion,
+  useActivateChatbotFlow,
   useChatbotFlowDraft,
+  useChatbotFlowDeployments,
   useChatbotFlowVersions,
+  useDeactivateChatbotFlow,
   usePublishChatbotFlow,
   useSaveChatbotFlowDraft,
+  useSimulateChatbotFlow,
   useValidateChatbotFlow,
 } from "@/queries/useChatbotFlows";
+import {
+  appendChatbotSimulationInput,
+  appendChatbotSimulationOption,
+  applyChatbotSimulationStep,
+  createChatbotSimulationSession,
+  type ChatbotSimulationSession,
+  type ChatbotSimulationOption,
+} from "@/utils/ChatbotSimulationUtils";
 import {
   addChatbotConditionBranch,
   ChatbotDraftConflictError,
   ChatbotPublishValidationError,
   CHATBOT_INPUT_MAX_LENGTH,
+  CHATBOT_INTERACTIVE_BODY_MAX_LENGTH,
+  CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH,
+  CHATBOT_LIST_MAX_ROWS,
+  CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH,
+  CHATBOT_LIST_ROW_TITLE_MAX_LENGTH,
+  CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  CHATBOT_REPLY_BUTTON_MAX_COUNT,
+  CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH,
   chatbotConditionOperators,
   createChatbotNode,
+  createChatbotListRow,
+  createChatbotListSection,
+  createChatbotReplyButton,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
+  getChatbotEditorActionAvailability,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
+  getChatbotNodeOptionIds,
   isValidChatbotConnection,
+  insertChatbotTemplateVariable,
   normalizeChatbotEditorGraph,
   removeChatbotConditionBranch,
   removeChatbotNode,
@@ -87,12 +127,16 @@ import {
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  type ChatbotListSection,
+  type ChatbotNodeConfig,
+  type ChatbotReplyButton,
   type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotInteractiveConfig,
 } from "@/utils/ChatbotFlowUtils";
 
 export const Route = createFileRoute("/_auth/chatbots/$flowId")({
@@ -220,12 +264,28 @@ function FlowEditorWorkspace({
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [deploymentOpen, setDeploymentOpen] = useState(false);
+  const [simulatorOpen, setSimulatorOpen] = useState(false);
+  const [simulationSession, setSimulationSession] =
+    useState<ChatbotSimulationSession>(createChatbotSimulationSession);
   const [previewVersion, setPreviewVersion] =
     useState<ChatbotFlowVersion | null>(null);
   const saveDraft = useSaveChatbotFlowDraft();
   const validateDraft = useValidateChatbotFlow();
   const publishDraft = usePublishChatbotFlow();
-  const versionsQuery = useChatbotFlowVersions(editor.flow.id, versionsOpen);
+  const activateFlow = useActivateChatbotFlow();
+  const deactivateFlow = useDeactivateChatbotFlow();
+  const simulateFlow = useSimulateChatbotFlow();
+  const versionsQuery = useChatbotFlowVersions(
+    editor.flow.id,
+    versionsOpen || deploymentOpen,
+  );
+  const deploymentsQuery = useChatbotFlowDeployments(editor.flow.id);
+  const addressesQuery = useOrganizationsAddresses();
+  const connectedWhatsAppAddresses = (addressesQuery.data ?? []).filter(
+    (address) =>
+      address.service === "whatsapp" && address.status === "connected",
+  );
   const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const availableVariables = selectedNode
@@ -253,6 +313,48 @@ function FlowEditorWorkspace({
     failed: saveDraft.isError,
     conflict,
   });
+
+  const runSimulation = async (
+    baseSession: ChatbotSimulationSession,
+    input?: {
+      freeTextInput?: string;
+      option?: ChatbotSimulationOption;
+    },
+  ) => {
+    const requestSession = input?.option
+      ? appendChatbotSimulationOption(baseSession, input.option)
+      : input?.freeTextInput === undefined
+        ? baseSession
+        : appendChatbotSimulationInput(baseSession, input.freeTextInput);
+    setSimulationSession(requestSession);
+
+    try {
+      const step = await simulateFlow.mutateAsync({
+        flowId: editor.flow.id,
+        editorGraph,
+        currentNodeId: requestSession.currentNodeId,
+        variables: requestSession.variables,
+        freeTextInput: input?.freeTextInput,
+        optionInput: input?.option
+          ? { kind: input.option.kind, id: input.option.id }
+          : undefined,
+      });
+      setSimulationSession((current) =>
+        applyChatbotSimulationStep(current, step),
+      );
+    } catch {
+      // The mutation error is rendered in the simulator panel.
+    }
+  };
+
+  const startSimulation = () => {
+    const session = createChatbotSimulationSession();
+    simulateFlow.reset();
+    setSimulationSession(session);
+    setSimulatorOpen(true);
+    setMobilePanel(null);
+    void runSimulation(session);
+  };
   const shouldBlockNavigation = useCallback(() => dirty, [dirty]);
   const navigationBlocker = useBlocker({
     shouldBlockFn: shouldBlockNavigation,
@@ -270,15 +372,18 @@ function FlowEditorWorkspace({
   const validationIsStale =
     validationSnapshot !== null &&
     validationSnapshot.fingerprint !== currentValidationFingerprint;
-  const publishDisabled =
-    dirty ||
-    saveDraft.isPending ||
-    publishDraft.isPending ||
-    conflict ||
-    editor.flow.status === "archived";
+  const actionAvailability = getChatbotEditorActionAvailability({
+    dirty,
+    saving: saveDraft.isPending,
+    validating: validateDraft.isPending,
+    publishing: publishDraft.isPending,
+    conflict,
+    archived: editor.flow.status === "archived",
+    selectedNodeType: selectedNode?.data.node_type,
+  });
 
-  const saveEditorGraph = async () => {
-    if (!dirty || saveDraft.isPending) return;
+  const saveEditorGraph = useCallback(async () => {
+    if (!actionAvailability.canSave) return;
     try {
       const savedDraft = await saveDraft.mutateAsync({
         flowId: editor.flow.id,
@@ -291,7 +396,15 @@ function FlowEditorWorkspace({
     } catch {
       // The mutation state renders the actionable save error.
     }
-  };
+  }, [
+    actionAvailability.canSave,
+    currentFingerprint,
+    editor.draft.id,
+    editor.flow.id,
+    editorGraph,
+    expectedUpdatedAt,
+    saveDraft,
+  ]);
 
   const validateEditorGraph = async () => {
     try {
@@ -412,7 +525,14 @@ function FlowEditorWorkspace({
               operator: conditionBranch.operator,
               value: conditionBranch.value,
             }
-          : { kind: "default" as const };
+          : (sourceNode?.data.node_type === "interactive_buttons" ||
+                sourceNode?.data.node_type === "list_message") &&
+              connection.sourceHandle
+            ? {
+                kind: "option" as const,
+                option_id: connection.sourceHandle,
+              }
+            : { kind: "default" as const };
       const isConditionEdge = sourceNode?.data.node_type === "condition";
 
       setEdges((currentEdges) =>
@@ -456,6 +576,8 @@ function FlowEditorWorkspace({
       const type = event.dataTransfer.getData(CHATBOT_NODE_DRAG_TYPE);
       if (
         type !== "send_message" &&
+        type !== "interactive_buttons" &&
+        type !== "list_message" &&
         type !== "collect_input" &&
         type !== "condition" &&
         type !== "end"
@@ -518,6 +640,29 @@ function FlowEditorWorkspace({
       );
     },
     [setNodes],
+  );
+
+  const updateInteractive = useCallback(
+    (nodeId: string, updates: Partial<ChatbotNodeConfig>) => {
+      const sourceNode = nodes.find((node) => node.id === nodeId);
+      if (!sourceNode) return;
+      const updatedNode = updateChatbotInteractiveConfig(sourceNode, updates);
+      const optionIds = new Set(getChatbotNodeOptionIds(updatedNode));
+
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => (node.id === nodeId ? updatedNode : node)),
+      );
+      setEdges((currentEdges) =>
+        currentEdges.filter(
+          (edge) =>
+            edge.source !== nodeId ||
+            edge.data?.kind !== "option" ||
+            (typeof edge.sourceHandle === "string" &&
+              optionIds.has(edge.sourceHandle)),
+        ),
+      );
+    },
+    [nodes, setEdges, setNodes],
   );
 
   const updateConditionVariable = useCallback(
@@ -601,6 +746,74 @@ function FlowEditorWorkspace({
     [nodes, setEdges, setNodes],
   );
 
+  useEffect(() => {
+    const handleEditorKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const shortcut = getChatbotEditorShortcut({
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        editableTarget: Boolean(
+          target?.closest("input, textarea, select, [contenteditable='true']"),
+        ),
+        composing: event.isComposing,
+      });
+
+      if (shortcut === "save") {
+        event.preventDefault();
+        if (actionAvailability.canSave) void saveEditorGraph();
+        return;
+      }
+
+      if (
+        shortcut === "delete-selected" &&
+        selectedNodeId &&
+        actionAvailability.canDeleteSelected
+      ) {
+        event.preventDefault();
+        deleteNode(selectedNodeId);
+        return;
+      }
+
+      if (
+        shortcut === "dismiss" &&
+        (selectedNodeId ||
+          mobilePanel ||
+          validationDialogOpen ||
+          publishDialogOpen ||
+          versionsOpen ||
+          simulatorOpen ||
+          previewVersion)
+      ) {
+        event.preventDefault();
+        setSelectedNodeId(null);
+        setMobilePanel(null);
+        setValidationDialogOpen(false);
+        setPublishDialogOpen(false);
+        setVersionsOpen(false);
+        setSimulatorOpen(false);
+        setPreviewVersion(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleEditorKeyDown);
+    return () => window.removeEventListener("keydown", handleEditorKeyDown);
+  }, [
+    actionAvailability.canDeleteSelected,
+    actionAvailability.canSave,
+    deleteNode,
+    mobilePanel,
+    previewVersion,
+    publishDialogOpen,
+    saveEditorGraph,
+    selectedNodeId,
+    simulatorOpen,
+    validationDialogOpen,
+    versionsOpen,
+  ]);
+
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="flex shrink-0 flex-wrap items-center gap-[10px] border-b border-border px-[12px] py-[10px] md:px-[18px]">
@@ -662,6 +875,20 @@ function FlowEditorWorkspace({
           </button>
           <button
             type="button"
+            title={t("Simular flujo")}
+            aria-label={t("Simular flujo")}
+            className={`flex h-[36px] items-center gap-[7px] rounded-lg border px-[10px] text-[12px] ${
+              simulatorOpen
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:bg-muted"
+            }`}
+            onClick={startSimulation}
+          >
+            <FlaskConical className="h-[15px] w-[15px]" />
+            <span className="hidden xl:inline">{t("Simular")}</span>
+          </button>
+          <button
+            type="button"
             title={t("Versiones")}
             aria-label={t("Versiones")}
             className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted"
@@ -674,7 +901,7 @@ function FlowEditorWorkspace({
             type="button"
             title={t("Validar flujo")}
             aria-label={t("Validar flujo")}
-            disabled={validateDraft.isPending}
+            disabled={!actionAvailability.canValidate}
             className="flex h-[36px] items-center gap-[7px] rounded-lg border border-border px-[10px] text-[12px] hover:bg-muted disabled:opacity-50"
             onClick={() => void validateEditorGraph()}
           >
@@ -702,9 +929,9 @@ function FlowEditorWorkspace({
           </button>
           <button
             type="button"
-            title={t("Guardar borrador")}
+            title={`${t("Guardar borrador")} (Ctrl/⌘ S)`}
             aria-label={t("Guardar borrador")}
-            disabled={!dirty || saveDraft.isPending || conflict}
+            disabled={!actionAvailability.canSave}
             className="primary flex h-[36px] min-w-[96px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => void saveEditorGraph()}
           >
@@ -723,7 +950,7 @@ function FlowEditorWorkspace({
                 : t("Publicar flujo")
             }
             aria-label={t("Publicar flujo")}
-            disabled={publishDisabled}
+            disabled={!actionAvailability.canPublish}
             className="primary flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => setPublishDialogOpen(true)}
           >
@@ -733,6 +960,20 @@ function FlowEditorWorkspace({
               <Rocket className="h-[15px] w-[15px]" />
             )}
             <span className="hidden sm:inline">{t("Publicar")}</span>
+          </button>
+          <button
+            type="button"
+            title={t("Activar chatbot")}
+            aria-label={t("Activar chatbot")}
+            className="flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] rounded-lg border border-primary/45 px-[12px] text-[12px] text-primary hover:bg-primary/10"
+            onClick={() => setDeploymentOpen(true)}
+          >
+            <RadioTower className="h-[15px] w-[15px]" />
+            <span className="hidden xl:inline">
+              {deploymentsQuery.data?.length
+                ? `${t("Activo")} (${deploymentsQuery.data.length})`
+                : t("Activar")}
+            </span>
           </button>
         </div>
       </header>
@@ -872,6 +1113,7 @@ function FlowEditorWorkspace({
             }}
             onDrop={onDrop}
             onNodeClick={(_, node) => {
+              setSimulatorOpen(false);
               setSelectedNodeId(node.id);
               setMobilePanel(null);
             }}
@@ -886,6 +1128,7 @@ function FlowEditorWorkspace({
             fitView={!graph.viewport && nodes.length > 0}
             minZoom={0.25}
             maxZoom={2}
+            deleteKeyCode={null}
             colorMode={
               document.documentElement.classList.contains("dark")
                 ? "dark"
@@ -933,20 +1176,37 @@ function FlowEditorWorkspace({
             )}
         </main>
 
-        <NodeInspector
-          node={selectedNode}
-          open={mobilePanel === "inspector"}
-          onClose={() => setMobilePanel(null)}
-          onMessageTextChange={updateMessageText}
-          onCollectInputChange={updateCollectInput}
-          availableVariables={availableVariables}
-          onConditionVariableChange={updateConditionVariable}
-          onConditionBranchAdd={addConditionBranch}
-          onConditionBranchChange={updateConditionBranch}
-          onConditionBranchRemove={removeConditionBranch}
-          onDuplicate={duplicateNode}
-          onDelete={deleteNode}
-        />
+        {simulatorOpen ? (
+          <ChatbotFlowSimulator
+            session={simulationSession}
+            pending={simulateFlow.isPending}
+            error={simulateFlow.isError}
+            onSend={(text) =>
+              void runSimulation(simulationSession, { freeTextInput: text })
+            }
+            onSelect={(option) =>
+              void runSimulation(simulationSession, { option })
+            }
+            onReset={startSimulation}
+            onClose={() => setSimulatorOpen(false)}
+          />
+        ) : (
+          <NodeInspector
+            node={selectedNode}
+            open={mobilePanel === "inspector"}
+            onClose={() => setMobilePanel(null)}
+            onMessageTextChange={updateMessageText}
+            onCollectInputChange={updateCollectInput}
+            onInteractiveChange={updateInteractive}
+            availableVariables={availableVariables}
+            onConditionVariableChange={updateConditionVariable}
+            onConditionBranchAdd={addConditionBranch}
+            onConditionBranchChange={updateConditionBranch}
+            onConditionBranchRemove={removeConditionBranch}
+            onDuplicate={duplicateNode}
+            onDelete={deleteNode}
+          />
+        )}
       </div>
       <UnsavedChangesDialog
         action={
@@ -987,6 +1247,48 @@ function FlowEditorWorkspace({
         version={previewVersion}
         onClose={() => setPreviewVersion(null)}
       />
+      <ChatbotFlowDeploymentDialog
+        open={deploymentOpen}
+        deployments={deploymentsQuery.data ?? []}
+        versions={versionsQuery.data ?? []}
+        addresses={connectedWhatsAppAddresses}
+        loading={
+          deploymentsQuery.isLoading ||
+          versionsQuery.isLoading ||
+          addressesQuery.isLoading
+        }
+        error={
+          deploymentsQuery.isError ||
+          versionsQuery.isError ||
+          addressesQuery.isError
+        }
+        actionError={activateFlow.isError || deactivateFlow.isError}
+        pending={activateFlow.isPending || deactivateFlow.isPending}
+        onClose={() => {
+          activateFlow.reset();
+          deactivateFlow.reset();
+          setDeploymentOpen(false);
+        }}
+        onRetry={() => {
+          void Promise.all([
+            deploymentsQuery.refetch(),
+            versionsQuery.refetch(),
+            addressesQuery.refetch(),
+          ]);
+        }}
+        onActivate={(input) =>
+          activateFlow.mutate({
+            flowId: editor.flow.id,
+            ...input,
+          })
+        }
+        onDeactivate={(organizationAddress) =>
+          deactivateFlow.mutate({
+            flowId: editor.flow.id,
+            organizationAddress,
+          })
+        }
+      />
     </div>
   );
 }
@@ -1014,6 +1316,20 @@ function NodeLibrary({
       label: t("Enviar mensaje"),
       description: t("Envía un mensaje de texto"),
       icon: MessageSquareText,
+      locked: false,
+    },
+    {
+      type: "interactive_buttons" as const,
+      label: t("Botones interactivos"),
+      description: t("Ofrece hasta tres respuestas rápidas"),
+      icon: MousePointerClick,
+      locked: false,
+    },
+    {
+      type: "list_message" as const,
+      label: t("Mensaje de lista"),
+      description: t("Ofrece un menú de hasta diez opciones"),
+      icon: List,
       locked: false,
     },
     {
@@ -1095,14 +1411,81 @@ function NodeLibrary({
           </button>
         ))}
       </div>
-      <div className="mt-auto flex gap-[7px] border-t border-border p-[12px] text-[10px] leading-relaxed text-muted-foreground">
-        <Info className="mt-[1px] h-[13px] w-[13px] shrink-0 text-primary" />
-        {t(
-          "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
-        )}
+      <div className="mt-auto space-y-[9px] border-t border-border p-[12px] text-[10px] leading-relaxed text-muted-foreground">
+        <div className="flex gap-[7px]">
+          <Info className="mt-[1px] h-[13px] w-[13px] shrink-0 text-primary" />
+          {t(
+            "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[5px] border-t border-border/70 pt-[9px]">
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Ctrl/⌘ S
+            </kbd>{" "}
+            {t("Guardar")}
+          </span>
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Del
+            </kbd>{" "}
+            {t("Eliminar")}
+          </span>
+          <span>
+            <kbd className="rounded border border-border bg-muted px-[4px] py-[1px] font-mono">
+              Esc
+            </kbd>{" "}
+            {t("Cerrar")}
+          </span>
+        </div>
       </div>
     </aside>
   );
+}
+
+function TemplateVariableControls({
+  availableVariables,
+  onInsert,
+}: {
+  availableVariables: string[];
+  onInsert: (variable: string) => void;
+}) {
+  const { translate: t } = useTranslation();
+
+  return (
+    <div className="mt-[7px] rounded-lg border border-border bg-muted/25 p-[8px]">
+      <div className="flex items-center gap-[5px] text-[10px] font-medium">
+        <Braces className="h-[11px] w-[11px] text-primary" />
+        {t("Insertar variable")}
+      </div>
+      {availableVariables.length > 0 ? (
+        <div className="mt-[6px] flex flex-wrap gap-[5px]">
+          {availableVariables.map((variable) => (
+            <button
+              key={variable}
+              type="button"
+              onClick={() => onInsert(variable)}
+              className="rounded-md border border-primary/30 bg-primary/5 px-[6px] py-[3px] font-mono text-[9px] text-primary hover:bg-primary/10"
+            >
+              {`{{${variable}}}`}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-[4px] text-[9px] text-muted-foreground">
+          {t("No hay variables disponibles en este punto.")}
+        </div>
+      )}
+      <div className="mt-[5px] text-[9px] leading-relaxed text-muted-foreground">
+        {t("Usa variables recopiladas anteriormente con {{variable}}.")}
+      </div>
+    </div>
+  );
+}
+
+function appendTemplateVariable(text: string, variable: string) {
+  const prefix = text.length > 0 && !/\s$/.test(text) ? `${text} ` : text;
+  return insertChatbotTemplateVariable(prefix, variable);
 }
 
 function NodeInspector({
@@ -1111,6 +1494,7 @@ function NodeInspector({
   onClose,
   onMessageTextChange,
   onCollectInputChange,
+  onInteractiveChange,
   availableVariables,
   onConditionVariableChange,
   onConditionBranchAdd,
@@ -1126,6 +1510,10 @@ function NodeInspector({
   onCollectInputChange: (
     nodeId: string,
     updates: Record<string, unknown>,
+  ) => void;
+  onInteractiveChange: (
+    nodeId: string,
+    updates: Partial<ChatbotNodeConfig>,
   ) => void;
   availableVariables: string[];
   onConditionVariableChange: (nodeId: string, variable: string) => void;
@@ -1143,6 +1531,8 @@ function NodeInspector({
   const nodeType = node?.data.node_type ?? t("Nodo");
   const isStart = nodeType === "start";
   const isMessage = nodeType === "send_message";
+  const isButtons = nodeType === "interactive_buttons";
+  const isListMessage = nodeType === "list_message";
   const isCollectInput = nodeType === "collect_input";
   const isCondition = nodeType === "condition";
   const messageText =
@@ -1213,6 +1603,15 @@ function NodeInspector({
                     : "border-border focus:border-primary"
                 }`}
               />
+              <TemplateVariableControls
+                availableVariables={availableVariables}
+                onInsert={(variable) =>
+                  onMessageTextChange(
+                    node.id,
+                    appendTemplateVariable(messageText, variable),
+                  )
+                }
+              />
               <span className="mt-[4px] flex justify-between gap-[8px] text-[10px]">
                 <span
                   className={
@@ -1233,7 +1632,20 @@ function NodeInspector({
           ) : isCollectInput ? (
             <CollectInputInspector
               node={node}
+              availableVariables={availableVariables}
               onChange={(updates) => onCollectInputChange(node.id, updates)}
+            />
+          ) : isButtons ? (
+            <InteractiveButtonsInspector
+              node={node}
+              availableVariables={availableVariables}
+              onChange={(updates) => onInteractiveChange(node.id, updates)}
+            />
+          ) : isListMessage ? (
+            <ListMessageInspector
+              node={node}
+              availableVariables={availableVariables}
+              onChange={(updates) => onInteractiveChange(node.id, updates)}
             />
           ) : isCondition ? (
             <ConditionInspector
@@ -1297,11 +1709,384 @@ function NodeInspector({
   );
 }
 
-function CollectInputInspector({
+function InteractiveButtonsInspector({
   node,
+  availableVariables,
   onChange,
 }: {
   node: ChatbotFlowNodeType;
+  availableVariables: string[];
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const body =
+    typeof node.data.config.body === "string" ? node.data.config.body : "";
+  const buttons = node.data.config.buttons ?? [];
+
+  const updateButton = (
+    buttonId: string,
+    updates: Partial<ChatbotReplyButton>,
+  ) => {
+    onChange({
+      buttons: buttons.map((button) =>
+        button.id === buttonId ? { ...button, ...updates } : button,
+      ),
+    });
+  };
+
+  return (
+    <div className="space-y-[14px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del mensaje")}
+        </span>
+        <textarea
+          value={body}
+          rows={4}
+          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          aria-invalid={!body.trim()}
+          onChange={(event) => onChange({ body: event.target.value })}
+          placeholder={t("Elegí una opción para continuar")}
+          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed outline-none ${
+            body.trim()
+              ? "border-border focus:border-primary"
+              : "border-destructive"
+          }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(variable) =>
+            onChange({ body: appendTemplateVariable(body, variable) })
+          }
+        />
+        <span className="mt-[4px] flex justify-between text-[10px] text-muted-foreground">
+          <span className={!body.trim() ? "text-destructive" : ""}>
+            {!body.trim() ? t("El mensaje es obligatorio") : t("Mensaje listo")}
+          </span>
+          <span>
+            {body.length}/{CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          </span>
+        </span>
+      </label>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium">{t("Botones")}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {buttons.length}/{CHATBOT_REPLY_BUTTON_MAX_COUNT}
+          </span>
+        </div>
+        <div className="mt-[7px] space-y-[8px]">
+          {buttons.map((button, index) => (
+            <div
+              key={button.id}
+              className="rounded-lg border border-border bg-background/45 p-[8px]"
+            >
+              <div className="flex gap-[6px]">
+                <input
+                  value={button.title}
+                  maxLength={CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
+                  aria-invalid={!button.title.trim()}
+                  placeholder={`${t("Botón")} ${index + 1}`}
+                  onChange={(event) =>
+                    updateButton(button.id, { title: event.target.value })
+                  }
+                  className={`h-[34px] min-w-0 flex-1 rounded-lg border bg-background px-[9px] text-[11px] ${
+                    button.title.trim() ? "border-border" : "border-destructive"
+                  }`}
+                />
+                <button
+                  type="button"
+                  title={t("Eliminar botón")}
+                  aria-label={t("Eliminar botón")}
+                  disabled={buttons.length <= 1}
+                  onClick={() =>
+                    onChange({
+                      buttons: buttons.filter(
+                        (candidate) => candidate.id !== button.id,
+                      ),
+                    })
+                  }
+                  className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                >
+                  <Trash2 className="h-[13px] w-[13px]" />
+                </button>
+              </div>
+              <div className="mt-[3px] text-right text-[9px] text-muted-foreground">
+                {button.title.length}/{CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={buttons.length >= CHATBOT_REPLY_BUTTON_MAX_COUNT}
+          onClick={() =>
+            onChange({
+              buttons: [
+                ...buttons,
+                createChatbotReplyButton(`${t("Botón")} ${buttons.length + 1}`),
+              ],
+            })
+          }
+          className="mt-[8px] flex h-[34px] w-full items-center justify-center gap-[6px] rounded-lg border border-dashed border-primary/45 text-[11px] text-primary hover:bg-primary/8 disabled:opacity-40"
+        >
+          <Plus className="h-[13px] w-[13px]" />
+          {t("Agregar botón")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ListMessageInspector({
+  node,
+  availableVariables,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  availableVariables: string[];
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const body =
+    typeof node.data.config.body === "string" ? node.data.config.body : "";
+  const buttonText =
+    typeof node.data.config.button_text === "string"
+      ? node.data.config.button_text
+      : "";
+  const sections = node.data.config.sections ?? [];
+  const rowCount = sections.reduce(
+    (total, section) => total + section.rows.length,
+    0,
+  );
+
+  const updateSections = (nextSections: ChatbotListSection[]) =>
+    onChange({ sections: nextSections });
+  const updateSection = (
+    sectionId: string,
+    updater: (section: ChatbotListSection) => ChatbotListSection,
+  ) =>
+    updateSections(
+      sections.map((section) =>
+        section.id === sectionId ? updater(section) : section,
+      ),
+    );
+
+  return (
+    <div className="space-y-[14px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del mensaje")}
+        </span>
+        <textarea
+          value={body}
+          rows={4}
+          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+          aria-invalid={!body.trim()}
+          onChange={(event) => onChange({ body: event.target.value })}
+          placeholder={t("Elegí una opción de la lista")}
+          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed ${
+            body.trim() ? "border-border" : "border-destructive"
+          }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(variable) =>
+            onChange({ body: appendTemplateVariable(body, variable) })
+          }
+        />
+        <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
+          {body.length}/{CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+        </span>
+      </label>
+
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Texto del botón para abrir la lista")}
+        </span>
+        <input
+          value={buttonText}
+          maxLength={CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
+          aria-invalid={!buttonText.trim()}
+          onChange={(event) => onChange({ button_text: event.target.value })}
+          placeholder={t("Ver opciones")}
+          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
+            buttonText.trim() ? "border-border" : "border-destructive"
+          }`}
+        />
+        <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
+          {buttonText.length}/{CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
+        </span>
+      </label>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium">
+            {t("Secciones y opciones")}
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {rowCount}/{CHATBOT_LIST_MAX_ROWS}
+          </span>
+        </div>
+        <div className="mt-[7px] space-y-[9px]">
+          {sections.map((section, sectionIndex) => (
+            <div
+              key={section.id}
+              className="rounded-lg border border-border bg-background/45 p-[8px]"
+            >
+              <div className="flex gap-[6px]">
+                <input
+                  value={section.title}
+                  maxLength={CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH}
+                  aria-invalid={!section.title.trim()}
+                  placeholder={`${t("Sección")} ${sectionIndex + 1}`}
+                  onChange={(event) =>
+                    updateSection(section.id, (current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  className={`h-[32px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] font-medium ${
+                    section.title.trim()
+                      ? "border-border"
+                      : "border-destructive"
+                  }`}
+                />
+                <button
+                  type="button"
+                  title={t("Eliminar sección")}
+                  aria-label={t("Eliminar sección")}
+                  disabled={sections.length <= 1}
+                  onClick={() =>
+                    updateSections(
+                      sections.filter(
+                        (candidate) => candidate.id !== section.id,
+                      ),
+                    )
+                  }
+                  className="flex h-[32px] w-[32px] items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                >
+                  <Trash2 className="h-[12px] w-[12px]" />
+                </button>
+              </div>
+
+              <div className="mt-[7px] space-y-[7px]">
+                {section.rows.map((row, rowIndex) => (
+                  <div
+                    key={row.id}
+                    className="rounded-md border border-dashed border-border p-[7px]"
+                  >
+                    <div className="flex gap-[5px]">
+                      <input
+                        value={row.title}
+                        maxLength={CHATBOT_LIST_ROW_TITLE_MAX_LENGTH}
+                        aria-invalid={!row.title.trim()}
+                        placeholder={`${t("Opción")} ${rowIndex + 1}`}
+                        onChange={(event) =>
+                          updateSection(section.id, (current) => ({
+                            ...current,
+                            rows: current.rows.map((candidate) =>
+                              candidate.id === row.id
+                                ? { ...candidate, title: event.target.value }
+                                : candidate,
+                            ),
+                          }))
+                        }
+                        className={`h-[31px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] ${
+                          row.title.trim()
+                            ? "border-border"
+                            : "border-destructive"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        title={t("Eliminar opción")}
+                        aria-label={t("Eliminar opción")}
+                        disabled={rowCount <= 1}
+                        onClick={() => {
+                          if (section.rows.length === 1) {
+                            updateSections(
+                              sections.filter(
+                                (candidate) => candidate.id !== section.id,
+                              ),
+                            );
+                          } else {
+                            updateSection(section.id, (current) => ({
+                              ...current,
+                              rows: current.rows.filter(
+                                (candidate) => candidate.id !== row.id,
+                              ),
+                            }));
+                          }
+                        }}
+                        className="flex h-[31px] w-[31px] items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-35"
+                      >
+                        <Trash2 className="h-[12px] w-[12px]" />
+                      </button>
+                    </div>
+                    <input
+                      value={row.description ?? ""}
+                      maxLength={CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH}
+                      placeholder={t("Descripción opcional")}
+                      onChange={(event) =>
+                        updateSection(section.id, (current) => ({
+                          ...current,
+                          rows: current.rows.map((candidate) =>
+                            candidate.id === row.id
+                              ? {
+                                  ...candidate,
+                                  description: event.target.value,
+                                }
+                              : candidate,
+                          ),
+                        }))
+                      }
+                      className="mt-[5px] h-[29px] w-full rounded-md border border-border bg-background px-[8px] text-[9px]"
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={rowCount >= CHATBOT_LIST_MAX_ROWS}
+                onClick={() =>
+                  updateSection(section.id, (current) => ({
+                    ...current,
+                    rows: [...current.rows, createChatbotListRow()],
+                  }))
+                }
+                className="mt-[7px] flex h-[30px] w-full items-center justify-center gap-[5px] rounded-md border border-dashed border-primary/40 text-[10px] text-primary disabled:opacity-40"
+              >
+                <Plus className="h-[12px] w-[12px]" />
+                {t("Agregar opción")}
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={rowCount >= CHATBOT_LIST_MAX_ROWS}
+          onClick={() =>
+            updateSections([...sections, createChatbotListSection()])
+          }
+          className="mt-[8px] flex h-[34px] w-full items-center justify-center gap-[6px] rounded-lg border border-dashed border-primary/45 text-[11px] text-primary hover:bg-primary/8 disabled:opacity-40"
+        >
+          <Plus className="h-[13px] w-[13px]" />
+          {t("Agregar sección")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CollectInputInspector({
+  node,
+  availableVariables,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  availableVariables: string[];
   onChange: (updates: Record<string, unknown>) => void;
 }) {
   const { translate: t } = useTranslation();
@@ -1340,6 +2125,14 @@ function CollectInputInspector({
           className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
             prompt.trim() ? "border-border" : "border-destructive"
           }`}
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(templateVariable) =>
+            onChange({
+              prompt: appendTemplateVariable(prompt, templateVariable),
+            })
+          }
         />
         {!prompt.trim() && (
           <span className="mt-[4px] block text-[10px] text-destructive">
@@ -1614,6 +2407,9 @@ function SaveStatusLabel({
 
   return (
     <span
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className={
         status === "saved"
           ? "text-emerald-500"

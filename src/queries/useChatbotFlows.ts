@@ -8,6 +8,7 @@ import {
   type ChatbotFlowStatus,
   type ChatbotFlowValidationResult,
 } from "@/utils/ChatbotFlowUtils";
+import type { ChatbotSimulationStep } from "@/utils/ChatbotSimulationUtils";
 import type {
   DataTablePage,
   DataTablePageParams,
@@ -39,6 +40,9 @@ export type ChatbotFlowVersion = Pick<
   | "created_at"
   | "updated_at"
 >;
+
+export type ChatbotFlowDeployment =
+  Database["public"]["Tables"]["chatbot_flow_deployments"]["Row"];
 
 export type ChatbotFlowEditorData = {
   flow: Pick<
@@ -93,6 +97,29 @@ type PublishChatbotFlowInput = {
   expectedUpdatedAt: string;
 };
 
+type SimulateChatbotFlowInput = {
+  flowId: string;
+  editorGraph: ChatbotEditorGraph;
+  currentNodeId?: string;
+  variables: Record<string, unknown>;
+  freeTextInput?: string;
+  optionInput?: {
+    kind: "button" | "list_selection";
+    id: string;
+  };
+};
+
+type ActivateChatbotFlowInput = {
+  flowId: string;
+  organizationAddress: string;
+  versionId: string;
+};
+
+type DeactivateChatbotFlowInput = {
+  flowId: string;
+  organizationAddress: string;
+};
+
 export type ChatbotFlowPublishResponse = {
   valid: true;
   outcome: "published";
@@ -123,7 +150,7 @@ async function normalizeChatbotManagementError(error: unknown) {
 async function invokeChatbotManagement<T>(
   path: string,
   body?: Record<string, unknown>,
-  method: "GET" | "POST" | "PUT" = "POST",
+  method: "DELETE" | "GET" | "POST" | "PUT" = "POST",
 ) {
   const { data, error } = await supabase.functions.invoke<T>(
     `chatbot-management/${path}`,
@@ -222,6 +249,36 @@ export function useValidateChatbotFlow() {
   });
 }
 
+export function useSimulateChatbotFlow() {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      editorGraph,
+      currentNodeId,
+      variables,
+      freeTextInput,
+      optionInput,
+    }: SimulateChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<ChatbotSimulationStep>(
+        `flows/${flowId}/simulate`,
+        {
+          organization_id: orgId,
+          editor_graph: editorGraph,
+          variables,
+          ...(currentNodeId ? { current_node_id: currentNodeId } : {}),
+          ...(freeTextInput === undefined
+            ? {}
+            : { free_text_input: freeTextInput }),
+          ...(optionInput === undefined ? {} : { option_input: optionInput }),
+        },
+      );
+    },
+  });
+}
+
 export function usePublishChatbotFlow() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -277,6 +334,85 @@ export function useChatbotFlowVersions(flowId: string, enabled = true) {
       return result.data;
     },
     enabled: !!orgId && !!flowId && enabled,
+  });
+}
+
+export function useChatbotFlowDeployments(flowId: string, enabled = true) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery<ChatbotFlowDeployment[]>({
+    queryKey: queryKeys.chatbotFlows.deployments(orgId, flowId),
+    queryFn: async () => {
+      const response = await invokeChatbotManagement<{
+        deployments: ChatbotFlowDeployment[];
+      }>(
+        `flows/${flowId}/deployments?organization_id=${encodeURIComponent(
+          orgId!,
+        )}`,
+        undefined,
+        "GET",
+      );
+      return response.deployments;
+    },
+    enabled: !!orgId && !!flowId && enabled,
+  });
+}
+
+export function useActivateChatbotFlow() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      organizationAddress,
+      versionId,
+    }: ActivateChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<{
+        deployment: ChatbotFlowDeployment;
+      }>(
+        `flows/${flowId}/deployment`,
+        {
+          organization_id: orgId,
+          organization_address: organizationAddress,
+          version_id: versionId,
+        },
+        "PUT",
+      );
+    },
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
+      });
+    },
+  });
+}
+
+export function useDeactivateChatbotFlow() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({
+      flowId,
+      organizationAddress,
+    }: DeactivateChatbotFlowInput) => {
+      if (!orgId) throw new Error("No active organization");
+      return await invokeChatbotManagement<{ deactivated: true }>(
+        `flows/${flowId}/deployment`,
+        {
+          organization_id: orgId,
+          organization_address: organizationAddress,
+        },
+        "DELETE",
+      );
+    },
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
+      });
+    },
   });
 }
 

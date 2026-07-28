@@ -3,10 +3,20 @@ import type { Edge, Node, Viewport, XYPosition } from "@xyflow/react";
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
 export const CHATBOT_INPUT_MAX_LENGTH = 4096;
+export const CHATBOT_INTERACTIVE_BODY_MAX_LENGTH = 1024;
+export const CHATBOT_REPLY_BUTTON_MAX_COUNT = 3;
+export const CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH = 20;
+export const CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH = 20;
+export const CHATBOT_LIST_MAX_ROWS = 10;
+export const CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH = 24;
+export const CHATBOT_LIST_ROW_TITLE_MAX_LENGTH = 24;
+export const CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH = 72;
 
 export type ChatbotCoreNodeType =
   | "start"
   | "send_message"
+  | "interactive_buttons"
+  | "list_message"
   | "collect_input"
   | "condition"
   | "end";
@@ -24,6 +34,23 @@ export type ChatbotConditionBranch = {
   value: string;
 };
 
+export type ChatbotReplyButton = {
+  id: string;
+  title: string;
+};
+
+export type ChatbotListRow = {
+  id: string;
+  title: string;
+  description?: string;
+};
+
+export type ChatbotListSection = {
+  id: string;
+  title: string;
+  rows: ChatbotListRow[];
+};
+
 export type ChatbotNodeConfig = {
   text?: string;
   prompt?: string;
@@ -31,6 +58,10 @@ export type ChatbotNodeConfig = {
   required?: boolean;
   min_length?: number;
   max_length?: number;
+  body?: string;
+  buttons?: ChatbotReplyButton[];
+  button_text?: string;
+  sections?: ChatbotListSection[];
   [key: string]: unknown;
 };
 
@@ -48,6 +79,7 @@ export type ChatbotFlowEdge = Edge<{
   kind: string;
   operator?: ChatbotConditionOperator;
   value?: string;
+  option_id?: string;
   [key: string]: unknown;
 }>;
 
@@ -98,6 +130,20 @@ export type ChatbotDraftSaveStatus =
   | "saving"
   | "error"
   | "conflict";
+
+export type ChatbotEditorShortcut =
+  | "save"
+  | "delete-selected"
+  | "dismiss"
+  | null;
+
+export type ChatbotEditorActionAvailability = {
+  canSave: boolean;
+  canValidate: boolean;
+  canPublish: boolean;
+  canDeleteSelected: boolean;
+  canViewVersions: boolean;
+};
 
 export type ChatbotFlowValidationIssue = {
   code: string;
@@ -233,7 +279,12 @@ export function serializeChatbotEditorGraph(
               operator: edge.data.operator ?? "equals",
               value: edge.data.value ?? "",
             }
-          : { kind: "default" },
+          : edge.data?.kind === "option"
+            ? {
+                kind: "option",
+                option_id: edge.data.option_id ?? edge.sourceHandle ?? "",
+              }
+            : { kind: "default" },
     })),
     ...(graph.viewport
       ? {
@@ -278,10 +329,84 @@ export function getChatbotDraftSaveStatus({
   return dirty ? "dirty" : "saved";
 }
 
+export function getChatbotEditorShortcut({
+  key,
+  ctrlKey = false,
+  metaKey = false,
+  altKey = false,
+  shiftKey = false,
+  editableTarget = false,
+  composing = false,
+}: {
+  key: string;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  editableTarget?: boolean;
+  composing?: boolean;
+}): ChatbotEditorShortcut {
+  if (editableTarget || composing) return null;
+
+  const normalizedKey = key.toLowerCase();
+  const primaryModifier = ctrlKey || metaKey;
+  if (normalizedKey === "s" && primaryModifier && !altKey && !shiftKey) {
+    return "save";
+  }
+  if (
+    !primaryModifier &&
+    !altKey &&
+    !shiftKey &&
+    (normalizedKey === "delete" || normalizedKey === "backspace")
+  ) {
+    return "delete-selected";
+  }
+  if (normalizedKey === "escape" && !primaryModifier && !altKey && !shiftKey) {
+    return "dismiss";
+  }
+  return null;
+}
+
+export function getChatbotEditorActionAvailability({
+  dirty,
+  saving,
+  validating,
+  publishing,
+  conflict,
+  archived,
+  selectedNodeType,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  validating: boolean;
+  publishing: boolean;
+  conflict: boolean;
+  archived: boolean;
+  selectedNodeType?: string;
+}): ChatbotEditorActionAvailability {
+  const busy = saving || validating || publishing;
+  const editable = !archived && !conflict && !busy;
+
+  return {
+    canSave: editable && dirty,
+    canValidate: editable,
+    canPublish: editable && !dirty,
+    canDeleteSelected:
+      editable &&
+      selectedNodeType !== undefined &&
+      selectedNodeType !== "start",
+    canViewVersions: true,
+  };
+}
+
 const legacyNodeTypes: Record<string, ChatbotCoreNodeType> = {
   START: "start",
   MESSAGE: "send_message",
   SEND_MESSAGE: "send_message",
+  BUTTON: "interactive_buttons",
+  INTERACTIVE_BUTTONS: "interactive_buttons",
+  LIST: "list_message",
+  LIST_MESSAGE: "list_message",
   INPUT: "collect_input",
   COLLECT_INPUT: "collect_input",
   CONDITION: "condition",
@@ -308,6 +433,8 @@ export function isChatbotCoreNodeType(
   return (
     value === "start" ||
     value === "send_message" ||
+    value === "interactive_buttons" ||
+    value === "list_message" ||
     value === "collect_input" ||
     value === "condition" ||
     value === "end"
@@ -317,6 +444,8 @@ export function isChatbotCoreNodeType(
 export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "start") return "Inicio";
   if (type === "send_message") return "Enviar mensaje";
+  if (type === "interactive_buttons") return "Botones interactivos";
+  if (type === "list_message") return "Mensaje de lista";
   if (type === "collect_input") return "Recopilar respuesta";
   if (type === "condition") return "Condición";
   return "Fin";
@@ -328,6 +457,26 @@ function createStableNodeId(type: ChatbotCoreNodeType) {
 
 function createConditionBranchId() {
   return `branch-${crypto.randomUUID()}`;
+}
+
+function createOptionId(prefix: "button" | "row" | "section") {
+  return `${prefix}-${crypto.randomUUID()}`;
+}
+
+export function createChatbotReplyButton(title = ""): ChatbotReplyButton {
+  return { id: createOptionId("button"), title };
+}
+
+export function createChatbotListRow(title = ""): ChatbotListRow {
+  return { id: createOptionId("row"), title, description: "" };
+}
+
+export function createChatbotListSection(): ChatbotListSection {
+  return {
+    id: createOptionId("section"),
+    title: "",
+    rows: [createChatbotListRow()],
+  };
 }
 
 export function createChatbotConditionBranch(
@@ -357,11 +506,19 @@ export function createChatbotNode(
       config:
         type === "send_message"
           ? { text: "" }
-          : type === "collect_input"
-            ? { prompt: "", variable: "", required: true }
-            : type === "condition"
-              ? { variable: "" }
-              : {},
+          : type === "interactive_buttons"
+            ? { body: "", buttons: [createChatbotReplyButton()] }
+            : type === "list_message"
+              ? {
+                  body: "",
+                  button_text: "",
+                  sections: [createChatbotListSection()],
+                }
+              : type === "collect_input"
+                ? { prompt: "", variable: "", required: true }
+                : type === "condition"
+                  ? { variable: "" }
+                  : {},
       ...(type === "condition"
         ? { branches: [createChatbotConditionBranch()] }
         : {}),
@@ -419,6 +576,41 @@ export function updateChatbotCollectInputConfig(
       },
     },
   };
+}
+
+export function updateChatbotInteractiveConfig(
+  node: ChatbotFlowNode,
+  updates: Partial<ChatbotNodeConfig>,
+): ChatbotFlowNode {
+  if (
+    node.data.node_type !== "interactive_buttons" &&
+    node.data.node_type !== "list_message"
+  ) {
+    return node;
+  }
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: {
+        ...node.data.config,
+        ...updates,
+      },
+    },
+  };
+}
+
+export function getChatbotNodeOptionIds(node: ChatbotFlowNode): string[] {
+  if (node.data.node_type === "interactive_buttons") {
+    return (node.data.config.buttons ?? []).map((button) => button.id);
+  }
+  if (node.data.node_type === "list_message") {
+    return (node.data.config.sections ?? []).flatMap((section) =>
+      section.rows.map((row) => row.id),
+    );
+  }
+  return [];
 }
 
 export function updateChatbotConditionVariable(
@@ -502,6 +694,29 @@ export function duplicateChatbotNode(
 ): ChatbotFlowNode | null {
   if (node.data.node_type === "start") return null;
 
+  const duplicatedConfig =
+    node.data.node_type === "interactive_buttons"
+      ? {
+          ...node.data.config,
+          buttons: (node.data.config.buttons ?? []).map((button) => ({
+            ...button,
+            id: createOptionId("button"),
+          })),
+        }
+      : node.data.node_type === "list_message"
+        ? {
+            ...node.data.config,
+            sections: (node.data.config.sections ?? []).map((section) => ({
+              ...section,
+              id: createOptionId("section"),
+              rows: section.rows.map((row) => ({
+                ...row,
+                id: createOptionId("row"),
+              })),
+            })),
+          }
+        : { ...node.data.config };
+
   return {
     ...node,
     id,
@@ -512,7 +727,7 @@ export function duplicateChatbotNode(
     },
     data: {
       ...node.data,
-      config: { ...node.data.config },
+      config: duplicatedConfig,
       ...(node.data.node_type === "condition"
         ? {
             branches: (node.data.branches ?? []).map((branch) =>
@@ -613,6 +828,27 @@ export function isValidChatbotConnection(
   }
 
   if (
+    sourceNode.data.node_type === "interactive_buttons" ||
+    sourceNode.data.node_type === "list_message"
+  ) {
+    if (
+      !connection.sourceHandle ||
+      !getChatbotNodeOptionIds(sourceNode).includes(connection.sourceHandle)
+    ) {
+      return false;
+    }
+    if (
+      edges.some(
+        (edge) =>
+          edge.source === source &&
+          edge.sourceHandle === connection.sourceHandle,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (
     edges.some(
       (edge) =>
         edge.source === source &&
@@ -679,6 +915,18 @@ export function getAvailableChatbotVariables(
 
   const predecessorSets = (incoming.get(nodeId) ?? []).map(variablesAfterNode);
   return [...intersectVariableSets(predecessorSets)].sort();
+}
+
+export function insertChatbotTemplateVariable(
+  text: string,
+  variable: string,
+  selectionStart = text.length,
+  selectionEnd = selectionStart,
+) {
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(variable)) return text;
+  const start = Math.max(0, Math.min(selectionStart, text.length));
+  const end = Math.max(start, Math.min(selectionEnd, text.length));
+  return `${text.slice(0, start)}{{${variable}}}${text.slice(end)}`;
 }
 
 export function getChatbotConditionEdgeLabel(
@@ -815,21 +1063,35 @@ export function normalizeChatbotEditorGraph(
       const sourceNode = nodes.find((node) => node.id === edge.source);
       const sourceIsCondition = sourceNode?.data.node_type === "condition";
       const sourceData = isRecord(edge.data) ? edge.data : {};
-      const kind = sourceData.kind === "condition" ? "condition" : "default";
+      const kind =
+        sourceData.kind === "condition"
+          ? "condition"
+          : sourceData.kind === "option"
+            ? "option"
+            : "default";
       const operator = isConditionOperator(sourceData.operator)
         ? sourceData.operator
         : "equals";
       const edgeValue =
         typeof sourceData.value === "string" ? sourceData.value : "";
+      const sourceIsInteractive =
+        sourceNode?.data.node_type === "interactive_buttons" ||
+        sourceNode?.data.node_type === "list_message";
       const sourceHandle = sourceIsCondition
         ? kind === "default"
           ? "default"
           : typeof edge.sourceHandle === "string"
             ? edge.sourceHandle
             : `${edge.id}-branch`
-        : typeof edge.sourceHandle === "string"
-          ? edge.sourceHandle
-          : null;
+        : sourceIsInteractive && kind === "option"
+          ? typeof edge.sourceHandle === "string"
+            ? edge.sourceHandle
+            : typeof sourceData.option_id === "string"
+              ? sourceData.option_id
+              : null
+          : typeof edge.sourceHandle === "string"
+            ? edge.sourceHandle
+            : null;
 
       return [
         {
@@ -845,6 +1107,9 @@ export function normalizeChatbotEditorGraph(
             ...sourceData,
             kind,
             ...(kind === "condition" ? { operator, value: edgeValue } : {}),
+            ...(kind === "option" && sourceHandle
+              ? { option_id: sourceHandle }
+              : {}),
           },
           ...(sourceIsCondition
             ? {

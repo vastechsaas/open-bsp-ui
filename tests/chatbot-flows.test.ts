@@ -7,14 +7,19 @@ import {
   ChatbotDraftConflictError,
   ChatbotPublishValidationError,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  createChatbotListSection,
   createChatbotManagementError,
   createChatbotNode,
+  createChatbotReplyButton,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
+  insertChatbotTemplateVariable,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
+  getChatbotEditorActionAvailability,
   getChatbotEditorGraphFingerprint,
+  getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
@@ -30,7 +35,14 @@ import {
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotInteractiveConfig,
 } from "../src/utils/ChatbotFlowUtils.ts";
+import {
+  appendChatbotSimulationInput,
+  appendChatbotSimulationOption,
+  applyChatbotSimulationStep,
+  createChatbotSimulationSession,
+} from "../src/utils/ChatbotSimulationUtils.ts";
 
 void test("chatbot listing uses the full workspace layout", () => {
   assert.equal(isChatbotWorkspacePath("/chatbots"), true);
@@ -79,8 +91,206 @@ void test("chatbot version summaries distinguish drafts and unpublished flows", 
   );
 });
 
+void test("chatbot simulator keeps conversation state local and resettable", () => {
+  const initial = createChatbotSimulationSession();
+  const waiting = applyChatbotSimulationStep(initial, {
+    valid: true,
+    status: "waiting",
+    current_node_id: "city",
+    waiting_for: "free_text",
+    variables: {},
+    outgoing_texts: ["Welcome", "What is your city?"],
+    outgoing_messages: [
+      { type: "text", text: "Welcome" },
+      { type: "text", text: "What is your city?" },
+    ],
+    error: null,
+    transition_count: 3,
+  });
+  const answered = appendChatbotSimulationInput(waiting, " Lahore ");
+  const completed = applyChatbotSimulationStep(answered, {
+    valid: true,
+    status: "completed",
+    current_node_id: "end",
+    waiting_for: null,
+    variables: { customer_city: "Lahore" },
+    outgoing_texts: ["Lahore selected"],
+    outgoing_messages: [{ type: "text", text: "Lahore selected" }],
+    error: null,
+    transition_count: 4,
+  });
+
+  assert.equal(waiting.status, "waiting");
+  assert.deepEqual(
+    completed.messages.map((message) => [message.role, message.text]),
+    [
+      ["bot", "Welcome"],
+      ["bot", "What is your city?"],
+      ["user", "Lahore"],
+      ["bot", "Lahore selected"],
+    ],
+  );
+  assert.deepEqual(completed.variables, { customer_city: "Lahore" });
+  assert.deepEqual(createChatbotSimulationSession(), initial);
+});
+
+void test("chatbot simulator renders and selects interactive options locally", () => {
+  const waiting = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: true,
+    status: "waiting",
+    current_node_id: "buttons",
+    waiting_for: "button",
+    variables: {},
+    outgoing_texts: [],
+    outgoing_messages: [
+      {
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "Choose a team" },
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: { id: "support", title: "Support" },
+              },
+            ],
+          },
+        },
+      },
+    ],
+    error: null,
+    transition_count: 2,
+  });
+  const selected = appendChatbotSimulationOption(
+    waiting,
+    waiting.messages[0]!.options![0]!,
+  );
+
+  assert.equal(waiting.waitingFor, "button");
+  assert.deepEqual(waiting.messages[0]?.options, [
+    { id: "support", title: "Support", kind: "button" },
+  ]);
+  assert.equal(selected.messages.at(-1)?.text, "Support");
+});
+
+void test("chatbot simulator preserves WhatsApp list button and sections", () => {
+  const waiting = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: true,
+    status: "waiting",
+    current_node_id: "offices",
+    waiting_for: "list_selection",
+    variables: {},
+    outgoing_texts: [],
+    outgoing_messages: [
+      {
+        type: "interactive",
+        interactive: {
+          type: "list",
+          body: { text: "Choose an office" },
+          action: {
+            button: "View offices",
+            sections: [
+              {
+                title: "Pakistan",
+                rows: [
+                  {
+                    id: "lahore",
+                    title: "Lahore",
+                    description: "Main office",
+                  },
+                ],
+              },
+              {
+                title: "UAE",
+                rows: [{ id: "dubai", title: "Dubai" }],
+              },
+            ],
+          },
+        },
+      },
+    ],
+    error: null,
+    transition_count: 2,
+  });
+
+  assert.equal(waiting.waitingFor, "list_selection");
+  assert.equal(waiting.messages[0]?.options, undefined);
+  assert.deepEqual(waiting.messages[0]?.list, {
+    buttonText: "View offices",
+    sections: [
+      {
+        title: "Pakistan",
+        options: [
+          {
+            id: "lahore",
+            title: "Lahore",
+            description: "Main office",
+            kind: "list_selection",
+          },
+        ],
+      },
+      {
+        title: "UAE",
+        options: [
+          {
+            id: "dubai",
+            title: "Dubai",
+            description: undefined,
+            kind: "list_selection",
+          },
+        ],
+      },
+    ],
+  });
+
+  const selected = appendChatbotSimulationOption(
+    waiting,
+    waiting.messages[0]!.list!.sections[1]!.options[0]!,
+  );
+  assert.equal(selected.messages.at(-1)?.text, "Dubai");
+});
+
+void test("chatbot simulator exposes invalid graph issues without runtime state", () => {
+  const session = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: false,
+    issues: [
+      {
+        code: "invalid_start_count",
+        path: ["nodes"],
+        message: "Exactly one start node is required",
+      },
+    ],
+  });
+
+  assert.equal(session.status, "invalid");
+  assert.equal(session.issues[0]?.code, "invalid_start_count");
+  assert.deepEqual(session.messages, []);
+});
+
 void test("chatbot duplication uses a predictable editable name", () => {
   assert.equal(getChatbotFlowDuplicateName("  Ventas  "), "Ventas (copia)");
+});
+
+void test("chatbot activation uses the server-owned runtime identity", () => {
+  const deploymentDialog = readFileSync(
+    new URL(
+      "../src/components/chatbots/ChatbotFlowDeployment.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const flowQueries = readFileSync(
+    new URL("../src/queries/useChatbotFlows.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(deploymentDialog, /Agente de IA|agentId|agents:/);
+  assert.match(
+    deploymentDialog,
+    /Necesitás un número de WhatsApp conectado y una versión publicada\./,
+  );
+  assert.doesNotMatch(flowQueries, /agent_id:\s*agentId/);
 });
 
 void test("chatbot editor graph normalization keeps safe connected elements", () => {
@@ -320,6 +530,113 @@ void test("draft save status prioritizes active saves and concurrency conflicts"
   );
 });
 
+void test("builder shortcuts are safe, cross-platform, and ignore editable controls", () => {
+  assert.equal(getChatbotEditorShortcut({ key: "s", ctrlKey: true }), "save");
+  assert.equal(getChatbotEditorShortcut({ key: "S", metaKey: true }), "save");
+  assert.equal(getChatbotEditorShortcut({ key: "Delete" }), "delete-selected");
+  assert.equal(
+    getChatbotEditorShortcut({ key: "Backspace" }),
+    "delete-selected",
+  );
+  assert.equal(getChatbotEditorShortcut({ key: "Escape" }), "dismiss");
+  assert.equal(
+    getChatbotEditorShortcut({
+      key: "Delete",
+      editableTarget: true,
+    }),
+    null,
+  );
+  assert.equal(
+    getChatbotEditorShortcut({
+      key: "s",
+      ctrlKey: true,
+      composing: true,
+    }),
+    null,
+  );
+  assert.equal(
+    getChatbotEditorShortcut({ key: "s", ctrlKey: true, shiftKey: true }),
+    null,
+  );
+});
+
+void test("builder action contract covers the complete V1 authoring workflow", () => {
+  const availability = (
+    overrides: Partial<
+      Parameters<typeof getChatbotEditorActionAvailability>[0]
+    > = {},
+  ) =>
+    getChatbotEditorActionAvailability({
+      dirty: false,
+      saving: false,
+      validating: false,
+      publishing: false,
+      conflict: false,
+      archived: false,
+      ...overrides,
+    });
+
+  // A newly created or freshly loaded draft can be validated, published,
+  // and inspected through version history, but has nothing to save yet.
+  assert.deepEqual(availability(), {
+    canSave: false,
+    canValidate: true,
+    canPublish: true,
+    canDeleteSelected: false,
+    canViewVersions: true,
+  });
+
+  // Editing enables saving, protects the Start node, and prevents publishing
+  // until the exact graph snapshot has been persisted.
+  assert.deepEqual(availability({ dirty: true, selectedNodeType: "start" }), {
+    canSave: true,
+    canValidate: true,
+    canPublish: false,
+    canDeleteSelected: false,
+    canViewVersions: true,
+  });
+  assert.equal(
+    availability({ dirty: true, selectedNodeType: "send_message" })
+      .canDeleteSelected,
+    true,
+  );
+
+  // Save, validation, and publication are mutually exclusive operations.
+  for (const pending of [
+    { saving: true },
+    { validating: true },
+    { publishing: true },
+  ]) {
+    assert.deepEqual(availability({ dirty: true, ...pending }), {
+      canSave: false,
+      canValidate: false,
+      canPublish: false,
+      canDeleteSelected: false,
+      canViewVersions: true,
+    });
+  }
+
+  // After save and validation, publication is available. Conflicted or
+  // archived drafts remain read-only while version history stays accessible.
+  assert.equal(availability({ dirty: false }).canPublish, true);
+  for (const blocked of [{ conflict: true }, { archived: true }]) {
+    assert.deepEqual(
+      availability({
+        dirty: true,
+        selectedNodeType: "condition",
+        ...blocked,
+      }),
+      {
+        canSave: false,
+        canValidate: false,
+        canPublish: false,
+        canDeleteSelected: false,
+        canViewVersions: true,
+      },
+    );
+  }
+});
+
 void test("publish validation errors preserve structured node and edge issues", () => {
   const error = createChatbotManagementError(422, {
     message: "Draft is invalid",
@@ -402,6 +719,24 @@ void test("input and condition nodes use the exact compiler-compatible contract"
     "starts_with",
     "ends_with",
   ]);
+});
+
+void test("interactive nodes keep stable option IDs and compiler-compatible config", () => {
+  const buttons = createChatbotNode(
+    "interactive_buttons",
+    { x: 0, y: 0 },
+    "buttons",
+  );
+  const list = createChatbotNode("list_message", { x: 200, y: 0 }, "list");
+  const configured = updateChatbotInteractiveConfig(buttons, {
+    body: "Choose",
+    buttons: [createChatbotReplyButton("Support")],
+  });
+
+  assert.equal(configured.data.config.body, "Choose");
+  assert.match(configured.data.config.buttons![0]!.id, /^button-/);
+  assert.equal(list.data.config.sections?.length, 1);
+  assert.match(createChatbotListSection().rows[0]!.id, /^row-/);
 });
 
 void test("input and condition inspector updates preserve node contracts", () => {
@@ -560,6 +895,54 @@ void test("condition connections require one edge per branch and a fallback", ()
   );
 });
 
+void test("interactive connections require one edge per stable option handle", () => {
+  const buttons = updateChatbotInteractiveConfig(
+    createChatbotNode("interactive_buttons", { x: 0, y: 0 }, "buttons"),
+    {
+      body: "Choose",
+      buttons: [{ id: "support", title: "Support" }],
+    },
+  );
+  const end = createChatbotNode("end", { x: 300, y: 0 }, "end");
+  const nodes = [buttons, end];
+
+  assert.equal(
+    isValidChatbotConnection({ source: "buttons", target: "end" }, nodes, []),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "support" },
+      nodes,
+      [],
+    ),
+    true,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "unknown" },
+      nodes,
+      [],
+    ),
+    false,
+  );
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "buttons", target: "end", sourceHandle: "support" },
+      nodes,
+      [
+        {
+          id: "support-edge",
+          source: "buttons",
+          sourceHandle: "support",
+          target: "end",
+        },
+      ],
+    ),
+    false,
+  );
+});
+
 void test("conditions only expose variables collected on every incoming path", () => {
   const start = createChatbotNode("start", { x: 0, y: 0 }, "start");
   const input = updateChatbotCollectInputConfig(
@@ -593,6 +976,21 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "message-condition", source: "message", target: "condition" },
     ]),
     [],
+  );
+});
+
+void test("template variables insert at the requested selection", () => {
+  assert.equal(
+    insertChatbotTemplateVariable("Hello name", "customer_name", 6, 10),
+    "Hello {{customer_name}}",
+  );
+  assert.equal(
+    insertChatbotTemplateVariable("City: ", "customer_city"),
+    "City: {{customer_city}}",
+  );
+  assert.equal(
+    insertChatbotTemplateVariable("Hello", "contact.name"),
+    "Hello",
   );
 });
 
@@ -754,6 +1152,51 @@ void test("input and condition editor labels exist in every supported locale", (
     "Ver resultado",
     "La versión se publicó correctamente.",
     "Ya podés continuar editando el siguiente borrador.",
+    "Simular flujo",
+    "Simular",
+    "Simulador",
+    "Entorno local sin envíos",
+    "Reiniciar",
+    "Usa el flujo actual en memoria. No crea conversaciones, mensajes ni ejecuciones reales.",
+    "Iniciando simulación…",
+    "Corregí el flujo antes de simularlo.",
+    "No se pudo continuar la simulación. Intentá reiniciarla.",
+    "Procesando…",
+    "La simulación terminó correctamente.",
+    "Escribí una respuesta",
+    "Esperando al flujo",
+    "Enviar respuesta",
+    "Botones interactivos",
+    "Ofrece hasta tres respuestas rápidas",
+    "Mensaje de lista",
+    "Ofrece un menú de hasta diez opciones",
+    "Elegí una opción para continuar",
+    "Botones",
+    "Botón",
+    "Eliminar botón",
+    "Agregar botón",
+    "Elegí una opción de la lista",
+    "Texto del botón para abrir la lista",
+    "Ver opciones",
+    "Secciones y opciones",
+    "Sección",
+    "Eliminar sección",
+    "Opción",
+    "Eliminar opción",
+    "Descripción opcional",
+    "Agregar opción",
+    "Agregar sección",
+    "Seleccioná una opción para continuar",
+    "Activar chatbot",
+    "Elegí qué versión publicada responderá en cada número de WhatsApp.",
+    "No se pudieron cargar las opciones de activación.",
+    "Activaciones actuales",
+    "Desactivar",
+    "Número de WhatsApp",
+    "Necesitás un número de WhatsApp conectado y una versión publicada.",
+    "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.",
+    "Activar",
+    "Desactivar chatbot",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

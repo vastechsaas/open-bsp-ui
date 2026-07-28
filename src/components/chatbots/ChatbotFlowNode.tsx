@@ -2,7 +2,9 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   CircleStop,
   GitBranch,
+  List,
   MessageSquareText,
+  MousePointerClick,
   Play,
   TextCursorInput,
   type LucideIcon,
@@ -30,6 +32,18 @@ const nodePresentation: Record<
     badge: "MESSAGE",
     accent: "border-primary/45",
     iconBackground: "bg-primary/15 text-primary",
+  },
+  interactive_buttons: {
+    icon: MousePointerClick,
+    badge: "BUTTONS",
+    accent: "border-sky-500/45",
+    iconBackground: "bg-sky-500/15 text-sky-500",
+  },
+  list_message: {
+    icon: List,
+    badge: "LIST",
+    accent: "border-teal-500/45",
+    iconBackground: "bg-teal-500/15 text-teal-500",
   },
   collect_input: {
     icon: TextCursorInput,
@@ -63,6 +77,9 @@ export default function ChatbotFlowNode({
   const isStart = data.node_type === "start";
   const isEnd = data.node_type === "end";
   const isMessage = data.node_type === "send_message";
+  const isButtons = data.node_type === "interactive_buttons";
+  const isList = data.node_type === "list_message";
+  const isInteractive = isButtons || isList;
   const isCollectInput = data.node_type === "collect_input";
   const isCondition = data.node_type === "condition";
   const messageText =
@@ -73,6 +90,20 @@ export default function ChatbotFlowNode({
       : "";
   const variable =
     typeof data.config.variable === "string" ? data.config.variable : "";
+  const interactiveBody =
+    isInteractive && typeof data.config.body === "string"
+      ? data.config.body
+      : "";
+  const interactiveOptions = isButtons
+    ? (data.config.buttons ?? []).map((button) => ({
+        id: button.id,
+        title: button.title,
+      }))
+    : isList
+      ? (data.config.sections ?? []).flatMap((section) =>
+          section.rows.map((row) => ({ id: row.id, title: row.title })),
+        )
+      : [];
 
   return (
     <div
@@ -138,6 +169,45 @@ export default function ChatbotFlowNode({
         </div>
       )}
 
+      {isInteractive && (
+        <div className="border-t border-border">
+          <p
+            className={`line-clamp-2 px-[12px] py-[8px] text-[10px] leading-relaxed ${
+              interactiveBody.trim()
+                ? "text-muted-foreground"
+                : "text-destructive"
+            }`}
+          >
+            {interactiveBody.trim() ? interactiveBody : t("Mensaje requerido")}
+          </p>
+          {interactiveOptions.map((option, index) => (
+            <div
+              key={option.id}
+              className="relative flex items-center justify-between gap-[8px] border-t border-border/70 px-[12px] py-[7px]"
+            >
+              <span
+                className={`truncate text-[9px] ${
+                  option.title.trim()
+                    ? "text-muted-foreground"
+                    : "text-destructive"
+                }`}
+              >
+                {option.title.trim() || `${t("Opción")} ${index + 1}`}
+              </span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={option.id}
+                isConnectable={isConnectable}
+                className={`!right-[-5px] !h-[9px] !w-[9px] !border-2 !border-card ${
+                  isButtons ? "!bg-sky-500" : "!bg-teal-500"
+                }`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {isCondition && (
         <div className="border-t border-border">
           <div className="px-[12px] py-[7px] font-mono text-[9px] font-semibold text-orange-500">
@@ -176,7 +246,7 @@ export default function ChatbotFlowNode({
         </div>
       )}
 
-      {!isEnd && !isCondition && (
+      {!isEnd && !isCondition && !isInteractive && (
         <Handle
           type="source"
           position={Position.Right}
