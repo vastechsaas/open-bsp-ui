@@ -32,6 +32,7 @@ import {
   removeChatbotConditionBranch,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
+  updateChatbotAssignAgent,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
@@ -43,6 +44,46 @@ import {
   applyChatbotSimulationStep,
   createChatbotSimulationSession,
 } from "../src/utils/ChatbotSimulationUtils.ts";
+
+void test("assign agent is a configured terminal builder node", () => {
+  const agentId = "11111111-1111-4111-8111-111111111111";
+  const start = createChatbotNode("start", { x: 0, y: 0 }, "start");
+  const handoff = createChatbotNode(
+    "assign_agent",
+    { x: 200, y: 0 },
+    "handoff",
+  );
+  const configured = updateChatbotAssignAgent(handoff, agentId);
+
+  assert.deepEqual(configured.data.config, { agent_id: agentId });
+  assert.equal(
+    isValidChatbotConnection(
+      { source: "handoff", target: "start" },
+      [start, configured],
+      [],
+    ),
+    false,
+  );
+});
+
+void test("simulator reports handoff without creating a real assignment", () => {
+  const session = applyChatbotSimulationStep(createChatbotSimulationSession(), {
+    valid: true,
+    status: "handed_off",
+    current_node_id: "handoff",
+    waiting_for: null,
+    handoff_agent_id: "11111111-1111-4111-8111-111111111111",
+    variables: {},
+    outgoing_texts: [],
+    outgoing_messages: [],
+    error: null,
+    transition_count: 2,
+  });
+
+  assert.equal(session.status, "handed_off");
+  assert.equal(session.handoffAgentId, "11111111-1111-4111-8111-111111111111");
+  assert.deepEqual(session.messages, []);
+});
 
 void test("chatbot listing uses the full workspace layout", () => {
   assert.equal(isChatbotWorkspacePath("/chatbots"), true);
@@ -988,10 +1029,7 @@ void test("template variables insert at the requested selection", () => {
     insertChatbotTemplateVariable("City: ", "customer_city"),
     "City: {{customer_city}}",
   );
-  assert.equal(
-    insertChatbotTemplateVariable("Hello", "contact.name"),
-    "Hello",
-  );
+  assert.equal(insertChatbotTemplateVariable("Hello", "contact.name"), "Hello");
 });
 
 void test("condition graph normalization keeps branch routing metadata", () => {
@@ -1197,6 +1235,16 @@ void test("input and condition editor labels exist in every supported locale", (
     "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.",
     "Activar",
     "Desactivar chatbot",
+    "Asignar agente",
+    "Transfiere la conversación a una persona",
+    "Agente configurado",
+    "Agente requerido",
+    "Agente humano",
+    "Seleccioná un agente",
+    "No hay agentes humanos activos disponibles.",
+    "La automatización terminará y la conversación quedará asignada a esta persona.",
+    "Seleccioná un agente humano activo.",
+    "La simulación transfirió la conversación sin modificar datos reales.",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

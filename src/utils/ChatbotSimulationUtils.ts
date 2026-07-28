@@ -25,8 +25,15 @@ export type ChatbotSimulationList = {
 
 export type ChatbotSimulationSession = {
   currentNodeId?: string;
+  handoffAgentId?: string;
   variables: Record<string, unknown>;
-  status: "idle" | "waiting" | "completed" | "failed" | "invalid";
+  status:
+    | "idle"
+    | "waiting"
+    | "completed"
+    | "handed_off"
+    | "failed"
+    | "invalid";
   waitingFor: "free_text" | "button" | "list_selection" | null;
   messages: ChatbotSimulationMessage[];
   issues: ChatbotFlowValidationIssue[];
@@ -39,9 +46,10 @@ export type ChatbotSimulationStep =
     }
   | {
       valid: true;
-      status: "waiting" | "completed" | "failed";
+      status: "waiting" | "completed" | "handed_off" | "failed";
       current_node_id: string;
       waiting_for: "free_text" | "button" | "list_selection" | null;
+      handoff_agent_id?: string | null;
       variables: Record<string, unknown>;
       outgoing_texts: string[];
       outgoing_messages: Array<
@@ -195,6 +203,7 @@ export function applyChatbotSimulationStep(
 
   return {
     currentNodeId: step.current_node_id,
+    handoffAgentId: step.handoff_agent_id ?? undefined,
     variables: step.variables,
     status: step.status,
     waitingFor: step.waiting_for,

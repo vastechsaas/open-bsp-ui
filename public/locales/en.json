@@ -938,5 +938,15 @@
   "Necesitás un número de WhatsApp conectado y una versión publicada.": "You need a connected WhatsApp number and a published version.",
   "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Activation could not be changed. Review the options and try again.",
   "Activar": "Activate",
-  "Desactivar chatbot": "Deactivate chatbot"
+  "Desactivar chatbot": "Deactivate chatbot",
+  "Asignar agente": "Assign agent",
+  "Transfiere la conversación a una persona": "Transfers the conversation to a person",
+  "Agente configurado": "Agent configured",
+  "Agente requerido": "Agent required",
+  "Agente humano": "Human agent",
+  "Seleccioná un agente": "Select an agent",
+  "No hay agentes humanos activos disponibles.": "No active human agents are available.",
+  "La automatización terminará y la conversación quedará asignada a esta persona.": "Automation will stop and the conversation will be assigned to this person.",
+  "Seleccioná un agente humano activo.": "Select an active human agent.",
+  "La simulación transfirió la conversación sin modificar datos reales.": "The simulation transferred the conversation without changing real data."
 }

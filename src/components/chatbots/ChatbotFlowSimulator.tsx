@@ -63,12 +63,7 @@ export function ChatbotFlowSimulator({
     ) {
       setOpenListMessageId(null);
     }
-  }, [
-    actionableMessageId,
-    openListMessageId,
-    pending,
-    session.status,
-  ]);
+  }, [actionableMessageId, openListMessageId, pending, session.status]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -256,6 +251,14 @@ export function ChatbotFlowSimulator({
       {session.status === "completed" && (
         <div className="border-t border-emerald-500/25 bg-emerald-500/8 px-[13px] py-[9px] text-[10px] text-emerald-600 dark:text-emerald-400">
           {t("La simulación terminó correctamente.")}
+        </div>
+      )}
+
+      {session.status === "handed_off" && (
+        <div className="border-t border-violet-500/25 bg-violet-500/8 px-[13px] py-[9px] text-[10px] text-violet-600 dark:text-violet-400">
+          {t(
+            "La simulación transfirió la conversación sin modificar datos reales.",
+          )}
         </div>
       )}
 

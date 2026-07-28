@@ -938,5 +938,15 @@
   "Necesitás un número de WhatsApp conectado y una versión publicada.": "Unahitaji nambari ya WhatsApp iliyounganishwa na toleo lililochapishwa.",
   "No se pudo cambiar la activación. Revisá las opciones e intentá nuevamente.": "Imeshindikana kubadilisha uanzishaji. Kagua chaguo na ujaribu tena.",
   "Activar": "Washa",
-  "Desactivar chatbot": "Zima chatbot"
+  "Desactivar chatbot": "Zima chatbot",
+  "Asignar agente": "Mkabidhi wakala",
+  "Transfiere la conversación a una persona": "Hamisha mazungumzo kwa mtu",
+  "Agente configurado": "Wakala amewekwa",
+  "Agente requerido": "Wakala anahitajika",
+  "Agente humano": "Wakala wa kibinadamu",
+  "Seleccioná un agente": "Chagua wakala",
+  "No hay agentes humanos activos disponibles.": "Hakuna mawakala wa kibinadamu wanaopatikana.",
+  "La automatización terminará y la conversación quedará asignada a esta persona.": "Otomatiki itasimama na mazungumzo yatakabidhiwa mtu huyu.",
+  "Seleccioná un agente humano activo.": "Chagua wakala wa kibinadamu anayefanya kazi.",
+  "La simulación transfirió la conversación sin modificar datos reales.": "Uigaji ulihamisha mazungumzo bila kubadilisha data halisi."
 }
