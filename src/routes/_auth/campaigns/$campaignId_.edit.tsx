@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
 import CampaignForm from "@/components/campaigns/CampaignForm";
-import SectionHeader from "@/components/SectionHeader";
+import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
+import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   useCampaign,
@@ -17,17 +18,31 @@ function EditCampaign() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
   const { campaignId } = Route.useParams();
-  const { data: campaign } = useCampaign(campaignId);
+  const { data: campaign, isLoading, isError } = useCampaign(campaignId);
   const updateCampaign = useUpdateCampaign();
   const deleteCampaign = useDeleteCampaign();
 
-  if (!campaign) return null;
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (isError || !campaign) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
+        {t("No se pudo cargar la campaña")}
+      </div>
+    );
+  }
 
   return (
-    <>
-      <SectionHeader
+    <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
+      <CampaignWorkspaceHeader
         title={t("Editar campaña")}
-        backTo="/campaigns"
+        activeStep={1}
         onDelete={() =>
           deleteCampaign.mutate(campaignId, {
             onSuccess: () => {
@@ -45,19 +60,29 @@ function EditCampaign() {
       />
       <CampaignForm
         campaign={campaign}
+        layout="workspace"
         loading={updateCampaign.isPending}
-        submitLabel={t("Actualizar borrador")}
-        onSubmit={(input) =>
+        secondarySubmitLabel={t("Guardar borrador")}
+        submitLabel={t("Revisar y continuar")}
+        onSubmit={(input, intent) =>
           updateCampaign.mutate(
             { id: campaignId, ...input },
             {
-              onSuccess: () => void message.success(t("Borrador actualizado")),
+              onSuccess: () => {
+                void message.success(t("Borrador actualizado"));
+                if (intent === "review") {
+                  void navigate({
+                    to: "/campaigns/$campaignId/review",
+                    params: { campaignId },
+                  });
+                }
+              },
               onError: () =>
                 void message.error(t("No se pudo actualizar el borrador")),
             },
           )
         }
       />
-    </>
+    </div>
   );
 }

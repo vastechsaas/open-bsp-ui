@@ -45,7 +45,7 @@ export function isCampaignWorkspacePath(pathname: string) {
   return (
     normalizedPath === "/campaigns" ||
     normalizedPath === "/campaigns/new" ||
-    /^\/campaigns\/[^/]+\/review$/.test(normalizedPath)
+      /^\/campaigns\/[^/]+\/(?:edit|review)$/.test(normalizedPath)
   );
 }
 

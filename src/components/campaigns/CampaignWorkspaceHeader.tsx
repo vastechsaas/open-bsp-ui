@@ -1,13 +1,19 @@
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, LoaderCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function CampaignWorkspaceHeader({
   title,
   activeStep,
+  onBack,
+  onDelete,
+  deleteLoading = false,
 }: {
   title: string;
   activeStep: 1 | 2;
+  onBack?: () => void;
+  onDelete?: () => void;
+  deleteLoading?: boolean;
 }) {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
@@ -18,17 +24,34 @@ export default function CampaignWorkspaceHeader({
         <button
           className="p-[8px] ml-[-8px] rounded-full hover:bg-muted"
           title={t("Volver")}
-          onClick={() => window.history.back()}
+          onClick={onBack || (() => void navigate({ to: "/campaigns" }))}
         >
           <ArrowLeft className="w-[22px] h-[22px]" />
         </button>
         <h1 className="text-[22px] font-semibold">{title}</h1>
-        <button
-          className="ml-auto text-[13px] text-muted-foreground hover:text-foreground"
-          onClick={() => void navigate({ to: "/campaigns" })}
-        >
-          {t("Volver a campañas")}
-        </button>
+        <div className="ml-auto flex items-center gap-[8px]">
+          <button
+            className="text-[13px] text-muted-foreground hover:text-foreground"
+            onClick={() => void navigate({ to: "/campaigns" })}
+          >
+            {t("Volver a campañas")}
+          </button>
+          {onDelete && (
+            <button
+              type="button"
+              className="rounded-full p-[8px] hover:bg-muted disabled:opacity-50"
+              title={t("Eliminar")}
+              disabled={deleteLoading}
+              onClick={onDelete}
+            >
+              {deleteLoading ? (
+                <LoaderCircle className="h-[20px] w-[20px] animate-spin" />
+              ) : (
+                <Trash2 className="h-[20px] w-[20px]" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-[18px] mx-auto flex max-w-[680px] items-center">

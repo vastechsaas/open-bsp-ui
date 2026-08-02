@@ -171,9 +171,10 @@ void test("campaign readiness requires valid mappings and recipients", () => {
   );
 });
 
-void test("only listing, create, and review use the campaign workspace", () => {
+void test("campaign listing, create, edit, and review use the workspace", () => {
   assert.equal(isCampaignWorkspacePath("/campaigns"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/new"), true);
+  assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1/edit"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1/review"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1"), false);
 });
@@ -221,7 +222,9 @@ void test("campaign setup uses an explicit edit URL from every entry point", () 
     editRoute,
     /createFileRoute\("\/_auth\/campaigns\/\$campaignId_\/edit"\)/,
   );
-  assert.match(editRoute, /backTo="\/campaigns"/);
+  assert.match(editRoute, /<CampaignWorkspaceHeader/);
+  assert.match(editRoute, /layout="workspace"/);
+  assert.match(editRoute, /to: "\/campaigns\/\$campaignId\/review"/);
   assert.match(legacyRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
   assert.match(listingRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
   assert.match(reviewRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
