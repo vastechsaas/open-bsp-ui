@@ -210,6 +210,8 @@ button:disabled {
   }
 
   .bg-chat {
+    position: relative;
+    isolation: isolate;
     background-color: var(--color-muted);
     z-index: 0;
   }

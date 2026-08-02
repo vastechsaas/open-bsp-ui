@@ -620,7 +620,7 @@ export default function CampaignForm({
   return (
     <>
       {isWorkspace ? (
-        <div className="flex-1 min-h-0 overflow-y-auto p-[16px] md:p-[24px] bg-muted/30">
+        <div className="flex-1 min-h-0 overflow-y-auto p-[16px] md:p-[24px] bg-background">
           <div className="max-w-[1400px] mx-auto">{form}</div>
         </div>
       ) : (

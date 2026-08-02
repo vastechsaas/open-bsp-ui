@@ -230,6 +230,33 @@ void test("campaign setup uses an explicit edit URL from every entry point", () 
   assert.match(reviewRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
 });
 
+void test("campaign workspaces keep the chat texture inside template previews", () => {
+  const globalStyles = readFileSync(
+    new URL("../src/global.css", import.meta.url),
+    "utf8",
+  );
+  const campaignForm = readFileSync(
+    new URL("../src/components/campaigns/CampaignForm.tsx", import.meta.url),
+    "utf8",
+  );
+  const reviewRoute = readFileSync(
+    new URL(
+      "../src/routes/_auth/campaigns/$campaignId_.review.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    globalStyles,
+    /\.bg-chat\s*\{[^}]*position:\s*relative;[^}]*isolation:\s*isolate;/s,
+  );
+  assert.doesNotMatch(campaignForm, /bg-muted\/30/);
+  assert.match(campaignForm, /overflow-y-auto[^"\n]*bg-background/);
+  assert.doesNotMatch(reviewRoute, /bg-muted\/30/);
+  assert.match(reviewRoute, /overflow-y-auto[^"\n]*bg-background/);
+});
+
 void test("campaign execution is allowed only for a ready draft", () => {
   assert.equal(canStartCampaign("draft", "ready"), true);
   assert.equal(canStartCampaign("draft", "needs_attention"), false);

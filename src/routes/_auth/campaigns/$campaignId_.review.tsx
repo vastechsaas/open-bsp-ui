@@ -126,7 +126,7 @@ function ReviewCampaign() {
     <div className="h-full min-h-0 flex flex-col bg-background text-foreground">
       <CampaignWorkspaceHeader title={t("Revisar campaña")} activeStep={2} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30 p-[16px] md:p-[24px]">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-background p-[16px] md:p-[24px]">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-[16px]">
           <div className="flex flex-col gap-[16px] min-w-0">
             <section className="campaign-review-card">
