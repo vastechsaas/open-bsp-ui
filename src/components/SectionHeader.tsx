@@ -7,6 +7,7 @@ import Spinner from "./Spinner";
 export default function SectionHeader({
   title,
   closeButton,
+  backTo,
   onDelete,
   deleteDisabled,
   deleteDisabledReason,
@@ -14,6 +15,7 @@ export default function SectionHeader({
 }: {
   title: string;
   closeButton?: boolean;
+  backTo?: string;
   onDelete?: () => void;
   deleteDisabled?: boolean;
   deleteDisabledReason?: string;
@@ -40,7 +42,7 @@ export default function SectionHeader({
           </button>
         ) : (
           <LinkButton
-            to=".."
+            to={backTo || ".."}
             className="mr-[8px] ml-[-8px]"
             title={t("Volver")}
           >

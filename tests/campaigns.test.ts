@@ -221,6 +221,7 @@ void test("campaign setup uses an explicit edit URL from every entry point", () 
     editRoute,
     /createFileRoute\("\/_auth\/campaigns\/\$campaignId_\/edit"\)/,
   );
+  assert.match(editRoute, /backTo="\/campaigns"/);
   assert.match(legacyRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
   assert.match(listingRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
   assert.match(reviewRoute, /to: "\/campaigns\/\$campaignId\/edit"/);

@@ -27,6 +27,7 @@ function EditCampaign() {
     <>
       <SectionHeader
         title={t("Editar campaña")}
+        backTo="/campaigns"
         onDelete={() =>
           deleteCampaign.mutate(campaignId, {
             onSuccess: () => {
