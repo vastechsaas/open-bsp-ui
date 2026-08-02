@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import type { TemplateData } from "../src/supabase/client.ts";
 import {
   canStartCampaign,
@@ -175,6 +176,21 @@ void test("only listing, create, and review use the campaign workspace", () => {
   assert.equal(isCampaignWorkspacePath("/campaigns/new"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1/review"), true);
   assert.equal(isCampaignWorkspacePath("/campaigns/campaign-1"), false);
+});
+
+void test("campaign review is not nested under the campaign edit route", () => {
+  const reviewRoute = readFileSync(
+    new URL(
+      "../src/routes/_auth/campaigns/$campaignId_.review.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    reviewRoute,
+    /createFileRoute\("\/_auth\/campaigns\/\$campaignId_\/review"\)/,
+  );
 });
 
 void test("campaign execution is allowed only for a ready draft", () => {

@@ -25,7 +25,7 @@ import {
 } from "@/utils/CampaignUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 
-export const Route = createFileRoute("/_auth/campaigns/$campaignId/review")({
+export const Route = createFileRoute("/_auth/campaigns/$campaignId_/review")({
   component: ReviewCampaign,
 });
 
