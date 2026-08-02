@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import type { TemplateData } from "../src/supabase/client.ts";
 import {
   canStartCampaign,
@@ -255,6 +255,39 @@ void test("campaign workspaces keep the chat texture inside template previews", 
   assert.match(campaignForm, /overflow-y-auto[^"\n]*bg-background/);
   assert.doesNotMatch(reviewRoute, /bg-muted\/30/);
   assert.match(reviewRoute, /overflow-y-auto[^"\n]*bg-background/);
+});
+
+void test("campaign translations cover every supported locale", () => {
+  const sourceDirectories = [
+    new URL("../src/components/campaigns/", import.meta.url),
+    new URL("../src/routes/_auth/campaigns/", import.meta.url),
+  ];
+  const translationKeys = new Set(
+    sourceDirectories.flatMap((directory) =>
+      readdirSync(directory)
+        .filter((fileName) => fileName.endsWith(".tsx"))
+        .flatMap((fileName) => {
+          const source = readFileSync(new URL(fileName, directory), "utf8");
+          return [...source.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/gs)].map(
+            (match) => JSON.parse(`"${match[1]}"`) as string,
+          );
+        }),
+    ),
+  );
+
+  for (const locale of ["en", "fr", "pt", "sw"]) {
+    const translations = JSON.parse(
+      readFileSync(
+        new URL(`../public/locales/${locale}.json`, import.meta.url),
+        "utf8",
+      ),
+    ) as Record<string, string>;
+    const missing = [...translationKeys].filter(
+      (key) => !Object.hasOwn(translations, key),
+    );
+
+    assert.deepEqual(missing, [], `${locale}.json is missing campaign strings`);
+  }
 });
 
 void test("campaign execution is allowed only for a ready draft", () => {
