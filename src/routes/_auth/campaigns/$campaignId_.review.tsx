@@ -324,7 +324,7 @@ function ReviewCampaign() {
           onClick={() =>
             void (campaign.status === "draft"
               ? navigate({
-                  to: "/campaigns/$campaignId",
+                  to: "/campaigns/$campaignId/edit",
                   params: { campaignId },
                 })
               : navigate({ to: "/campaigns" }))

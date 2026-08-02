@@ -193,6 +193,39 @@ void test("campaign review is not nested under the campaign edit route", () => {
   );
 });
 
+void test("campaign setup uses an explicit edit URL from every entry point", () => {
+  const editRoute = readFileSync(
+    new URL(
+      "../src/routes/_auth/campaigns/$campaignId_.edit.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const legacyRoute = readFileSync(
+    new URL("../src/routes/_auth/campaigns/$campaignId.tsx", import.meta.url),
+    "utf8",
+  );
+  const listingRoute = readFileSync(
+    new URL("../src/routes/_auth/campaigns/index.tsx", import.meta.url),
+    "utf8",
+  );
+  const reviewRoute = readFileSync(
+    new URL(
+      "../src/routes/_auth/campaigns/$campaignId_.review.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    editRoute,
+    /createFileRoute\("\/_auth\/campaigns\/\$campaignId_\/edit"\)/,
+  );
+  assert.match(legacyRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
+  assert.match(listingRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
+  assert.match(reviewRoute, /to: "\/campaigns\/\$campaignId\/edit"/);
+});
+
 void test("campaign execution is allowed only for a ready draft", () => {
   assert.equal(canStartCampaign("draft", "ready"), true);
   assert.equal(canStartCampaign("draft", "needs_attention"), false);

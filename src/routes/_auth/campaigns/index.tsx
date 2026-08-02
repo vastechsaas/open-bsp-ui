@@ -318,7 +318,7 @@ function CampaignActions({ campaign }: { campaign: CampaignListItem }) {
   const navigate = useNavigate();
   const edit = () =>
     void navigate({
-      to: "/campaigns/$campaignId",
+      to: "/campaigns/$campaignId/edit",
       params: { campaignId: campaign.id },
     });
 
