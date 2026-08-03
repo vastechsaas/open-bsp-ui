@@ -19,6 +19,7 @@ import type {
 } from "./whatsapp_webhook_message_types";
 import type { Template } from "./whatsapp_template_types";
 import type { InstagramReferral } from "./instagram_webhook_payload_types";
+import type { OutgoingInteractive } from "./whatsapp_endpoint_types";
 
 //===================================
 // Agent Protocol Types
@@ -157,6 +158,11 @@ type ButtonPart = DataPart<"button", ButtonMessage["button"]>;
 
 type TemplatePart = DataPart<"template", Template>;
 
+type OutgoingInteractivePart = DataPart<
+  "interactive",
+  OutgoingInteractive["interactive"]
+>;
+
 type MediaPlaceholderPart = DataPart<
   "media_placeholder",
   Record<PropertyKey, never>
@@ -235,4 +241,11 @@ export type OutgoingMessage = {
   re_message_id?: string; // replied, reacted or forwarded message id
   forwarded?: boolean;
 } & TaskInfo &
-  (TextPart | FilePart | ContactsPart | LocationPart | TemplatePart);
+  (
+    | TextPart
+    | FilePart
+    | ContactsPart
+    | LocationPart
+    | TemplatePart
+    | OutgoingInteractivePart
+  );
