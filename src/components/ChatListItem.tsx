@@ -25,6 +25,7 @@ import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import { useNavigate } from "@tanstack/react-router";
+import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -287,6 +288,9 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   }
 
   const { mediaIcon, mediaPreviewContent } = mediaPreview(t, preview);
+  const previewText = preview
+    ? getMessagePreviewText(preview.content)
+    : undefined;
 
   // Note: severity depends on the most recent incoming message timestamp.
   // `mostRecent` does not distinguish between incoming/outgoing. Nonetheless
@@ -376,10 +380,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                     </div>
                   )}
                 <div className="truncate text-[14px]">
-                  {preview?.content.type === "text" && preview.content.text}
-                  {preview?.content.type === "data" &&
-                    preview.content.kind !== "media_placeholder" &&
-                    JSON.stringify(preview.content.data)}
+                  {previewText}
                   {(preview?.content.type === "file" ||
                     (preview?.content.type === "data" &&
                       preview.content.kind === "media_placeholder")) &&
