@@ -2,6 +2,15 @@
 
 Last reviewed: 2026-08-04
 
+Project contract baseline: WhatsApp Graph API v24.0
+
+Status legend:
+
+- `[x]` Implemented in Chat Center.
+- `[~]` Partially implemented; the safe stored-data presentation exists, but a
+  separately scoped enrichment or workflow is still required.
+- `[ ]` Not implemented.
+
 ## Purpose
 
 Track WhatsApp interactive formats that the Chat Center does not yet render as
@@ -27,35 +36,57 @@ SCRUM-93 added Chat Center display support for:
 Historical reply buttons are intentionally read-only. The list opener only
 shows a local read-only options panel and never sends a WhatsApp response.
 
+SCRUM-101 expanded that support with:
+
+- Product, product-list, and catalog message presentation using stored payload
+  data only.
+- Location requests and inbound location responses with validated stored URLs.
+- WhatsApp Flows and privacy-safe `nfm_reply` completion summaries.
+- Structured inbound order summaries with conditional same-currency totals.
+- Text headers, footers, and typed unavailable-media placeholders for existing
+  button/list messages.
+- Family-specific normalizers, one shared preview resolver, localized labels,
+  and accessible read-only details dialogs.
+
+Still excluded and not implemented: live Meta catalog enrichment, operator send
+workflows, new chatbot nodes, Flow answer display, CTA URL messages, address
+collection, payment formats, full authenticated media-header persistence, and
+third-party chat libraries.
+
 ## Rendering gaps in the formats already supported
 
-- [ ] Render optional text headers on list and reply-button messages.
-- [ ] Render optional image, video, and document headers on reply-button
-      messages.
-- [ ] Render optional footer text.
-- [ ] Preserve WhatsApp formatting in header, body, footer, and descriptions.
+- [x] Render optional text headers on list and reply-button messages.
+- [~] Render optional image, video, and document headers on reply-button
+  messages. Typed unavailable-media placeholders are implemented; full
+  authenticated media artifacts remain future work.
+- [x] Render optional footer text.
+- [~] Preserve WhatsApp formatting in header, body, footer, and descriptions.
+  Header, body, and footer formatting is implemented; list descriptions
+  remain safe plain text.
 - [ ] Add representative preview text when a body is missing but a valid header
       or media component is present.
-- [ ] Confirm safe behavior when referenced media has expired or cannot be
-      downloaded.
+- [x] Confirm safe behavior when referenced media has expired or cannot be
+      downloaded by displaying a typed unavailable-media placeholder.
 
 These enhancements can remain frontend-only if the stored payload already
 contains the fields. Otherwise, update backend endpoint types and ingestion
 before changing the frontend mirror.
 
-## Remaining interactive message families
+## Core interactive message families and remaining gaps
 
 ### 1. Single-product messages
 
 Meta interactive type: `product`
 
-- [ ] Add the outgoing payload contract to backend and mirrored frontend types.
-- [ ] Render the product name, image, price, currency, retailer ID, and catalog
-      context when available.
-- [ ] Define a useful placeholder when product metadata cannot be resolved.
-- [ ] Add a readable conversation preview such as `Product: <name>`.
-- [ ] Keep any product/catalog action read-only in historical messages.
-- [ ] Handle the related inbound `order` message as a structured order summary.
+- [x] Add the outgoing payload contract to backend and mirrored frontend types.
+- [~] Render the product name, image, price, currency, retailer ID, and catalog
+  context when available. Stored catalog and retailer references are shown;
+  name, image, price, and currency require future catalog enrichment.
+- [x] Define a useful placeholder when product metadata cannot be resolved.
+- [~] Add a readable conversation preview such as `Product: <name>`. A neutral
+  localized `Product message` preview is implemented without live metadata.
+- [x] Keep any product/catalog action read-only in historical messages.
+- [x] Handle the related inbound `order` message as a structured order summary.
 
 Dependencies:
 
@@ -67,12 +98,13 @@ Dependencies:
 
 Meta interactive type: `product_list`
 
-- [ ] Add the outgoing payload contract to backend and mirrored frontend types.
-- [ ] Render catalog sections and product items in a local read-only panel.
-- [ ] Support long lists, missing images, unavailable products, and multiple
-      sections without breaking bubble layout.
-- [ ] Add a concise preview containing the message body or product count.
-- [ ] Handle the related inbound `order` message, including quantities,
+- [x] Add the outgoing payload contract to backend and mirrored frontend types.
+- [x] Render catalog sections and stored retailer references in a local
+      read-only panel.
+- [~] Support long lists, missing images, unavailable products, and multiple
+  sections without breaking bubble layout.
+- [x] Add a concise preview containing the message body.
+- [x] Handle the related inbound `order` message, including quantities,
       currency, and totals when supplied.
 
 Dependencies:
@@ -85,27 +117,27 @@ Dependencies:
 
 Meta interactive type: `catalog_message`
 
-- [ ] Verify availability and exact payload contract for the Meta Graph API
+- [x] Verify availability and exact payload contract for the Meta Graph API
       version used by this project before implementation.
-- [ ] Render the catalog prompt and a read-only `View catalog` action.
+- [x] Render the catalog prompt and a read-only `View catalog` action.
 - [ ] Add a local catalog summary only if authorized product data is available.
-- [ ] Add a readable conversation preview.
-- [ ] Cover related inbound cart/order payloads without exposing raw JSON.
+- [x] Add a readable conversation preview.
+- [x] Cover related inbound order payloads without exposing raw JSON.
 
-This item may share its UI and data layer with single- and multi-product
-messages, but should not be implemented until catalog authorization and stale
-product behavior are defined.
+The stored-data presentation shares its UI and data layer with single- and
+multi-product messages. Live catalog summaries remain blocked on catalog
+authorization and stale-product behavior.
 
 ### 4. Location-request messages
 
 Meta interactive type: `location_request_message`
 
-- [ ] Add the outgoing request contract to backend and mirrored frontend types.
-- [ ] Render the body and a visibly read-only `Send location` row in history.
-- [ ] Render the customer's inbound location response with name, address,
+- [x] Add the outgoing request contract to backend and mirrored frontend types.
+- [x] Render the body and a visibly read-only `Send location` row in history.
+- [x] Render the customer's inbound location response with name, address,
       coordinates, and a safe map link when present.
-- [ ] Do not request browser/device location from a historical message bubble.
-- [ ] Add useful previews for both the request and the returned location.
+- [x] Do not request browser/device location from a historical message bubble.
+- [x] Add useful previews for both the request and the returned location.
 - [ ] Define privacy, retention, logging, and authorization expectations for
       location data before enabling any send workflow.
 
@@ -115,21 +147,22 @@ Meta interactive type: `flow`
 
 Typical inbound completion type: `interactive.type = "nfm_reply"`
 
-- [ ] Add exact versioned outgoing Flow contracts to backend and mirrored
+- [x] Add exact versioned outgoing Flow contracts to backend and mirrored
       frontend types.
-- [ ] Render the Flow header/body/footer and a read-only Flow action row.
-- [ ] Render a completed Flow as a concise summary rather than raw
+- [x] Render the Flow header/body/footer and a read-only Flow action row.
+- [x] Render a completed Flow as a concise summary rather than raw
       `response_json`.
-- [ ] Store and display the Flow name/ID and completion status when available.
+- [~] Store and display the Flow name/ID and completion status when available.
+  Completion name/body and `Response received` are displayed; payload IDs
+  remain intentionally hidden from bubbles and previews.
 - [ ] Define field labels, ordering, masking, and redaction for submitted data.
 - [ ] Add an expandable details view for large Flow responses.
-- [ ] Never automatically render unknown Flow response values as HTML.
-- [ ] Add previews that identify the Flow or summarize its outcome without
+- [x] Never automatically render unknown Flow response values as HTML.
+- [x] Add previews that identify the Flow or summarize its outcome without
       leaking sensitive answers.
 
-Dependencies:
+Remaining dependencies:
 
-- Backend webhook normalization for `nfm_reply` and Flow response data.
 - Per-Flow schema/label metadata for human-readable summaries.
 - Security review for personal, financial, authentication, and health data.
 - Meta Flow status/version handling for draft, published, deprecated, and
@@ -207,17 +240,17 @@ read-only and must never call the WhatsApp send endpoint.
 
 ## Shared acceptance criteria
 
-- [ ] Supported payloads never display as raw JSON.
-- [ ] Unknown or malformed payloads retain a safe, readable JSON fallback.
-- [ ] Timestamps, delivery/read status, agent attribution, and bubble alignment
+- [x] Supported payloads never display as raw JSON.
+- [x] Unknown or malformed payloads retain a safe, readable JSON fallback.
+- [x] Timestamps, delivery/read status, agent attribution, and bubble alignment
       remain unchanged.
-- [ ] Conversation previews do not expose IDs or large serialized payloads.
-- [ ] Long content works at desktop and narrow breakpoints.
-- [ ] Media and external links use the existing authenticated/safe rendering
-      paths.
-- [ ] Sensitive fields are masked or omitted from previews.
-- [ ] Raw payload IDs remain available to routing and backend logic.
-- [ ] Every supported inbound and outgoing shape has focused normalizer and
+- [x] Conversation previews do not expose IDs or large serialized payloads.
+- [x] Long content works at desktop and narrow breakpoints.
+- [~] Media and external links use the existing authenticated/safe rendering
+  paths.
+- [x] Sensitive fields are masked or omitted from previews.
+- [x] Raw payload IDs remain available to routing and backend logic.
+- [x] Every supported inbound and outgoing shape has focused normalizer and
       preview tests.
 - [ ] Meta contracts are checked again when the Graph API version is upgraded.
 
