@@ -289,7 +289,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
 
   const { mediaIcon, mediaPreviewContent } = mediaPreview(t, preview);
   const previewText = preview
-    ? getMessagePreviewText(preview.content)
+    ? getMessagePreviewText(preview.content, t)
     : undefined;
 
   // Note: severity depends on the most recent incoming message timestamp.
