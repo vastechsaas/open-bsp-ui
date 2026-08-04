@@ -11,30 +11,16 @@ import { mediaCategory } from "./media";
 import StatusIcon from "./StatusIcon";
 import dayjs from "dayjs";
 import { Remarkable } from "remarkable";
-import {
-  type FormEventHandler,
-  type PropsWithChildren,
-  useEffect,
-  useId,
-  useState,
-} from "react";
+import { type FormEventHandler, type PropsWithChildren, useState } from "react";
 import { prettyPrintJson } from "pretty-print-json";
 import { useTranslation } from "@/hooks/useTranslation";
 import AvatarComponent from "@/components/Avatar";
 import { useAgent } from "@/queries/useAgents";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
-import {
-  ExternalLink,
-  List as ListIcon,
-  MessageCircleReply,
-  Phone,
-  X,
-} from "lucide-react";
-import {
-  normalizeStructuredMessage,
-  type InteractiveListSection,
-} from "@/utils/MessageDisplayUtils";
+import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
+import { normalizeStructuredMessage } from "@/utils/MessageDisplayUtils";
+import { StructuredMessageRenderer } from "./interactive/StructuredMessageRenderer";
 
 export type MessageActionButton = {
   text: string;
@@ -272,124 +258,6 @@ export function TextMessage({
   );
 }
 
-function InteractiveListMessage({
-  body,
-  buttonText,
-  sections,
-  timestamp,
-  status,
-  direction,
-  header,
-  fixedWidth,
-}: {
-  body: string;
-  buttonText: string;
-  sections: InteractiveListSection[];
-  timestamp?: string;
-  status?: OutgoingStatus;
-  direction: MessageRow["direction"];
-  header?: string;
-  fixedWidth?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const titleId = useId();
-  const { translate: t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
-
-  return (
-    <>
-      <TextMessage
-        header={header}
-        body={body}
-        type="markdown"
-        direction={direction}
-        timestamp={timestamp}
-        status={status}
-        fixedWidth={fixedWidth}
-      />
-      <button
-        type="button"
-        className="flex w-full items-center justify-center gap-[7px] border-t border-border py-3 text-center text-primary hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary dark:hover:bg-white/5"
-        onClick={() => setOpen(true)}
-      >
-        <ListIcon className="h-[14px] w-[14px]" />
-        {buttonText}
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-3 sm:items-center"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="max-h-[80vh] w-full max-w-[480px] overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <ListIcon className="h-4 w-4 shrink-0 text-primary" />
-              <div
-                id={titleId}
-                className="min-w-0 flex-1 truncate font-semibold"
-              >
-                {buttonText}
-              </div>
-              <button
-                type="button"
-                title={t("Cerrar panel")}
-                aria-label={t("Cerrar panel")}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
-                onClick={() => setOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="max-h-[calc(80vh-57px)] overflow-y-auto p-3">
-              {sections.map((section, sectionIndex) => (
-                <section
-                  key={`${section.title}:${sectionIndex}`}
-                  className="mb-3 last:mb-0"
-                >
-                  <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    {section.title}
-                  </h3>
-                  <div className="overflow-hidden rounded-xl border border-border">
-                    {section.rows.map((row) => (
-                      <div
-                        key={row.id}
-                        className="border-b border-border px-3 py-2.5 last:border-b-0"
-                      >
-                        <div className="text-sm font-medium">{row.title}</div>
-                        {row.description && (
-                          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                            {row.description}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
 function Avatar({
   agentId,
   color,
@@ -592,99 +460,11 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       />
     );
     text = true;
-  } else if (structuredDisplay?.kind === "text") {
+  } else if (structuredDisplay) {
     content = (
-      <TextMessage
-        header={headerText}
-        body={structuredDisplay.text}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (structuredDisplay?.kind === "media_placeholder") {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={`_${t("Contenido multimedia no disponible")}_`}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (structuredDisplay?.kind === "interactive_buttons") {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={structuredDisplay.body}
-        buttons={structuredDisplay.buttons.map((button) => button.title)}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (structuredDisplay?.kind === "interactive_list") {
-    content = (
-      <InteractiveListMessage
-        header={headerText}
-        body={structuredDisplay.body}
-        buttonText={structuredDisplay.buttonText}
-        sections={structuredDisplay.sections}
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (structuredDisplay?.kind === "selected_reply") {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={structuredDisplay.text}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (structuredDisplay?.kind === "json") {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={structuredDisplay.data}
-        type="json"
+      <StructuredMessageRenderer
+        display={structuredDisplay}
+        agentHeader={headerText}
         direction={props.message.direction}
         timestamp={props.message.timestamp}
         status={
