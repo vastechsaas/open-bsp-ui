@@ -32,6 +32,7 @@ import { useCurrentOrganization } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import {
+  getInvitableTeamMemberRoles,
   getTeamMemberPermissions,
   type TeamMemberRole,
   type TeamMemberStatus,
@@ -61,7 +62,8 @@ function TeamMembersWorkspace() {
   const { data: currentMember } = useCurrentAgent();
   const currentRole = (currentMember?.extra?.role ||
     null) as TeamMemberRole | null;
-  const isOwner = currentRole === "owner";
+  const invitableRoles = getInvitableTeamMemberRoles(currentRole);
+  const canInvite = invitableRoles.length > 0;
   const { data, isLoading, isError } = useMembersPage({
     page,
     pageSize,
@@ -92,8 +94,7 @@ function TeamMembersWorkspace() {
           <button
             type="button"
             className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px] sm:ml-auto disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isOwner}
-            title={!isOwner ? t("Requiere permisos de propietario") : undefined}
+            disabled={!canInvite}
             onClick={() => setDialog({ type: "invite" })}
           >
             <Plus className="h-[17px] w-[17px]" />
@@ -121,6 +122,7 @@ function TeamMembersWorkspace() {
                 { value: "all", label: t("Todos los roles") },
                 { value: "owner", label: t("Propietario") },
                 { value: "admin", label: t("Administrador") },
+                { value: "supervisor", label: t("Supervisor") },
                 { value: "member", label: t("Miembro") },
               ]}
             />
@@ -230,7 +232,10 @@ function TeamMembersWorkspace() {
       </div>
 
       {dialog?.type === "invite" && (
-        <InviteMemberDialog onClose={() => setDialog(null)} />
+        <InviteMemberDialog
+          allowedRoles={invitableRoles}
+          onClose={() => setDialog(null)}
+        />
       )}
       {dialog?.type === "edit" && (
         <EditMemberDialog
@@ -377,6 +382,7 @@ function MemberActions({
     currentMemberId,
     currentRole,
     memberId: member.id,
+    memberRole: member.role,
     isLastOwner: member.is_last_owner,
   });
 
@@ -405,7 +411,7 @@ function MemberActions({
           {t("Editar")}
         </button>
       )}
-      {(currentRole === "owner" || permissions.isSelf) && (
+      {permissions.canShowRemove && (
         <button
           type="button"
           className="flex items-center gap-[6px] rounded-lg border border-destructive/50 px-[10px] py-[7px] text-[12px] text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -450,7 +456,13 @@ function MemberStatusBadge({ status }: { status: TeamMemberStatus }) {
   );
 }
 
-function InviteMemberDialog({ onClose }: { onClose: () => void }) {
+function InviteMemberDialog({
+  allowedRoles,
+  onClose,
+}: {
+  allowedRoles: TeamMemberRole[];
+  onClose: () => void;
+}) {
   const { translate: t } = useTranslation();
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
   const { data: organization } = useCurrentOrganization();
@@ -505,7 +517,7 @@ function InviteMemberDialog({ onClose }: { onClose: () => void }) {
           type="email"
           required
         />
-        <RoleField role={role} onChange={setRole} />
+        <RoleField role={role} onChange={setRole} roles={allowedRoles} />
         {error && <DialogError>{error}</DialogError>}
         <DialogActions
           cancelLabel={t("Cancelar")}
@@ -539,6 +551,7 @@ function EditMemberDialog({
     currentMemberId,
     currentRole,
     memberId: member.id,
+    memberRole: member.role,
     isLastOwner: member.is_last_owner,
   });
 
@@ -622,6 +635,7 @@ function RemoveMemberDialog({
     currentMemberId,
     currentRole,
     memberId: member.id,
+    memberRole: member.role,
     isLastOwner: member.is_last_owner,
   });
   const isPending = member.status === "pending";
@@ -770,13 +784,21 @@ function TextField({
 function RoleField({
   role,
   onChange,
+  roles = ["member", "supervisor", "admin", "owner"],
   disabled = false,
 }: {
   role: TeamMemberRole;
   onChange: (role: TeamMemberRole) => void;
+  roles?: TeamMemberRole[];
   disabled?: boolean;
 }) {
   const { translate: t } = useTranslation();
+  const labels: Record<TeamMemberRole, string> = {
+    member: t("Miembro"),
+    supervisor: t("Supervisor"),
+    admin: t("Administrador"),
+    owner: t("Propietario"),
+  };
   return (
     <label className="block">
       <span className="mb-[6px] block text-[12px] text-muted-foreground">
@@ -787,11 +809,7 @@ function RoleField({
         value={role}
         onChange={onChange}
         disabled={disabled}
-        options={[
-          { value: "member", label: t("Miembro") },
-          { value: "admin", label: t("Administrador") },
-          { value: "owner", label: t("Propietario") },
-        ]}
+        options={roles.map((value) => ({ value, label: labels[value] }))}
       />
     </label>
   );
@@ -865,6 +883,7 @@ function getRoleLabel(role: TeamMemberRole, t: (value: string) => string) {
   return {
     owner: t("Propietario"),
     admin: t("Administrador"),
+    supervisor: t("Supervisor"),
     member: t("Miembro"),
   }[role];
 }

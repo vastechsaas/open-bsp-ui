@@ -123,6 +123,7 @@ function EditMember() {
             label={t("Rol")}
             options={[
               { value: "member", label: t("Miembro") },
+              { value: "supervisor", label: t("Supervisor") },
               { value: "admin", label: t("Administrador") },
               { value: "owner", label: t("Propietario") },
             ]}

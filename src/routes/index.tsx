@@ -56,7 +56,7 @@ const features = [
     icon: LockKeyhole,
     title: "Role-based access",
     description:
-      "Give owners, administrators, and members the access their responsibilities require.",
+      "Give owners, administrators, supervisors, and members the access their responsibilities require.",
   },
 ];
 
@@ -64,7 +64,8 @@ const steps = [
   {
     number: "01",
     title: "Sign in",
-    description: "Create your secure Social Connect workspace in a few moments.",
+    description:
+      "Create your secure Social Connect workspace in a few moments.",
   },
   {
     number: "02",
@@ -198,7 +199,10 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-24 border-y border-border bg-muted/35">
+        <section
+          id="features"
+          className="scroll-mt-24 border-y border-border bg-muted/35"
+        >
           <div className="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-24">
             <SectionHeading
               eyebrow="Everything in one workspace"
@@ -252,7 +256,10 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="security" className="scroll-mt-24 px-5 pb-20 lg:px-8 lg:pb-24">
+        <section
+          id="security"
+          className="scroll-mt-24 px-5 pb-20 lg:px-8 lg:pb-24"
+        >
           <div className="mx-auto grid max-w-[1180px] gap-10 overflow-hidden rounded-[32px] border border-border bg-muted/45 p-7 sm:p-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:p-14">
             <div>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
@@ -273,7 +280,7 @@ function LandingPage() {
               />
               <TrustItem
                 title="Permission controls"
-                description="Owner, administrator, and member roles keep sensitive actions restricted."
+                description="Owner, administrator, supervisor, and member roles keep sensitive actions restricted."
               />
               <TrustItem
                 title="Managed connection"
@@ -289,7 +296,10 @@ function LandingPage() {
 
         <section className="border-t border-border">
           <div className="mx-auto flex max-w-[900px] flex-col items-center px-5 py-20 text-center lg:py-24">
-            <MessageCircle className="h-9 w-9 text-primary" aria-hidden="true" />
+            <MessageCircle
+              className="h-9 w-9 text-primary"
+              aria-hidden="true"
+            />
             <h2 className="mt-6 text-[34px] font-semibold leading-tight tracking-[-0.025em] sm:text-[44px]">
               Give every conversation a better home.
             </h2>

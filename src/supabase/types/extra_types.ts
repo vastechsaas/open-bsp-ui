@@ -183,7 +183,7 @@ export type ToolConfig =
 
 export type HumanAgentExtra = {
   // @ui-divergence: role enum inlined (API: DatabaseGenerated[...]["Enums"]["role"]).
-  role: "member" | "admin" | "owner";
+  role: "member" | "supervisor" | "admin" | "owner";
   invitation?: {
     organization_name: string;
     email: string;

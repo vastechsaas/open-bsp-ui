@@ -25,6 +25,7 @@ import { useOrganizations } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { supabase } from "@/supabase/client";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
+import { canAccessNavigation } from "@/utils/RoleAccess";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
 
@@ -53,6 +54,10 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
     | undefined;
   const userName = agent?.name || metadata?.name || user?.email || "?";
   const userPicture = agent?.picture || metadata?.picture;
+  const role = agent?.extra?.role;
+  const showTools =
+    canAccessNavigation(role, "integrations") ||
+    canAccessNavigation(role, "stats");
   const navigationPadding = expanded ? "px-[12px]" : "px-[7px]";
 
   return (
@@ -103,6 +108,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
         <div className="space-y-[3px]">
           <LinkButton
             to="/dashboard"
+            access="dashboard"
+            role={role}
             title={t("Panel")}
             isActive={pathname === "/dashboard"}
             expanded={expanded}
@@ -112,6 +119,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/conversations"
+            access="conversations"
+            role={role}
             title={t("Mensajes")}
             isActive={pathname.startsWith("/conversations")}
             expanded={expanded}
@@ -132,6 +141,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/contacts"
+            access="contacts"
+            role={role}
             title={t("Contactos")}
             isActive={pathname.startsWith("/contacts")}
             expanded={expanded}
@@ -141,6 +152,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/campaigns"
+            access="campaigns"
+            role={role}
             title={t("Campañas")}
             isActive={pathname.startsWith("/campaigns")}
             expanded={expanded}
@@ -150,6 +163,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/chatbots"
+            access="chatbots"
+            role={role}
             title={t("Chatbots")}
             isActive={pathname.startsWith("/chatbots")}
             expanded={expanded}
@@ -159,6 +174,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/templates"
+            access="templates"
+            role={role}
             title={t("Gestor de plantillas")}
             isActive={pathname.startsWith("/templates")}
             expanded={expanded}
@@ -168,6 +185,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/team-members"
+            access="teamMembers"
+            role={role}
             title={t("Miembros del equipo")}
             isActive={pathname.startsWith("/team-members")}
             expanded={expanded}
@@ -176,30 +195,38 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
           </LinkButton>
         </div>
 
-        <MenuGroupLabel
-          expanded={expanded}
-          label={t("Herramientas")}
-          separated
-        />
-        <div className="space-y-[3px]">
-          <LinkButton
-            to="/integrations"
-            title={t("Integraciones")}
-            isActive={pathname.startsWith("/integrations")}
-            expanded={expanded}
-          >
-            <Unplug className="h-[21px] w-[21px] stroke-[2]" />
-          </LinkButton>
+        {showTools && (
+          <>
+            <MenuGroupLabel
+              expanded={expanded}
+              label={t("Herramientas")}
+              separated
+            />
+            <div className="space-y-[3px]">
+              <LinkButton
+                to="/integrations"
+                access="integrations"
+                role={role}
+                title={t("Integraciones")}
+                isActive={pathname.startsWith("/integrations")}
+                expanded={expanded}
+              >
+                <Unplug className="h-[21px] w-[21px] stroke-[2]" />
+              </LinkButton>
 
-          <LinkButton
-            to="/stats"
-            title={t("Estadísticas")}
-            isActive={pathname.startsWith("/stats")}
-            expanded={expanded}
-          >
-            <BarChart3 className="h-[21px] w-[21px] stroke-[2]" />
-          </LinkButton>
-        </div>
+              <LinkButton
+                to="/stats"
+                access="stats"
+                role={role}
+                title={t("Estadísticas")}
+                isActive={pathname.startsWith("/stats")}
+                expanded={expanded}
+              >
+                <BarChart3 className="h-[21px] w-[21px] stroke-[2]" />
+              </LinkButton>
+            </div>
+          </>
+        )}
       </nav>
 
       <div
@@ -207,6 +234,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
       >
         <LinkButton
           to="/whatsapp-manager"
+          access="whatsappManager"
+          role={role}
           title={t("Gestor de WhatsApp")}
           isActive={pathname.startsWith("/whatsapp-manager")}
           expanded={expanded}
@@ -216,6 +245,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
         <LinkButton
           to="/settings"
+          access="settings"
+          role={role}
           title={t("Preferencias")}
           isActive={pathname.startsWith("/settings")}
           expanded={expanded}
@@ -245,16 +276,20 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                       void navigate({ to: "/dashboard" });
                     },
                   })) || []),
-                  {
-                    key: "new_org",
-                    label: t("Nueva organización"),
-                    icon: <Plus className="h-[16px] w-[16px]" />,
-                    onClick: () =>
-                      void navigate({
-                        to: "/settings/organization/new",
-                        hash: (previousHash) => previousHash!,
-                      }),
-                  },
+                  ...(canAccessNavigation(role, "settings")
+                    ? [
+                        {
+                          key: "new_org",
+                          label: t("Nueva organización"),
+                          icon: <Plus className="h-[16px] w-[16px]" />,
+                          onClick: () =>
+                            void navigate({
+                              to: "/settings/organization/new",
+                              hash: (previousHash) => previousHash!,
+                            }),
+                        },
+                      ]
+                    : []),
                 ],
               },
               { type: "divider" },

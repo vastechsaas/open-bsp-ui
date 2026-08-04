@@ -45,7 +45,7 @@ https://github.com/user-attachments/assets/1ef30dde-9de1-4f5a-856a-db34ca2e3063
   formatting preview, and category management
 - **Integrations** — WhatsApp Business account connection via Embedded Signup
 - **Settings** — Organization management, team members with roles
-  (owner/admin/member), API keys, webhooks
+  (owner/admin/supervisor/member), API keys, webhooks
 - **Stats** — Usage charts and billing quota dashboards
 - **Multi-org** — Switch between organizations; invite and onboard team members
 

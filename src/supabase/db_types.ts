@@ -1832,8 +1832,20 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: string
       }
+      ensure_external_chatbot_agent: {
+        Args: {
+          p_integration_key: string
+          p_name: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
       get_authorized_orgs: {
         Args: { role?: Database["public"]["Enums"]["role"] }
+        Returns: string[]
+      }
+      get_authorized_orgs_by_roles: {
+        Args: { roles: Database["public"]["Enums"]["role"][] }
         Returns: string[]
       }
       get_campaign_audience_count: {
@@ -2039,6 +2051,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      member_update_by_supervisor_rules: {
+        Args: {
+          p_ai: boolean
+          p_extra: Json
+          p_id: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       merge_update_jsonb: {
         Args: { object: Json; path: string[]; target: Json }
         Returns: Json
@@ -2092,6 +2114,21 @@ export type Database = {
         }
         Returns: string
       }
+      record_external_chatbot_reply: {
+        Args: {
+          p_agent_id: string
+          p_content: Json
+          p_organization_id: string
+          p_phone_number_id: string
+          p_recipient: string
+          p_sent_at: string
+          p_wamid: string
+        }
+        Returns: {
+          message_id: string
+          outcome: string
+        }[]
+      }
       resolve_chatbot_webhook_credential: {
         Args: { p_credential_id: string; p_organization_id: string }
         Returns: Json
@@ -2128,7 +2165,7 @@ export type Database = {
       campaign_audience_type: "all_contacts" | "active_24h" | "csv_upload"
       direction: "incoming" | "outgoing" | "internal"
       log_level: "info" | "warning" | "error"
-      role: "owner" | "admin" | "member"
+      role: "owner" | "admin" | "supervisor" | "member"
       service:
         | "whatsapp"
         | "instagram"
@@ -2822,7 +2859,7 @@ export const Constants = {
       campaign_audience_type: ["all_contacts", "active_24h", "csv_upload"],
       direction: ["incoming", "outgoing", "internal"],
       log_level: ["info", "warning", "error"],
-      role: ["owner", "admin", "member"],
+      role: ["owner", "admin", "supervisor", "member"],
       service: ["whatsapp", "instagram", "local", "slack", "discord", "teams"],
       webhook_operation: ["insert", "update"],
       webhook_table: [
