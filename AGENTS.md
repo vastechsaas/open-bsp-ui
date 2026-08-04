@@ -54,6 +54,7 @@ Use this workflow:
 
 ```powershell
 npm run types:sync-check
+npm run types:db-sync-check
 npm run build
 npm run lint
 ```
@@ -61,15 +62,22 @@ npm run lint
 Feature work that only touches `extra` JSON values may not require DB type
 regeneration.
 
+For paired feature worktrees, set `API_DB_TYPES_FILE` to the matching backend
+worktree before running `npm run types:db-sync-check`. The strict check requires
+the generated files to match exactly and verifies the `billing`, `public`, and
+`storage` schemas.
+
 ## UI validation
 
 Use validation proportional to the change. For current feature work, prefer:
 
 ```powershell
-npm test
-npm run build
-npm run lint
+npm run validate:quick
+npm run validate
 ```
+
+Use the quick command during implementation and the full command once before
+commit. See `docs/development-workflow.md`.
 
 `npm run lint` currently has an existing warning baseline. Treat new lint errors
 as blockers; do not expand warning noise unnecessarily.
