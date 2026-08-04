@@ -69,12 +69,28 @@ void test("Team Members is canonical in the sidebar and Settings", () => {
   assert.match(settings, /to: "\/team-members"/);
 });
 
+void test("owners can select and filter the Supervisor role", () => {
+  const teamMembers = readFileSync(
+    new URL("../src/routes/_auth/team-members/index.tsx", import.meta.url),
+    "utf8",
+  );
+  const roleTypes = readFileSync(
+    new URL("../src/supabase/types/ui_types.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(teamMembers, /value: "supervisor", label: t\("Supervisor"\)/);
+  assert.match(teamMembers, /supervisor: t\("Supervisor"\)/);
+  assert.match(roleTypes, /"supervisor"/);
+});
+
 void test("Team Members labels exist in every supported locale", () => {
   const keys = [
     "Miembros del equipo",
     "Invitar miembro",
     "Buscar por nombre o correo",
     "Todos los roles",
+    "Supervisor",
     "Último propietario",
     "Cancelar invitación",
     "Eliminar miembro",

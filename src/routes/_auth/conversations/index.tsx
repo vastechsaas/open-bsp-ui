@@ -24,6 +24,7 @@ function Conversations() {
   const roles: Record<string, string> = {
     owner: t("Propietario"),
     admin: t("Administrador"),
+    supervisor: t("Supervisor"),
     member: t("Miembro"),
   };
 

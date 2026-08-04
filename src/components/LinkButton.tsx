@@ -1,5 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { type ReactNode } from "react";
+import {
+  canAccessNavigation,
+  type NavigationAccess,
+  type OrganizationRole,
+} from "@/utils/RoleAccess";
 
 interface LinkButtonProps {
   to: string;
@@ -8,6 +13,8 @@ interface LinkButtonProps {
   isActive?: boolean;
   className?: string;
   expanded?: boolean;
+  access?: NavigationAccess;
+  role?: OrganizationRole;
 }
 
 export function LinkButton({
@@ -17,7 +24,11 @@ export function LinkButton({
   isActive,
   className = "",
   expanded = false,
+  access,
+  role,
 }: LinkButtonProps) {
+  if (access && !canAccessNavigation(role, access)) return null;
+
   return (
     <Link
       to={to}

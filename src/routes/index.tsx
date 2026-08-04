@@ -56,7 +56,7 @@ const features = [
     icon: LockKeyhole,
     title: "Role-based access",
     description:
-      "Give owners, administrators, and members the access their responsibilities require.",
+      "Give owners, administrators, supervisors, and members the access their responsibilities require.",
   },
 ];
 
@@ -273,7 +273,7 @@ function LandingPage() {
               />
               <TrustItem
                 title="Permission controls"
-                description="Owner, administrator, and member roles keep sensitive actions restricted."
+                description="Owner, administrator, supervisor, and member roles keep sensitive actions restricted."
               />
               <TrustItem
                 title="Managed connection"

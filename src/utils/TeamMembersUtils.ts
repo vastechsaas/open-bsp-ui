@@ -1,4 +1,6 @@
-export type TeamMemberRole = "owner" | "admin" | "member";
+import type { OrganizationRole } from "./RoleAccess";
+
+export type TeamMemberRole = OrganizationRole;
 export type TeamMemberStatus = "active" | "pending" | "rejected";
 
 export type TeamMemberPermissionsInput = {

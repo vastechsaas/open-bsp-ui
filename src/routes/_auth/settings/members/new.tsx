@@ -69,7 +69,7 @@ function AddMember() {
           <fieldset disabled={!isOwner} className="contents">
             <p>
               {t(
-                "Los propietarios tienen control total, los administradores gestionan configuraciones y los miembros responden a las conversaciones.",
+                "Los propietarios tienen control total, los administradores gestionan configuraciones, los supervisores controlan la bandeja del equipo y los miembros responden a las conversaciones.",
               )}
             </p>
 
@@ -88,6 +88,7 @@ function AddMember() {
               label={t("Rol")}
               options={[
                 { value: "member", label: t("Miembro") },
+                { value: "supervisor", label: t("Supervisor") },
                 { value: "admin", label: t("Administrador") },
                 { value: "owner", label: t("Propietario") },
               ]}

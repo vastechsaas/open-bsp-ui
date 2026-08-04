@@ -121,6 +121,7 @@ function TeamMembersWorkspace() {
                 { value: "all", label: t("Todos los roles") },
                 { value: "owner", label: t("Propietario") },
                 { value: "admin", label: t("Administrador") },
+                { value: "supervisor", label: t("Supervisor") },
                 { value: "member", label: t("Miembro") },
               ]}
             />
@@ -789,6 +790,7 @@ function RoleField({
         disabled={disabled}
         options={[
           { value: "member", label: t("Miembro") },
+          { value: "supervisor", label: t("Supervisor") },
           { value: "admin", label: t("Administrador") },
           { value: "owner", label: t("Propietario") },
         ]}
@@ -865,6 +867,7 @@ function getRoleLabel(role: TeamMemberRole, t: (value: string) => string) {
   return {
     owner: t("Propietario"),
     admin: t("Administrador"),
+    supervisor: t("Supervisor"),
     member: t("Miembro"),
   }[role];
 }

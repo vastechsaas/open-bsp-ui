@@ -1,11 +1,15 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import Menu from "@/components/Menu";
 import Chat from "@/components/Chat";
 import ChatHeader from "@/components/ChatHeader";
 import ChatFooter from "@/components/ChatFooter";
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "@tanstack/react-router";
 import FilePicker from "@/components/FileUploader/FilePicker";
 import FilePreviewer from "@/components/FilePreviewer";
 import ActionCard from "@/components/ActionCard";
@@ -28,6 +32,8 @@ import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
+import { useCurrentAgent } from "@/queries/useAgents";
+import { canAccessNavigation, canAccessPath } from "@/utils/RoleAccess";
 import {
   getResizablePanelMaxWidth,
   getSidebarWidth,
@@ -54,7 +60,12 @@ function AppLayout() {
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { data: currentAgent } = useCurrentAgent();
   const pathname = location.pathname;
+  const currentRole = currentAgent?.extra?.role;
+  const canAccessCurrentPath =
+    !activeOrgId || canAccessPath(currentRole, pathname);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const menuWidth = getSidebarWidth(viewportWidth, sidebarCollapsed);
   const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);
@@ -104,6 +115,12 @@ function AppLayout() {
     setActiveConv(convId);
   }, [location.hash, setActiveConv]);
 
+  useEffect(() => {
+    if (!canAccessCurrentPath) {
+      void navigate({ to: "/dashboard", replace: true });
+    }
+  }, [canAccessCurrentPath, navigate]);
+
   console.log("--------");
   console.log("active org ", activeOrgId);
   console.log("active conv", activeConvId);
@@ -116,6 +133,8 @@ function AppLayout() {
       : effectivePanelWidth !== null
         ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
         : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
+
+  if (!canAccessCurrentPath) return null;
 
   return (
     <div
@@ -209,11 +228,13 @@ function AppLayout() {
                   title={t("Iniciar conversación")}
                   to="/conversations/new"
                 />
-                <ActionCard
-                  icon={<Settings className="w-[24px] h-[24px]" />}
-                  title={t("Configurar WhatsApp")}
-                  to="/integrations/whatsapp/new"
-                />
+                {canAccessNavigation(currentRole, "integrations") && (
+                  <ActionCard
+                    icon={<Settings className="w-[24px] h-[24px]" />}
+                    title={t("Configurar WhatsApp")}
+                    to="/integrations/whatsapp/new"
+                  />
+                )}
               </>
             )}
           </div>
