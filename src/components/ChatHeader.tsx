@@ -7,8 +7,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
-import { useCurrentAgents } from "@/queries/useAgents";
+import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { getConversationAssigneeName } from "@/utils/AssignmentUtils";
+import AssignConversationButton from "./AssignConversationButton";
+import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
+import ItemActions from "./ItemActions";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ export default function Header() {
     conversation?.contact_address,
   );
   const { data: agents } = useCurrentAgents();
+  const { data: currentAgent } = useCurrentAgent();
 
   const service = conversation?.service;
 
@@ -56,12 +60,23 @@ export default function Header() {
   const { translate: t } = useTranslation();
 
   const assigneeName = getConversationAssigneeName(conversation, agents);
+  const isSupervisor = currentAgent?.extra?.role === "supervisor";
+  const isPendingAgent =
+    currentAgent?.extra?.role === "agent" &&
+    conversation?.assigned_agent_id === null;
+  const currentAssignee = agents?.find(
+    (agent) => agent.id === conversation?.assigned_agent_id,
+  );
+  const supervisorCanManageAssignment =
+    isSupervisor &&
+    (!conversation?.assigned_agent_id ||
+      (!currentAssignee?.ai && currentAssignee?.extra?.role === "agent"));
 
   const subtitleParts = [
     service === "local" && t("Contacto de prueba"),
     service === "whatsapp" && address && formatPhoneNumber(address),
     service === "instagram" && igExtra?.username && `@${igExtra.username}`,
-    assigneeName && `${t("Asignado a")} ${assigneeName}`,
+    !isSupervisor && assigneeName && `${t("Asignado a")} ${assigneeName}`,
   ].filter(Boolean);
 
   if (!activeConvId) {
@@ -88,13 +103,44 @@ export default function Header() {
           className="bg-accent text-accent-foreground border border-border text-[16px]"
         />
       </div>
-      <div className="info flex flex-col justify-center mr-[12px] truncate">
+      <div className="info flex min-w-0 grow flex-col justify-center mr-[12px] truncate">
         <div className="text-[16px] text-foreground truncate">
           {displayName}
         </div>
         <div className="text-[13px] text-muted-foreground truncate">
           {subtitleParts.join(" · ")}
         </div>
+      </div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {isPendingAgent && (
+          <AssignConversationButton
+            conversationId={activeConvId}
+            className="hidden md:inline-flex"
+          />
+        )}
+        {isSupervisor &&
+          conversation &&
+          (supervisorCanManageAssignment ? (
+            <ItemActions
+              itemId={activeConvId}
+              trigger={["click"]}
+              assignmentOnly
+            >
+              <ConversationAssignmentBadge
+                conversation={conversation}
+                agents={agents}
+                interactive
+                className="max-w-[190px]"
+              />
+            </ItemActions>
+          ) : (
+            <ConversationAssignmentBadge
+              conversation={conversation}
+              agents={agents}
+              className="max-w-[190px]"
+            />
+          ))}
       </div>
 
       {/* Options button - Hidden, does nothing yet. */}
