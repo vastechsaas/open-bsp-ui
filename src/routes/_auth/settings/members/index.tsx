@@ -19,6 +19,7 @@ function ListMembers() {
   const isOwner = currentAgent?.extra?.role === "owner";
 
   const roles: Record<string, string> = {
+    agent: t("Agente"),
     owner: t("Propietario"),
     admin: t("Administrador"),
     supervisor: t("Supervisor"),

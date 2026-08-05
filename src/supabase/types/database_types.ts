@@ -205,7 +205,7 @@ export type OrganizationAddressRow =
   Database["public"]["Tables"]["organizations_addresses"]["Row"];
 
 export type Role = Database["public"]["Enums"]["role"];
-export type ApiKeyRole = Exclude<Role, "supervisor">;
+export type ApiKeyRole = Exclude<Role, "supervisor" | "agent">;
 export type ApiKeyRow = Omit<
   Database["public"]["Tables"]["api_keys"]["Row"],
   "role"

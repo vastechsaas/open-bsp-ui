@@ -22,6 +22,7 @@ function Conversations() {
   const updateAgent = useUpdateAgent();
 
   const roles: Record<string, string> = {
+    agent: t("Agente"),
     owner: t("Propietario"),
     admin: t("Administrador"),
     supervisor: t("Supervisor"),

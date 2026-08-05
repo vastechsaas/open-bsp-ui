@@ -59,6 +59,27 @@ void test("Supervisor route guard permits inbox oversight and denies management 
   }
 });
 
+void test("Agent navigation and route guard expose only Conversations and Contacts", () => {
+  assert.deepEqual(roleAccess.agent, ["conversations", "contacts"]);
+  for (const path of ["/conversations", "/conversations/new", "/contacts"]) {
+    assert.equal(canAccessPath("agent", path), true, path);
+  }
+  for (const path of [
+    "/dashboard",
+    "/team-members",
+    "/campaigns",
+    "/templates",
+    "/chatbots",
+    "/agents",
+    "/integrations",
+    "/stats",
+    "/whatsapp-manager",
+    "/settings",
+  ]) {
+    assert.equal(canAccessPath("agent", path), false, path);
+  }
+});
+
 void test("existing human roles retain their current route access", () => {
   for (const role of ["owner", "admin", "member"] as const) {
     for (const path of [
@@ -90,7 +111,7 @@ void test("authenticated layout redirects denied direct navigation", () => {
     "utf8",
   );
   assert.match(layout, /canAccessPath\(currentRole, pathname\)/);
-  assert.match(layout, /to: "\/dashboard", replace: true/);
+  assert.match(layout, /getDefaultPathForRole\(currentRole\)/);
 });
 
 void test("Supervisor can use templates in conversations without Template Manager access", () => {
@@ -113,6 +134,7 @@ void test("API-key UI types and selector remain limited to existing roles", () =
     new URL("../src/routes/_auth/settings/api-keys/new.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(databaseTypes, /Exclude<Role, "supervisor">/);
+  assert.match(databaseTypes, /Exclude<Role, "supervisor" \| "agent">/);
   assert.doesNotMatch(apiKeyForm, /value: "supervisor"/);
+  assert.doesNotMatch(apiKeyForm, /value: "agent"/);
 });

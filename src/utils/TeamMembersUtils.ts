@@ -12,6 +12,7 @@ export type TeamMemberPermissionsInput = {
 };
 
 const allTeamMemberRoles: TeamMemberRole[] = [
+  "agent",
   "member",
   "supervisor",
   "admin",
@@ -23,7 +24,7 @@ export function getInvitableTeamMemberRoles(
 ): TeamMemberRole[] {
   if (currentRole === "owner") return allTeamMemberRoles;
   if (currentRole === "admin" || currentRole === "supervisor") {
-    return ["member"];
+    return ["agent", "member"];
   }
   return [];
 }
@@ -42,7 +43,7 @@ export function getTeamMemberPermissions({
   const isOwner = currentRole === "owner";
   const isSelf = currentMemberId === memberId;
   const canManageMember =
-    memberRole === "member" &&
+    (memberRole === "member" || memberRole === "agent") &&
     (currentRole === "admin" || currentRole === "supervisor");
   const canShowRemove = isOwner || isSelf || canManageMember;
 

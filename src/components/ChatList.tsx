@@ -120,7 +120,9 @@ const ChatList = () => {
               className="text-[13px] text-primary"
               onClick={() => {
                 setSearchPattern("");
-                setConversationQueueKey(DEFAULT_CONVERSATION_QUEUE_KEY);
+                setConversationQueueKey(
+                  queues[0]?.key ?? DEFAULT_CONVERSATION_QUEUE_KEY,
+                );
               }}
             >
               {t("remover filtros...")}

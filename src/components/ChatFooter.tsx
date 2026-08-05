@@ -79,7 +79,7 @@ export default function ChatFooter() {
     store.chat.conversations.get(store.ui.activeConvId || ""),
   );
   const draft: Draft | null | undefined = conv?.extra?.draft;
-  const sendAsContact = useBoundStore((store) => store.ui.sendAsContact);
+  const storedSendAsContact = useBoundStore((store) => store.ui.sendAsContact);
   const setSendAsContact = useBoundStore((store) => store.ui.setSendAsContact);
   const toggle = useBoundStore((store) => store.ui.toggle);
   const templatePicker = useBoundStore((store) => store.ui.templatePicker);
@@ -107,6 +107,8 @@ export default function ChatFooter() {
 
   const { data: agent } = useCurrentAgent();
   const agentId = agent?.id;
+  const isAgent = agent?.extra?.role === "agent";
+  const sendAsContact = !isAgent && storedSendAsContact;
 
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout>>();
 
@@ -467,6 +469,14 @@ export default function ChatFooter() {
             />
           ),
         )}
+      </div>
+    );
+  }
+
+  if (isAgent && conv?.assigned_agent_id === null) {
+    return (
+      <div className="mx-[12px] mb-[12px] rounded-xl border border-border bg-muted px-[14px] py-[12px] text-center text-[13px] text-muted-foreground">
+        {t("Asignate esta conversaciÃ³n para responder")}
       </div>
     );
   }

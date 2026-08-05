@@ -87,6 +87,7 @@ function AddMember() {
               control={control}
               label={t("Rol")}
               options={[
+                { value: "agent", label: t("Agente") },
                 { value: "member", label: t("Miembro") },
                 { value: "supervisor", label: t("Supervisor") },
                 { value: "admin", label: t("Administrador") },
