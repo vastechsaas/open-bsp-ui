@@ -476,7 +476,7 @@ export default function ChatFooter() {
   if (isAgent && conv?.assigned_agent_id === null) {
     return (
       <div className="mx-[12px] mb-[12px] rounded-xl border border-border bg-muted px-[14px] py-[12px] text-center text-[13px] text-muted-foreground">
-        {t("Asignate esta conversaciÃ³n para responder")}
+        {t("Asígnate esta conversación para responder")}
       </div>
     );
   }
