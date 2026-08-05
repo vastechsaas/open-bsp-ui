@@ -26,6 +26,7 @@ import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import { useNavigate } from "@tanstack/react-router";
 import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
+import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -174,6 +175,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   const { data: agent } = useCurrentAgent();
   const { data: agents } = useCurrentAgents();
   const isAdmin = ["admin", "owner"].includes(agent?.extra?.role || "");
+  const isSupervisor = agent?.extra?.role === "supervisor";
 
   const messages: MessageRow[] | undefined = Array.from(
     useBoundStore((state) => state.chat.messages.get(itemId || ""))?.values() ||
@@ -357,7 +359,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
             </div>
             {/* Lower row */}
             <div className="flex justify-between mt-[2px] items-start">
-              <div className="min-w-0 flex items-start text-muted-foreground">
+              <div className="min-w-0 grow flex items-start text-muted-foreground">
                 {preview?.direction === "outgoing" &&
                   statusIcon(preview.status)}
                 {preview?.agent_id && preview.agent_id !== agent?.id && (
@@ -389,6 +391,13 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
               </div>
 
               <div className="flex flex-row items-center">
+                {isSupervisor && (
+                  <ConversationAssignmentBadge
+                    conversation={conversation}
+                    agents={agents}
+                    className="ml-2 max-w-[118px] shrink-0"
+                  />
+                )}
                 {/* Pause - AI assistant paused */}
                 {isPaused && (
                   <Pause className="h-[19px] w-[19px] ml-[6px] fill-muted-foreground stroke-0" />

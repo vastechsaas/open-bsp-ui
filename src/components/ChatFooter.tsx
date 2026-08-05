@@ -22,6 +22,7 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
+import AssignConversationButton from "./AssignConversationButton";
 
 function TemplateVarInput({
   placeholder,
@@ -475,8 +476,11 @@ export default function ChatFooter() {
 
   if (isAgent && conv?.assigned_agent_id === null) {
     return (
-      <div className="mx-[12px] mb-[12px] rounded-xl border border-border bg-muted px-[14px] py-[12px] text-center text-[13px] text-muted-foreground">
-        {t("Asígnate esta conversación para responder")}
+      <div className="mx-[12px] mb-[12px] flex flex-col items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm sm:flex-row">
+        <span className="text-center text-[13px] font-medium text-muted-foreground sm:text-left">
+          {t("Asígnate esta conversación para responder")}
+        </span>
+        <AssignConversationButton conversationId={conv.id} />
       </div>
     );
   }

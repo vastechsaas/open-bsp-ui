@@ -17,11 +17,13 @@ export default function ItemActions({
   itemId,
   trigger,
   visible,
+  assignmentOnly = false,
 }: {
   children: React.ReactNode;
   itemId: string;
   trigger: ("contextMenu" | "click" | "hover")[] | undefined;
   visible?: boolean;
+  assignmentOnly?: boolean;
 }) {
   const conversation = useBoundStore((state) =>
     state.chat.conversations.get(itemId || ""),
@@ -65,6 +67,17 @@ export default function ItemActions({
     try {
       await unassignConversationFromMe(conversation.id);
       void message.success(t("Conversación desasignada"));
+    } catch {
+      void message.error(t("No se pudo actualizar la asignación"));
+    }
+  };
+
+  const handleSetAgentAssignment = async (agentId: string | null) => {
+    try {
+      await setConversationAgentAssignment(conversation.id, agentId);
+      void message.success(
+        t(agentId ? "Conversación asignada" : "Conversación desasignada"),
+      );
     } catch {
       void message.error(t("No se pudo actualizar la asignación"));
     }
@@ -123,11 +136,7 @@ export default function ItemActions({
                 key: "unassign-agent",
                 label: t("Sin asignar"),
                 onClick: () => {
-                  void setConversationAgentAssignment(conversation.id, null)
-                    .then(() => message.success(t("ConversaciÃ³n desasignada")))
-                    .catch(() =>
-                      message.error(t("No se pudo actualizar la asignaciÃ³n")),
-                    );
+                  void handleSetAgentAssignment(null);
                 },
               },
               { type: "divider" as const },
@@ -138,15 +147,34 @@ export default function ItemActions({
           label: agent.name,
           disabled: agent.id === conversation.assigned_agent_id,
           onClick: () => {
-            void setConversationAgentAssignment(conversation.id, agent.id)
-              .then(() => message.success(t("ConversaciÃ³n asignada")))
-              .catch(() =>
-                message.error(t("No se pudo actualizar la asignaciÃ³n")),
-              );
+            void handleSetAgentAssignment(agent.id);
           },
         })),
       ],
     });
+  }
+
+  const supervisorAssignmentItems: MenuProps["items"] = [];
+  if (canManageAgentAssignment) {
+    if (conversation.assigned_agent_id) {
+      supervisorAssignmentItems.push(
+        {
+          key: "unassign-agent-only",
+          label: t("Sin asignar"),
+          onClick: () => void handleSetAgentAssignment(null),
+        },
+        { type: "divider" },
+      );
+    }
+
+    supervisorAssignmentItems.push(
+      ...acceptedAgents.map((agent) => ({
+        key: `assign-agent-only-${agent.id}`,
+        label: agent.name,
+        disabled: agent.id === conversation.assigned_agent_id,
+        onClick: () => void handleSetAgentAssignment(agent.id),
+      })),
+    );
   }
 
   const isPendingAgent =
@@ -185,18 +213,24 @@ export default function ItemActions({
         },
       ];
 
-  const items: MenuProps["items"] = [
-    ...assignmentItems,
-    ...(assignmentItems.length && conversationMutationItems.length
-      ? [{ type: "divider" as const }]
-      : []),
-    ...conversationMutationItems,
-    /*{
-      label: t("Marcar como no leído"),
-      key: "2",
-      disabled: true,
-    },*/
-  ];
+  const items: MenuProps["items"] = assignmentOnly
+    ? supervisorAssignmentItems
+    : [
+        ...assignmentItems,
+        ...(assignmentItems.length && conversationMutationItems.length
+          ? [{ type: "divider" as const }]
+          : []),
+        ...conversationMutationItems,
+        /*{
+          label: t("Marcar como no leído"),
+          key: "2",
+          disabled: true,
+        },*/
+      ];
+
+  if (!items.length) {
+    return children;
+  }
 
   return (
     <Dropdown

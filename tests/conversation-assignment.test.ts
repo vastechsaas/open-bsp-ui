@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  getConversationAssignee,
   getConversationAssigneeName,
   getConversationAssignmentAction,
 } from "../src/utils/AssignmentUtils.ts";
@@ -106,6 +107,14 @@ void test("assignment actions expose only the delivered base controls", () => {
 });
 
 void test("assignee display resolves the current assignee name from loaded agents", () => {
+  const currentAgent = agent(CURRENT_AGENT_ID, "Goat");
+  assert.equal(
+    getConversationAssignee(
+      conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
+      [currentAgent],
+    ),
+    currentAgent,
+  );
   assert.equal(
     getConversationAssigneeName(
       conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
@@ -123,6 +132,13 @@ void test("assignee display resolves the current assignee name from loaded agent
     getConversationAssigneeName(
       conversation({ assigned_agent_id: OTHER_AGENT_ID }),
       [agent(CURRENT_AGENT_ID, "Goat")],
+    ),
+    undefined,
+  );
+  assert.equal(
+    getConversationAssignee(
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      [currentAgent],
     ),
     undefined,
   );
