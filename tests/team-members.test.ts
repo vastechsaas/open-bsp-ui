@@ -63,7 +63,7 @@ void test("the final owner cannot be downgraded or removed", () => {
   assert.equal(permissions.canShowRemove, true);
 });
 
-void test("Supervisors can manage Members without privilege escalation", () => {
+void test("Supervisors can manage Members and Agents without privilege escalation", () => {
   const memberPermissions = getTeamMemberPermissions({
     currentMemberId: "supervisor-1",
     currentRole: "supervisor",
@@ -74,6 +74,17 @@ void test("Supervisors can manage Members without privilege escalation", () => {
   assert.equal(memberPermissions.canEditName, true);
   assert.equal(memberPermissions.canEditRole, false);
   assert.equal(memberPermissions.canRemove, true);
+
+  const agentPermissions = getTeamMemberPermissions({
+    currentMemberId: "supervisor-1",
+    currentRole: "supervisor",
+    memberId: "agent-1",
+    memberRole: "agent",
+    isLastOwner: false,
+  });
+  assert.equal(agentPermissions.canEditName, true);
+  assert.equal(agentPermissions.canEditRole, false);
+  assert.equal(agentPermissions.canRemove, true);
 
   for (const memberRole of ["supervisor", "admin", "owner"] as const) {
     const permissions = getTeamMemberPermissions({
@@ -88,8 +99,11 @@ void test("Supervisors can manage Members without privilege escalation", () => {
     assert.equal(permissions.canRemove, false, memberRole);
   }
 
-  assert.deepEqual(getInvitableTeamMemberRoles("supervisor"), ["member"]);
-  assert.deepEqual(getInvitableTeamMemberRoles("admin"), ["member"]);
+  assert.deepEqual(getInvitableTeamMemberRoles("supervisor"), [
+    "agent",
+    "member",
+  ]);
+  assert.deepEqual(getInvitableTeamMemberRoles("admin"), ["agent", "member"]);
   assert.deepEqual(getInvitableTeamMemberRoles("member"), []);
 });
 
@@ -119,6 +133,9 @@ void test("owners can select and filter the Supervisor role", () => {
   assert.match(teamMembers, /value: "supervisor", label: t\("Supervisor"\)/);
   assert.match(teamMembers, /supervisor: t\("Supervisor"\)/);
   assert.match(roleTypes, /"supervisor"/);
+  assert.match(teamMembers, /value: "agent", label: t\("Agente"\)/);
+  assert.match(teamMembers, /agent: t\("Agente"\)/);
+  assert.match(roleTypes, /"agent"/);
 });
 
 void test("Team Members labels exist in every supported locale", () => {
@@ -128,6 +145,7 @@ void test("Team Members labels exist in every supported locale", () => {
     "Buscar por nombre o correo",
     "Todos los roles",
     "Supervisor",
+    "Agente",
     "Último propietario",
     "Cancelar invitación",
     "Eliminar miembro",

@@ -120,6 +120,7 @@ function TeamMembersWorkspace() {
               onChange={setRoleFilter}
               options={[
                 { value: "all", label: t("Todos los roles") },
+                { value: "agent", label: t("Agente") },
                 { value: "owner", label: t("Propietario") },
                 { value: "admin", label: t("Administrador") },
                 { value: "supervisor", label: t("Supervisor") },
@@ -784,7 +785,7 @@ function TextField({
 function RoleField({
   role,
   onChange,
-  roles = ["member", "supervisor", "admin", "owner"],
+  roles = ["agent", "member", "supervisor", "admin", "owner"],
   disabled = false,
 }: {
   role: TeamMemberRole;
@@ -794,6 +795,7 @@ function RoleField({
 }) {
   const { translate: t } = useTranslation();
   const labels: Record<TeamMemberRole, string> = {
+    agent: t("Agente"),
     member: t("Miembro"),
     supervisor: t("Supervisor"),
     admin: t("Administrador"),
@@ -881,6 +883,7 @@ function MembersEmptyState({
 
 function getRoleLabel(role: TeamMemberRole, t: (value: string) => string) {
   return {
+    agent: t("Agente"),
     owner: t("Propietario"),
     admin: t("Administrador"),
     supervisor: t("Supervisor"),

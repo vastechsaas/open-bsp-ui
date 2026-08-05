@@ -2,13 +2,18 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import { Search, X, MessageSquarePlus, MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { startConversation } from "@/utils/ConversationUtils";
+import {
+  createConversationForMe,
+  startConversation,
+} from "@/utils/ConversationUtils";
 import { useState } from "react";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import SectionHeader from "@/components/SectionHeader";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import SectionItem from "@/components/SectionItem";
 import SectionBody from "@/components/SectionBody";
+import { useCurrentAgent } from "@/queries/useAgents";
+import type { ConversationInsert } from "@/supabase/client";
 
 export const Route = createFileRoute("/_auth/conversations/new")({
   component: NewChat,
@@ -19,6 +24,15 @@ function NewChat() {
   const navigate = useNavigate();
   const { data: addresses } = useOrganizationsAddresses();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const { data: currentAgent } = useCurrentAgent();
+
+  const openConversation = async (conversation: ConversationInsert) => {
+    const convId =
+      currentAgent?.extra?.role === "agent"
+        ? await createConversationForMe(conversation)
+        : startConversation(conversation);
+    await navigate({ to: "/conversations", hash: convId });
+  };
 
   const localAddress = addresses?.find(
     (address) => address.service === "local",
@@ -83,15 +97,12 @@ function NewChat() {
                 return;
               }
 
-              const convId = startConversation({
+              void openConversation({
                 name: t("Conversación de prueba"),
                 organization_id: activeOrgId,
                 organization_address: localAddress.address,
                 service: "local",
               });
-
-              //setActiveConv(convId!);
-              navigate({ to: "/conversations", hash: convId });
             }}
           />
         )}
@@ -108,16 +119,13 @@ function NewChat() {
               onClick={() => {
                 if (!activeOrgId) return;
 
-                const convId = startConversation({
+                void openConversation({
                   organization_id: activeOrgId,
                   organization_address: whatsappAddresses[0].address,
                   contact_address: sanitizePhoneNumber(phoneNumber),
                   service: "whatsapp",
                   name: formatPhoneNumber(sanitizePhoneNumber(phoneNumber)),
                 });
-
-                // setActiveConv(convId!);
-                navigate({ to: "/conversations", hash: convId });
               }}
             />
           )}

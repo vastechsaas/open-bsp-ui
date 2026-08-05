@@ -33,7 +33,11 @@ import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
-import { canAccessNavigation, canAccessPath } from "@/utils/RoleAccess";
+import {
+  canAccessNavigation,
+  canAccessPath,
+  getDefaultPathForRole,
+} from "@/utils/RoleAccess";
 import {
   getResizablePanelMaxWidth,
   getSidebarWidth,
@@ -117,9 +121,12 @@ function AppLayout() {
 
   useEffect(() => {
     if (!canAccessCurrentPath) {
-      void navigate({ to: "/dashboard", replace: true });
+      void navigate({
+        to: getDefaultPathForRole(currentRole),
+        replace: true,
+      });
     }
-  }, [canAccessCurrentPath, navigate]);
+  }, [canAccessCurrentPath, currentRole, navigate]);
 
   console.log("--------");
   console.log("active org ", activeOrgId);

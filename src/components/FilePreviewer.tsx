@@ -40,7 +40,8 @@ const FilePreviewer = () => {
   const setConversationTextDraft = useBoundStore(
     (store) => store.chat.setConversationTextDraft,
   );
-  const sendAsContact = useBoundStore((store) => store.ui.sendAsContact);
+  const storedSendAsContact = useBoundStore((store) => store.ui.sendAsContact);
+  const sendAsContact = agent?.extra?.role !== "agent" && storedSendAsContact;
   const setMediaLoad = useBoundStore((store) => store.chat.setMediaLoad);
 
   const [previewIndex, setPreviewIndex] = useState(0);

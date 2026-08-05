@@ -5,10 +5,11 @@ import { isArchived } from "@/stores/uiSlice";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   assignConversationToMe,
+  setConversationAgentAssignment,
   unassignConversationFromMe,
   updateConvExtra,
 } from "@/utils/ConversationUtils";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { getConversationAssignmentAction } from "@/utils/AssignmentUtils";
 
 export default function ItemActions({
@@ -35,6 +36,7 @@ export default function ItemActions({
 
   const { translate: t } = useTranslation();
   const currentAgent = useCurrentAgent();
+  const organizationAgents = useCurrentAgents();
 
   if (!conversation) {
     return children;
@@ -93,37 +95,102 @@ export default function ItemActions({
       : []),
   ];
 
+  const acceptedAgents = (organizationAgents.data || []).filter((agent) => {
+    if (agent.ai || agent.extra?.role !== "agent") return false;
+    return (
+      !agent.extra.invitation || agent.extra.invitation.status === "accepted"
+    );
+  });
+  const currentAssignee = organizationAgents.data?.find(
+    (agent) => agent.id === conversation.assigned_agent_id,
+  );
+  const currentAssigneeIsAgent =
+    currentAssignee &&
+    !currentAssignee.ai &&
+    currentAssignee.extra?.role === "agent";
+  const canManageAgentAssignment =
+    currentAgent.data?.extra?.role === "supervisor" &&
+    (!conversation.assigned_agent_id || currentAssigneeIsAgent);
+
+  if (canManageAgentAssignment) {
+    assignmentItems.push({
+      key: "manage-agent-assignment",
+      label: t("Asignar agente"),
+      children: [
+        ...(conversation.assigned_agent_id
+          ? [
+              {
+                key: "unassign-agent",
+                label: t("Sin asignar"),
+                onClick: () => {
+                  void setConversationAgentAssignment(conversation.id, null)
+                    .then(() => message.success(t("ConversaciÃ³n desasignada")))
+                    .catch(() =>
+                      message.error(t("No se pudo actualizar la asignaciÃ³n")),
+                    );
+                },
+              },
+              { type: "divider" as const },
+            ]
+          : []),
+        ...acceptedAgents.map((agent) => ({
+          key: `assign-agent-${agent.id}`,
+          label: agent.name,
+          disabled: agent.id === conversation.assigned_agent_id,
+          onClick: () => {
+            void setConversationAgentAssignment(conversation.id, agent.id)
+              .then(() => message.success(t("ConversaciÃ³n asignada")))
+              .catch(() =>
+                message.error(t("No se pudo actualizar la asignaciÃ³n")),
+              );
+          },
+        })),
+      ],
+    });
+  }
+
+  const isPendingAgent =
+    currentAgent.data?.extra?.role === "agent" &&
+    conversation.assigned_agent_id === null;
+  const conversationMutationItems: MenuProps["items"] = isPendingAgent
+    ? []
+    : [
+        {
+          label: isPaused ? t("Reanudar asistente") : t("Pausar asistente"),
+          key: "0",
+          onClick: () =>
+            updateConvExtra(conversation, {
+              paused: isPaused ? null : new Date().toISOString(),
+            }),
+        },
+        {
+          label: isArchived(conversation, mostRecentMsg)
+            ? t("Desarchivar chat")
+            : t("Archivar chat"),
+          key: "1",
+          onClick: () =>
+            updateConvExtra(conversation, {
+              archived: isArchived(conversation, mostRecentMsg)
+                ? null
+                : new Date().toISOString(),
+            }),
+        },
+        {
+          label: isPinned ? t("Desfijar chat") : t("Fijar chat"),
+          key: "2",
+          onClick: () =>
+            updateConvExtra(conversation, {
+              pinned: isPinned ? null : new Date().toISOString(),
+            }),
+        },
+      ];
+
   const items: MenuProps["items"] = [
     ...assignmentItems,
-    ...(assignmentItems.length ? [{ type: "divider" as const }] : []),
-    {
-      label: isPaused ? t("Reanudar asistente") : t("Pausar asistente"),
-      key: "0",
-      onClick: () =>
-        updateConvExtra(conversation, {
-          paused: isPaused ? null : new Date().toISOString(),
-        }),
-    },
-    {
-      label: isArchived(conversation, mostRecentMsg)
-        ? t("Desarchivar chat")
-        : t("Archivar chat"),
-      key: "1",
-      onClick: () =>
-        updateConvExtra(conversation, {
-          archived: isArchived(conversation, mostRecentMsg)
-            ? null
-            : new Date().toISOString(),
-        }),
-    },
-    {
-      label: isPinned ? t("Desfijar chat") : t("Fijar chat"),
-      key: "2",
-      onClick: () =>
-        updateConvExtra(conversation, {
-          pinned: isPinned ? null : new Date().toISOString(),
-        }),
-    },
+    ...(assignmentItems.length && conversationMutationItems.length
+      ? [{ type: "divider" as const }]
+      : []),
+    ...conversationMutationItems,
     /*{
       label: t("Marcar como no leído"),
       key: "2",
