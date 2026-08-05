@@ -32,7 +32,7 @@ void test("Agent Pending conversations hide mutation controls until self-assignm
   const footer = readSource("../src/components/ChatFooter.tsx");
   const actions = readSource("../src/components/ItemActions.tsx");
   assert.match(footer, /isAgent && conv\?\.assigned_agent_id === null/);
-  assert.match(footer, /Asignate esta conversaci/);
+  assert.match(footer, /Asígnate esta conversación para responder/);
   assert.match(actions, /assignConversationToMe/);
   assert.match(actions, /unassignConversationFromMe/);
   assert.match(actions, /const isPendingAgent/);
@@ -66,11 +66,15 @@ void test("Supervisor assignment menu targets accepted Agent users only", () => 
   assert.match(actions, /currentAssigneeIsAgent/);
 });
 
-void test("Agent role labels exist in every supported locale", () => {
+void test("Agent role and assignment prompt labels exist in every supported locale", () => {
   for (const language of ["en", "pt", "fr", "sw"]) {
     const translations = JSON.parse(
       readSource(`../public/locales/${language}.json`),
     ) as Record<string, string>;
     assert.ok(translations.Agente, language);
+    assert.ok(
+      translations["Asígnate esta conversación para responder"],
+      language,
+    );
   }
 });
