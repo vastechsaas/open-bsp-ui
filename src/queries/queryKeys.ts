@@ -58,6 +58,10 @@ export const queryKeys = {
   privateNotes: {
     mentionableHumans: (orgId: NullableId, search: string) =>
       [orgId, "private_notes", "mentionable_humans", search] as const,
+    mentionedConversationsRoot: (orgId: NullableId) =>
+      [orgId, "private_notes", "mentioned_conversations"] as const,
+    mentionedConversations: (orgId: NullableId, search: string) =>
+      [orgId, "private_notes", "mentioned_conversations", search] as const,
   },
   dashboard: {
     metrics: (orgId: NullableId, days: number) =>

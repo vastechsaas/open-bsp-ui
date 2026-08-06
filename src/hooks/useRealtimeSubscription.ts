@@ -5,6 +5,10 @@ import {
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentAgent } from "@/queries/useAgents";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { queryKeys } from "@/queries/queryKeys";
 
 export const useRealtimeSubscription = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -13,6 +17,9 @@ export const useRealtimeSubscription = () => {
     (state) => state.chat.pushConversations,
   );
   const pushMessages = useBoundStore((state) => state.chat.pushMessages);
+  const queryClient = useQueryClient();
+  const { data: currentAgent } = useCurrentAgent();
+  const currentAgentId = currentAgent?.id;
 
   useEffect(() => {
     if (!activeOrgId) return;
@@ -54,6 +61,17 @@ export const useRealtimeSubscription = () => {
 
           pushMessages([message]);
 
+          if (
+            currentAgentId &&
+            isPrivateNote(message) &&
+            message.content.mentioned_agent_ids.includes(currentAgentId)
+          ) {
+            void queryClient.invalidateQueries({
+              queryKey:
+                queryKeys.privateNotes.mentionedConversationsRoot(activeOrgId),
+            });
+          }
+
           //updateMessagesCache([message]);
         },
       );
@@ -62,7 +80,13 @@ export const useRealtimeSubscription = () => {
 
     // Cleanup subscription on unmount
     return () => {
-      channel.unsubscribe();
+      void channel.unsubscribe();
     };
-  }, [activeOrgId]);
+  }, [
+    activeOrgId,
+    currentAgentId,
+    pushConversations,
+    pushMessages,
+    queryClient,
+  ]);
 };

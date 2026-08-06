@@ -8,6 +8,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useConversationQueues } from "@/queries/useConversationQueues";
 import { DEFAULT_CONVERSATION_QUEUE_KEY } from "@/types/conversationQueues";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { useEffect, useMemo } from "react";
+import {
+  toMentionedConversation,
+  toMentionedPreviewMessage,
+  useMentionedConversations,
+} from "@/queries/usePrivateNotes";
 
 export type ConvMetadata = {
   convId: string;
@@ -42,6 +48,10 @@ const ChatList = () => {
   const searchPattern = useBoundStore((state) => state.ui.searchPattern);
   const setSearchPattern = useBoundStore((state) => state.ui.setSearchPattern);
   const { data: queues = [] } = useConversationQueues();
+  const pushConversations = useBoundStore(
+    (state) => state.chat.pushConversations,
+  );
+  const pushMessages = useBoundStore((state) => state.chat.pushMessages);
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
     for (const message of messages.get(convId)?.values() || []) {
@@ -57,6 +67,26 @@ const ChatList = () => {
     ? queueKey
     : DEFAULT_CONVERSATION_QUEUE_KEY;
   const activeQueue = queues.find((queue) => queue.key === activeQueueKey);
+  const isMentionedQueue = activeQueueKey === "mentioned";
+  const mentionedQuery = useMentionedConversations(
+    searchPattern,
+    isMentionedQueue,
+  );
+  const mentionedRows = useMemo(
+    () => mentionedQuery.data?.pages.flatMap((page) => page.rows) || [],
+    [mentionedQuery.data],
+  );
+
+  useEffect(() => {
+    if (!isMentionedQueue || mentionedRows.length === 0) return;
+
+    pushConversations(mentionedRows.map(toMentionedConversation));
+    pushMessages(
+      mentionedRows
+        .map(toMentionedPreviewMessage)
+        .filter((message) => message !== undefined),
+    );
+  }, [isMentionedQueue, mentionedRows, pushConversations, pushMessages]);
 
   let items: ConvMetadata[] = [...conversations]
     /*.filter(
@@ -78,13 +108,13 @@ const ChatList = () => {
         !!a.mostRecentMsg,
     );
 
-  if (searchPattern) {
+  if (searchPattern && !isMentionedQueue) {
     const fuse = new Fuse(items, {
       threshold: 0.4,
       keys: ["conv.name", "conv.contact_address"],
     });
     items = fuse.search(searchPattern).map((r) => r.item);
-  } else {
+  } else if (!isMentionedQueue) {
     items.sort(
       (a, b) =>
         pinnedAscending(a.conv, b.conv) ||
@@ -92,7 +122,12 @@ const ChatList = () => {
     );
   }
 
-  const itemIds = items.map((a) => a.convId);
+  const itemIds = isMentionedQueue
+    ? mentionedRows.map((row) => row.id)
+    : items.map((a) => a.convId);
+  const latestMentionById = new Map(
+    mentionedRows.map((row) => [row.id, row.latest_mention_at]),
+  );
 
   const emptyLabel = (() => {
     if (searchPattern) {
@@ -108,15 +143,41 @@ const ChatList = () => {
 
   return (
     <div className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]">
-      {itemIds.length ? (
+      {isMentionedQueue && mentionedQuery.isPending ? (
+        <div className="h-full flex items-center justify-center text-muted-foreground text-[14px]">
+          {t("Cargando...")}
+        </div>
+      ) : itemIds.length ? (
         <div className="flex flex-col gap-[4px]">
           {itemIds.map((key) => (
-            <ChatListItem key={key} itemId={key} />
+            <ChatListItem
+              key={key}
+              itemId={key}
+              isMentionedQueue={isMentionedQueue}
+              latestMentionAt={latestMentionById.get(key)}
+            />
           ))}
+          {isMentionedQueue && mentionedQuery.hasNextPage && (
+            <button
+              type="button"
+              className="mx-auto my-2 rounded-lg border border-border px-3 py-2 text-[13px] text-primary disabled:opacity-50"
+              disabled={mentionedQuery.isFetchingNextPage}
+              onClick={() => void mentionedQuery.fetchNextPage()}
+            >
+              {mentionedQuery.isFetchingNextPage
+                ? t("Cargando...")
+                : t("Cargar más")}
+            </button>
+          )}
         </div>
       ) : (
         <div className="h-full flex items-center justify-center flex-col text-foreground text-[15px] mt-[-24px]">
           {emptyLabel}
+          {isMentionedQueue && mentionedQuery.error && (
+            <div className="mt-2 max-w-sm text-center text-[12px] text-red-600">
+              {mentionedQuery.error.message}
+            </div>
+          )}
           {(searchPattern ||
             activeQueueKey !== DEFAULT_CONVERSATION_QUEUE_KEY) && (
             <button

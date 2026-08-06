@@ -1,6 +1,13 @@
-import type { MessageRow } from "@/supabase/client";
+import type { MessageRow, PrivateNotePart } from "@/supabase/client";
 
-export function isPrivateNote(message: MessageRow): boolean {
+export type PrivateNoteMessageRow = MessageRow & {
+  direction: "internal";
+  content: MessageRow["content"] & PrivateNotePart;
+};
+
+export function isPrivateNote(
+  message: MessageRow,
+): message is PrivateNoteMessageRow {
   return (
     message.direction === "internal" &&
     message.content.type === "text" &&

@@ -78,6 +78,8 @@ export const conversationQueueFilters: {
     conv.status === "active" && conv.assigned_agent_id !== null,
   pending: (conv) =>
     conv.status === "active" && conv.assigned_agent_id === null,
+  // Mentioned is intentionally resolved by its tenant-safe paginated RPC.
+  mentioned: () => false,
   spam: (conv) => conv.status === "spam",
   closed: (conv) => conv.status === "closed",
   expired: (conv, messages) => {

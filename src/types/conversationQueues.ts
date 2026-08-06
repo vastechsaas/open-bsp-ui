@@ -2,6 +2,7 @@ export const CONVERSATION_QUEUE_KEYS = [
   "all_active",
   "assigned",
   "pending",
+  "mentioned",
   "spam",
   "closed",
   "expired",

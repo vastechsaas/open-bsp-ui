@@ -28,6 +28,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { fetchMentionedConversationMessages } from "@/queries/usePrivateNotes";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -158,7 +159,15 @@ function severityClass(hours: number) {
   }
 }
 
-export default function ChatListItem({ itemId }: { itemId: string }) {
+export default function ChatListItem({
+  itemId,
+  isMentionedQueue = false,
+  latestMentionAt,
+}: {
+  itemId: string;
+  isMentionedQueue?: boolean;
+  latestMentionAt?: string;
+}) {
   const navigate = useNavigate();
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
 
@@ -303,6 +312,18 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
     tick.diff(mostRecent?.timestamp, "hours", true),
   );
 
+  const openConversation = async () => {
+    try {
+      if (isMentionedQueue && !messages?.some(isPrivateNote)) {
+        const hydratedMessages =
+          await fetchMentionedConversationMessages(itemId);
+        useBoundStore.getState().chat.pushMessages(hydratedMessages);
+      }
+    } finally {
+      await navigate({ to: "/conversations", hash: itemId });
+    }
+  };
+
   return (
     conversation && (
       <ItemActions trigger={["contextMenu"]} itemId={itemId}>
@@ -314,8 +335,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            // setActiveConv(itemId);
-            navigate({ to: "/conversations", hash: itemId });
+            void openConversation();
           }}
         >
           <div className="profile-picture pl-[10px] pr-[15px] flex items-center">
@@ -350,12 +370,13 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
               <div
                 className={
                   "text-[12px] ml-[6px] capitalize" +
-                  (unread.count
+                  (!isMentionedQueue && unread.count
                     ? ` ${severity.text} font-bold`
                     : " text-muted-foreground")
                 }
               >
-                {preview && formatTime(preview.timestamp)}
+                {(latestMentionAt || preview?.timestamp) &&
+                  formatTime(latestMentionAt || preview!.timestamp)}
               </div>
             </div>
             {/* Lower row */}
@@ -410,13 +431,13 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                   </svg>
                 )}
                 {/* Mention */}
-                {unread.notification && (
+                {!isMentionedQueue && unread.notification && (
                   <AtSign
                     className={`h-[15px] w-[15px] ml-[6px] ${severity.text}`}
                   />
                 )}
                 {/* Pending messages badge */}
-                {unread.count > 0 && (
+                {!isMentionedQueue && unread.count > 0 && (
                   <div className="ml-[6px]">
                     <span
                       className={`font-bold text-[12px] text-white rounded-full py-[2px] px-[6px] ${severity.bg}`}
