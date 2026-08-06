@@ -31,6 +31,9 @@ void test("Supervisor list badges are informational and header badge opens only 
   assert.match(header, /supervisorCanManageAssignment/);
   assert.match(header, /assignmentOnly/);
   assert.match(actions, /assignmentOnly\s*\? supervisorAssignmentItems/);
+  assert.match(actions, /placement=\{assignmentOnly \? "bottomRight"/);
+  assert.match(actions, /agent\.id === conversation\.assigned_agent_id/);
+  assert.match(actions, /label: t\("Desasignar"\)/);
   assert.match(actions, /agent\.extra\?\.role !== "agent"/);
   assert.match(actions, /agent\.extra\.invitation\.status === "accepted"/);
 });
@@ -40,6 +43,9 @@ void test("Assignment badge has unassigned, named, and missing-assignee states",
 
   assert.match(badge, /conversation\.assigned_agent_id !== null/);
   assert.match(badge, /assignee\?\.name/);
+  assert.doesNotMatch(badge, /Asignado.*·/);
+  assert.doesNotMatch(badge, /teal|amber/);
+  assert.match(badge, /border-border bg-muted\/70/);
   assert.match(badge, /t\("Asignado"\)/);
   assert.match(badge, /t\("Sin asignar"\)/);
   assert.match(badge, /title=\{label\}/);
