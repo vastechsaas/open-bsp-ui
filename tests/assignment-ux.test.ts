@@ -18,7 +18,8 @@ void test("Agent uses one loading-aware self-assignment action in header and foo
   assert.match(header, /isAssignedAgent/);
   assert.match(header, /t\("Asignada a mí"\)/);
   assert.match(header, /className="hidden md:inline-flex"/);
-  assert.match(footer, /isAgent && conv\?\.assigned_agent_id === null/);
+  assert.match(footer, /isAgent && !customerReplyAllowed/);
+  assert.match(footer, /conv\?\.assigned_agent_id === null/);
   assert.match(footer, /AssignConversationButton conversationId=\{conv.id\}/);
 });
 

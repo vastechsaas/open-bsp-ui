@@ -95,6 +95,14 @@ export type TextPart = {
   artifacts?: Part[];
 };
 
+export type PrivateNotePart = {
+  type: "text";
+  kind: "private_note";
+  text: string;
+  mentioned_agent_ids: string[];
+  artifacts?: never;
+};
+
 // File based
 
 export const MediaTypes = [
@@ -234,7 +242,7 @@ export type InternalMessage = {
   forwarded?: boolean;
 } & TaskInfo &
   ToolInfo &
-  Part;
+  (Part | PrivateNotePart);
 
 export type OutgoingMessage = {
   version: "1";

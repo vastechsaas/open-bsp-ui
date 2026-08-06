@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { MessageSquareText, Plus, StickyNote, X } from "lucide-react";
 import {
   newMessage,
   pushMessageToDb,
@@ -23,6 +23,11 @@ import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
 import AssignConversationButton from "./AssignConversationButton";
+import PrivateNoteComposer from "./PrivateNoteComposer";
+import {
+  canComposePrivateNote,
+  canSendCustomerReply,
+} from "@/utils/PrivateNoteUtils";
 
 function TemplateVarInput({
   placeholder,
@@ -84,6 +89,10 @@ export default function ChatFooter() {
   const setSendAsContact = useBoundStore((store) => store.ui.setSendAsContact);
   const toggle = useBoundStore((store) => store.ui.toggle);
   const templatePicker = useBoundStore((store) => store.ui.templatePicker);
+  const privateNoteMode = useBoundStore((store) => store.ui.privateNoteMode);
+  const setPrivateNoteMode = useBoundStore(
+    (store) => store.ui.setPrivateNoteMode,
+  );
   const templateDraftEntry = useBoundStore((store) =>
     store.ui.templateDrafts.get(store.ui.activeConvId || ""),
   );
@@ -110,6 +119,11 @@ export default function ChatFooter() {
   const agentId = agent?.id;
   const isAgent = agent?.extra?.role === "agent";
   const sendAsContact = !isAgent && storedSendAsContact;
+  const customerReplyAllowed = canSendCustomerReply(
+    agent?.extra?.role,
+    agentId,
+    conv?.assigned_agent_id,
+  );
 
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout>>();
 
@@ -209,7 +223,7 @@ export default function ChatFooter() {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvId, fileDrafts]);
+  }, [activeConvId, fileDrafts, privateNoteMode]);
 
   // Set send as contact
   useEffect(() => {
@@ -474,13 +488,68 @@ export default function ChatFooter() {
     );
   }
 
-  if (isAgent && conv?.assigned_agent_id === null) {
+  const composerModeTabs = activeConvId && conv && (
+    <div className="mb-2 flex w-fit gap-1 rounded-lg border border-border bg-background/95 p-1 text-[12px] shadow-sm">
+      <button
+        type="button"
+        className={
+          "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors " +
+          (!privateNoteMode
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-accent")
+        }
+        onClick={() => setPrivateNoteMode(false)}
+      >
+        <MessageSquareText className="h-3.5 w-3.5" />
+        {t("Responder al cliente")}
+      </button>
+      <button
+        type="button"
+        className={
+          "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors " +
+          (privateNoteMode
+            ? "bg-amber-500 text-amber-950"
+            : "text-muted-foreground hover:bg-amber-100 dark:hover:bg-amber-950")
+        }
+        onClick={() => setPrivateNoteMode(true)}
+      >
+        <StickyNote className="h-3.5 w-3.5" />
+        {t("Nota privada")}
+      </button>
+    </div>
+  );
+
+  if (activeConvId && conv && !canComposePrivateNote(conv.status)) {
     return (
-      <div className="mx-[12px] mb-[12px] flex flex-col items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm sm:flex-row">
-        <span className="text-center text-[13px] font-medium text-muted-foreground sm:text-left">
-          {t("Asígnate esta conversación para responder")}
-        </span>
-        <AssignConversationButton conversationId={conv.id} />
+      <div className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] font-medium text-muted-foreground shadow-sm">
+        {t("Esta conversación es historial de solo lectura")}
+      </div>
+    );
+  }
+
+  if (activeConvId && conv && privateNoteMode) {
+    return (
+      <div className="relative z-10 mx-[12px] mb-[12px] mt-[4px] lg:mt-0">
+        {composerModeTabs}
+        <PrivateNoteComposer conversationId={activeConvId} />
+      </div>
+    );
+  }
+
+  if (activeConvId && conv && isAgent && !customerReplyAllowed) {
+    return (
+      <div className="relative z-10 mx-[12px] mb-[12px] mt-[4px] lg:mt-0">
+        {composerModeTabs}
+        <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm sm:flex-row">
+          <span className="text-center text-[13px] font-medium text-muted-foreground sm:text-left">
+            {conv?.assigned_agent_id === null
+              ? t("Asígnate esta conversación para responder")
+              : t("Solo el agente asignado puede responder al cliente")}
+          </span>
+          {conv?.assigned_agent_id === null && (
+            <AssignConversationButton conversationId={conv.id} />
+          )}
+        </div>
       </div>
     );
   }
@@ -489,6 +558,7 @@ export default function ChatFooter() {
     activeConvId &&
     conv && (
       <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10">
+        {composerModeTabs}
         {templatePicker && <TemplatePicker />}
         <div
           className={

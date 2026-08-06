@@ -20,6 +20,7 @@ import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
 import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
 import { normalizeStructuredMessage } from "@/utils/MessageDisplayUtils";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { StructuredMessageRenderer } from "./interactive/StructuredMessageRenderer";
 
 export type MessageActionButton = {
@@ -359,6 +360,7 @@ export function OutMessage({
   children,
   avatar,
   internal,
+  privateNote,
 }: PropsWithChildren<UIMessage>) {
   return (
     <div
@@ -375,23 +377,29 @@ export function OutMessage({
           " text-foreground" +
           (first ? " rounded-tr-none" : "") +
           (text ? textMsgMaxWidth : "") +
-          (internal ? " bg-incoming-chat-bubble" : " bg-outgoing-chat-bubble")
+          (privateNote
+            ? " border border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-50"
+            : internal
+              ? " bg-incoming-chat-bubble"
+              : " bg-outgoing-chat-bubble")
         }
       >
         {first && (
           <>
             {!!avatar && <Avatar {...avatar} display="picture-right" />}
-            <svg
-              className={
-                msgTailClasses +
-                " -right-[8px]" +
-                (internal
-                  ? " text-incoming-chat-bubble"
-                  : " text-outgoing-chat-bubble")
-              }
-            >
-              <use href="/icons.svg#tail-out" />
-            </svg>
+            {!privateNote && (
+              <svg
+                className={
+                  msgTailClasses +
+                  " -right-[8px]" +
+                  (internal
+                    ? " text-incoming-chat-bubble"
+                    : " text-outgoing-chat-bubble")
+                }
+              >
+                <use href="/icons.svg#tail-out" />
+              </svg>
+            )}
           </>
         )}
         {!!avatar && first && <Avatar {...avatar} display="name" />}
@@ -409,6 +417,8 @@ type UIMessage = {
   convName?: string;
   avatar?: { agentId: string; color: string };
   internal?: boolean;
+  privateNote?: boolean;
+  authorName?: string;
 };
 
 export default function Message(props: UIMessage & { message: MessageRow }) {
@@ -416,6 +426,7 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
   let content;
   let text = false;
   let fixedWidth = false;
+  const privateNote = isPrivateNote(props.message);
 
   const structuredDisplay =
     props.message.content.type === "data"
@@ -445,19 +456,26 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
 
   if (props.message.content.type === "text") {
     content = (
-      <TextMessage
-        header={headerText}
-        body={props.message.content.text}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
+      <>
+        {privateNote && (
+          <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-amber-800 dark:text-amber-200">
+            {props.authorName || t("Agente")} · {t("Nota privada")}
+          </div>
+        )}
+        <TextMessage
+          header={headerText}
+          body={props.message.content.text}
+          type="markdown"
+          direction={props.message.direction}
+          timestamp={props.message.timestamp}
+          status={
+            props.message.direction === "outgoing"
+              ? props.message.status
+              : undefined
+          }
+          fixedWidth={fixedWidth}
+        />
+      </>
     );
     text = true;
   } else if (structuredDisplay) {
@@ -517,6 +535,7 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
             ...props,
             text,
             internal: props.message.direction === "internal",
+            privateNote,
             fixedWidth,
           }}
         >

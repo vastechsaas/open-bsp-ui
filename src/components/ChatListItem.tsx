@@ -27,6 +27,7 @@ import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import { useNavigate } from "@tanstack/react-router";
 import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -184,7 +185,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
 
   // If the role is not admin, then do not show internal messages.
   const mostRecent = messages?.find(
-    (m) => isAdmin || m.direction !== "internal",
+    (m) => !isPrivateNote(m) && (isAdmin || m.direction !== "internal"),
   );
 
   const draft: Draft | null | undefined = conversation?.extra?.draft;

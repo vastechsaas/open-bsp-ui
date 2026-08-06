@@ -29,6 +29,11 @@ export type FileDraft = {
   caption?: string;
 };
 
+export type PrivateNoteDraft = {
+  text: string;
+  mentionedAgentIds: string[];
+};
+
 type MediaLoad = {
   blob?: Blob;
   type: "upload" | "download";
@@ -41,6 +46,7 @@ export type ChatState = {
   conversations: Map<string, ConversationRow>;
   messages: Map<string, Map<string, MessageRow>>; // TODO: replace the nested maps with a data structure capable of prefix search (a Trie) - cabra 2024/07/26
   textDrafts: Map<string, string>;
+  privateNoteDrafts: Map<string, PrivateNoteDraft>;
   fileDrafts: Map<string, FileDraft[]>;
   mediaLoads: Map<string, MediaLoad>;
 };
@@ -50,6 +56,10 @@ export type ChatActions = {
   pushMessages: (msgs: MessageRow[]) => void;
   setMediaLoad: (messageId: string, mediaLoad: MediaLoad) => void;
   setConversationTextDraft: (convId: string, textDraft: string) => void;
+  setConversationPrivateNoteDraft: (
+    convId: string,
+    draft: PrivateNoteDraft,
+  ) => void;
   setConversationFileDrafts: (convId: string, drafts: FileDraft[]) => void;
   setConversationFileDraftCaption: (
     convId: string,
@@ -73,6 +83,7 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
   conversations: new Map(),
   messages: new Map(),
   textDrafts: new Map(),
+  privateNoteDrafts: new Map(),
   fileDrafts: new Map(),
   mediaLoads: new Map(),
   pushConversations: (convs: ConversationRow[]) =>
@@ -174,6 +185,27 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         chat: {
           ...state.chat,
           textDrafts,
+        },
+      };
+    });
+  },
+  setConversationPrivateNoteDraft: (
+    convId: string,
+    draft: PrivateNoteDraft,
+  ) => {
+    set((state) => {
+      const privateNoteDrafts = new Map(state.chat.privateNoteDrafts);
+
+      if (draft.text || draft.mentionedAgentIds.length) {
+        privateNoteDrafts.set(convId, draft);
+      } else {
+        privateNoteDrafts.delete(convId);
+      }
+
+      return {
+        chat: {
+          ...state.chat,
+          privateNoteDrafts,
         },
       };
     });

@@ -117,6 +117,7 @@ export function detectDefaultLanguage(): Language {
 
 export type UIState = {
   templatePicker: boolean;
+  privateNoteMode: boolean;
   templateDrafts: Map<string, TemplateDraft>;
   activeOrgId: string | null;
   activeConvId: string | null;
@@ -136,6 +137,7 @@ export type UIActions = {
   setActiveConv: (id: string | null) => void;
   setUser: (user: User | null) => void;
   setSendAsContact: (sendAsContact: boolean) => void;
+  setPrivateNoteMode: (privateNoteMode: boolean) => void;
   setFilter: (filter: keyof typeof filters) => void;
   setConversationQueueKey: (queueKey: ConversationQueueKey) => void;
   setSearchPattern: (searchPattern: string) => void;
@@ -157,6 +159,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   ) => void,
 ) => ({
   templatePicker: false,
+  privateNoteMode: false,
   templateDrafts: new Map(),
   activeOrgId: null,
   activeConvId: null,
@@ -208,6 +211,14 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       ui: {
         ...state.ui,
         sendAsContact,
+      },
+    })),
+  setPrivateNoteMode: (privateNoteMode: boolean) =>
+    set((state) => ({
+      ui: {
+        ...state.ui,
+        privateNoteMode,
+        templatePicker: privateNoteMode ? false : state.ui.templatePicker,
       },
     })),
   setFilter: (filter: keyof typeof filters) =>

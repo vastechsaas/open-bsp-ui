@@ -7,6 +7,7 @@ import Fuse from "fuse.js";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useConversationQueues } from "@/queries/useConversationQueues";
 import { DEFAULT_CONVERSATION_QUEUE_KEY } from "@/types/conversationQueues";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 
 export type ConvMetadata = {
   convId: string;
@@ -43,7 +44,9 @@ const ChatList = () => {
   const { data: queues = [] } = useConversationQueues();
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
-    return messages.get(convId)?.values().next().value;
+    for (const message of messages.get(convId)?.values() || []) {
+      if (!isPrivateNote(message)) return message;
+    }
   }
 
   function getConversationMessages(convId: string): MessageRow[] {
