@@ -2,7 +2,7 @@ import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import Avatar from "./Avatar";
 import useBoundStore from "@/stores/useBoundStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
@@ -64,6 +64,9 @@ export default function Header() {
   const isPendingAgent =
     currentAgent?.extra?.role === "agent" &&
     conversation?.assigned_agent_id === null;
+  const isAssignedAgent =
+    currentAgent?.extra?.role === "agent" &&
+    conversation?.assigned_agent_id === currentAgent.id;
   const currentAssignee = agents?.find(
     (agent) => agent.id === conversation?.assigned_agent_id,
   );
@@ -118,6 +121,20 @@ export default function Header() {
             conversationId={activeConvId}
             className="hidden md:inline-flex"
           />
+        )}
+        {isAssignedAgent && (
+          <ItemActions itemId={activeConvId} trigger={["click"]} assignmentOnly>
+            <button
+              type="button"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted/70 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              title={t("Asignada a mí")}
+              aria-label={`${t("Asignada a mí")}. ${t("Desasignar")}`}
+            >
+              <Check className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <span className="hidden sm:inline">{t("Asignada a mí")}</span>
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </ItemActions>
         )}
         {isSupervisor &&
           conversation &&

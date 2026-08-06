@@ -15,6 +15,8 @@ void test("Agent uses one loading-aware self-assignment action in header and foo
   assert.match(button, /Conversación asignada/);
   assert.match(button, /No se pudo actualizar la asignación/);
   assert.match(header, /isPendingAgent/);
+  assert.match(header, /isAssignedAgent/);
+  assert.match(header, /t\("Asignada a mí"\)/);
   assert.match(header, /className="hidden md:inline-flex"/);
   assert.match(footer, /isAgent && conv\?\.assigned_agent_id === null/);
   assert.match(footer, /AssignConversationButton conversationId=\{conv.id\}/);
@@ -30,7 +32,8 @@ void test("Supervisor list badges are informational and header badge opens only 
   assert.match(listItem, /<ConversationAssignmentBadge/);
   assert.match(header, /supervisorCanManageAssignment/);
   assert.match(header, /assignmentOnly/);
-  assert.match(actions, /assignmentOnly\s*\? supervisorAssignmentItems/);
+  assert.match(actions, /assignmentOnly\s*\? assignmentOnlyItems/);
+  assert.match(actions, /role === "agent"\s*\? assignmentItems/);
   assert.match(actions, /placement=\{assignmentOnly \? "bottomRight"/);
   assert.match(
     actions,
@@ -63,6 +66,7 @@ void test("Assignment UX labels exist in every supported locale", () => {
     ) as Record<string, string>;
 
     assert.ok(translations.Asignado, language);
+    assert.ok(translations["Asignada a mí"], language);
     assert.ok(translations["Sin asignar"], language);
     assert.ok(translations.Asignarme, language);
     assert.ok(
