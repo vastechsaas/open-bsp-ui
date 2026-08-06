@@ -222,8 +222,15 @@ export default function ItemActions({
         },
       ];
 
+  const assignmentOnlyItems: MenuProps["items"] =
+    currentAgent.data?.extra?.role === "supervisor"
+      ? supervisorAssignmentItems
+      : currentAgent.data?.extra?.role === "agent"
+        ? assignmentItems
+        : [];
+
   const items: MenuProps["items"] = assignmentOnly
-    ? supervisorAssignmentItems
+    ? assignmentOnlyItems
     : [
         ...assignmentItems,
         ...(assignmentItems.length && conversationMutationItems.length
