@@ -21,7 +21,7 @@ export default function ConversationAssignmentBadge({
   const isAssigned = conversation.assigned_agent_id !== null;
   const label = isAssigned
     ? assignee?.name
-      ? `${t("Asignado")} · ${assignee.name}`
+      ? assignee.name
       : t("Asignado")
     : t("Sin asignar");
 
@@ -32,7 +32,7 @@ export default function ConversationAssignmentBadge({
           src={assignee.picture}
           fallback={nameInitials(assignee.name || "?")}
           size={18}
-          className="shrink-0 border border-teal-500/30 bg-teal-500/15 text-[9px] text-teal-700 dark:text-teal-200"
+          className="shrink-0 border border-border bg-accent text-[9px] text-foreground"
         />
       )}
       <span className="truncate">{label}</span>
@@ -42,11 +42,7 @@ export default function ConversationAssignmentBadge({
     </>
   );
 
-  const styles = `inline-flex h-[24px] min-w-0 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium leading-none ${
-    isAssigned
-      ? "border-teal-500/40 bg-teal-500/10 text-teal-700 dark:text-teal-200"
-      : "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-200"
-  } ${className}`;
+  const styles = `inline-flex h-[24px] min-w-0 items-center gap-1.5 rounded-full border border-border bg-muted/70 px-2 text-[11px] font-medium leading-none text-foreground ${className}`;
 
   if (interactive) {
     return (

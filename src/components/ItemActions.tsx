@@ -11,6 +11,7 @@ import {
 } from "@/utils/ConversationUtils";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { getConversationAssignmentAction } from "@/utils/AssignmentUtils";
+import { Check } from "lucide-react";
 
 export default function ItemActions({
   children,
@@ -108,12 +109,14 @@ export default function ItemActions({
       : []),
   ];
 
-  const acceptedAgents = (organizationAgents.data || []).filter((agent) => {
-    if (agent.ai || agent.extra?.role !== "agent") return false;
-    return (
-      !agent.extra.invitation || agent.extra.invitation.status === "accepted"
-    );
-  });
+  const acceptedAgents = (organizationAgents.data || [])
+    .filter((agent) => {
+      if (agent.ai || agent.extra?.role !== "agent") return false;
+      return (
+        !agent.extra.invitation || agent.extra.invitation.status === "accepted"
+      );
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
   const currentAssignee = organizationAgents.data?.find(
     (agent) => agent.id === conversation.assigned_agent_id,
   );
@@ -160,7 +163,7 @@ export default function ItemActions({
       supervisorAssignmentItems.push(
         {
           key: "unassign-agent-only",
-          label: t("Sin asignar"),
+          label: t("Desasignar"),
           onClick: () => void handleSetAgentAssignment(null),
         },
         { type: "divider" },
@@ -171,6 +174,12 @@ export default function ItemActions({
       ...acceptedAgents.map((agent) => ({
         key: `assign-agent-only-${agent.id}`,
         label: agent.name,
+        icon:
+          agent.id === conversation.assigned_agent_id ? (
+            <Check className="h-4 w-4 text-primary" />
+          ) : (
+            <span className="inline-block h-4 w-4" />
+          ),
         disabled: agent.id === conversation.assigned_agent_id,
         onClick: () => void handleSetAgentAssignment(agent.id),
       })),
@@ -236,6 +245,8 @@ export default function ItemActions({
     <Dropdown
       menu={{ items }}
       trigger={trigger}
+      placement={assignmentOnly ? "bottomRight" : undefined}
+      overlayStyle={assignmentOnly ? { minWidth: 200 } : undefined}
       className={`${visible || visible == undefined ? "visible" : "hidden"} rounded-none`}
     >
       {children}
