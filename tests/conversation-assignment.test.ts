@@ -290,11 +290,11 @@ void test("backend conversation queue config controls visible tab labels and ord
 
   assert.deepEqual(
     queues.map((queue) => queue.key),
-    ["all_active", "pending", "spam"],
+    ["all_active", "pending", "spam", "mentioned"],
   );
   assert.deepEqual(
     queues.map((queue) => queue.label),
-    ["All (active)", "Pending", "Spam"],
+    ["All (active)", "Pending", "Spam", "Mentioned"],
   );
 });
 

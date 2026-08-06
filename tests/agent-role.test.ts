@@ -28,10 +28,11 @@ void test("Agent defaults to Conversations and has no management navigation", ()
   }
 });
 
-void test("Agent Pending conversations hide mutation controls until self-assignment", () => {
+void test("Agent customer replies stay assignment-gated while private notes remain available", () => {
   const footer = readSource("../src/components/ChatFooter.tsx");
   const actions = readSource("../src/components/ItemActions.tsx");
-  assert.match(footer, /isAgent && conv\?\.assigned_agent_id === null/);
+  assert.match(footer, /isAgent && !customerReplyAllowed/);
+  assert.match(footer, /<PrivateNoteComposer conversationId=\{activeConvId\}/);
   assert.match(footer, /Asígnate esta conversación para responder/);
   assert.match(actions, /assignConversationToMe/);
   assert.match(actions, /unassignConversationFromMe/);
