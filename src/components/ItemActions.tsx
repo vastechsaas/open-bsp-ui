@@ -249,7 +249,11 @@ export default function ItemActions({
       overlayStyle={assignmentOnly ? { minWidth: 200 } : undefined}
       className={`${visible || visible == undefined ? "visible" : "hidden"} rounded-none`}
     >
-      {children}
+      {assignmentOnly ? (
+        <span className="inline-flex">{children}</span>
+      ) : (
+        children
+      )}
     </Dropdown>
   );
 }

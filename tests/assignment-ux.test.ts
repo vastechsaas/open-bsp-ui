@@ -32,6 +32,10 @@ void test("Supervisor list badges are informational and header badge opens only 
   assert.match(header, /assignmentOnly/);
   assert.match(actions, /assignmentOnly\s*\? supervisorAssignmentItems/);
   assert.match(actions, /placement=\{assignmentOnly \? "bottomRight"/);
+  assert.match(
+    actions,
+    /assignmentOnly \? \(\s*<span className="inline-flex">\{children\}<\/span>/,
+  );
   assert.match(actions, /agent\.id === conversation\.assigned_agent_id/);
   assert.match(actions, /label: t\("Desasignar"\)/);
   assert.match(actions, /agent\.extra\?\.role !== "agent"/);
