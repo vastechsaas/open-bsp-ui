@@ -132,7 +132,7 @@ the Spanish text is shown.
 ./scripts/sync-translations.sh
 ```
 
-## Acknowledgmen
+## Acknowledgment
 
 - [@diegoparma](https://github.com/diegoparma) — for years of feedback, design
   input, and being one of the project's earliest power users.
