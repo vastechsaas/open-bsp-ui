@@ -164,3 +164,34 @@ export function useCreatePrivateNote() {
     },
   });
 }
+
+export type TransferConversationResult = {
+  conversation: ConversationRow;
+  note: MessageRow;
+};
+
+export function useTransferConversationWithPrivateNote() {
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      targetAgentId,
+      text,
+    }: {
+      conversationId: string;
+      targetAgentId: string;
+      text: string;
+    }) => {
+      const { data, error } = await supabase.rpc(
+        "transfer_conversation_with_private_note",
+        {
+          p_conversation_id: conversationId,
+          p_target_agent_id: targetAgentId,
+          p_text: text,
+        },
+      );
+
+      if (error) throw error;
+      return data as unknown as TransferConversationResult;
+    },
+  });
+}

@@ -1,6 +1,7 @@
 import {
   type MessageRow,
   type OutgoingStatus,
+  type PrivateNotePart,
   type ToolInfo,
 } from "@/supabase/client";
 import AudioMessage from "./AudioMessage";
@@ -419,6 +420,7 @@ type UIMessage = {
   internal?: boolean;
   privateNote?: boolean;
   authorName?: string;
+  transferTargetName?: string;
 };
 
 export default function Message(props: UIMessage & { message: MessageRow }) {
@@ -427,6 +429,10 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
   let text = false;
   let fixedWidth = false;
   const privateNote = isPrivateNote(props.message);
+  const privateNoteContent = privateNote
+    ? (props.message.content as PrivateNotePart)
+    : undefined;
+  const transfer = privateNoteContent?.transfer;
 
   const structuredDisplay =
     props.message.content.type === "data"
@@ -459,7 +465,17 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       <>
         {privateNote && (
           <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-amber-800 dark:text-amber-200">
-            {props.authorName || t("Agente")} · {t("Nota privada")}
+            {transfer ? (
+              <>
+                {props.authorName || t("Agente")}{" "}
+                {t("transfiri\u00f3 esta conversaci\u00f3n a")}{" "}
+                {props.transferTargetName || t("Agente")}
+              </>
+            ) : (
+              <>
+                {props.authorName || t("Agente")} · {t("Nota privada")}
+              </>
+            )}
           </div>
         )}
         <TextMessage

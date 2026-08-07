@@ -100,6 +100,10 @@ export type PrivateNotePart = {
   kind: "private_note";
   text: string;
   mentioned_agent_ids: string[];
+  transfer?: {
+    from_agent_id: string;
+    to_agent_id: string;
+  };
   artifacts?: never;
 };
 

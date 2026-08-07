@@ -26,3 +26,38 @@ export function canSendCustomerReply(
 ) {
   return role !== "agent" || assignedAgentId === currentAgentId;
 }
+
+export type TransferMention = {
+  id: string;
+  name: string;
+  role: string;
+};
+
+export function getPrivateNoteTransferTarget({
+  role,
+  currentAgentId,
+  assignedAgentId,
+  text,
+  selectedHumans,
+}: {
+  role: string | null | undefined;
+  currentAgentId: string | null | undefined;
+  assignedAgentId: string | null | undefined;
+  text: string;
+  selectedHumans: TransferMention[];
+}) {
+  if (
+    role !== "agent" ||
+    !currentAgentId ||
+    assignedAgentId !== currentAgentId ||
+    !text.trim() ||
+    selectedHumans.length !== 1
+  ) {
+    return undefined;
+  }
+
+  const target = selectedHumans[0];
+  return target.role === "agent" && target.id !== currentAgentId
+    ? target
+    : undefined;
+}

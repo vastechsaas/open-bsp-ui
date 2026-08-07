@@ -1,16 +1,21 @@
-import { Send, X } from "lucide-react";
+import { ArrowRightLeft, Send, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { message, Modal } from "antd";
 import useBoundStore from "@/stores/useBoundStore";
 import {
   useCreatePrivateNote,
   useMentionableHumans,
+  useTransferConversationWithPrivateNote,
 } from "@/queries/usePrivateNotes";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrentAgent } from "@/queries/useAgents";
 import {
   addMentionedAgentId,
   findActiveMention,
   insertMention,
 } from "@/utils/MentionUtils";
+import { getPrivateNoteTransferTarget } from "@/utils/PrivateNoteUtils";
 
 export default function PrivateNoteComposer({
   conversationId,
@@ -18,6 +23,7 @@ export default function PrivateNoteComposer({
   conversationId: string;
 }) {
   const { translate: t } = useTranslation();
+  const navigate = useNavigate();
   const draft = useBoundStore((state) =>
     state.chat.privateNoteDrafts.get(conversationId),
   ) || { text: "", mentionedAgentIds: [] };
@@ -25,7 +31,19 @@ export default function PrivateNoteComposer({
     (state) => state.chat.setConversationPrivateNoteDraft,
   );
   const pushMessages = useBoundStore((state) => state.chat.pushMessages);
+  const pushConversations = useBoundStore(
+    (state) => state.chat.pushConversations,
+  );
+  const conversation = useBoundStore((state) =>
+    state.chat.conversations.get(conversationId),
+  );
+  const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
+  const setPrivateNoteMode = useBoundStore(
+    (state) => state.ui.setPrivateNoteMode,
+  );
   const createNote = useCreatePrivateNote();
+  const transferConversation = useTransferConversationWithPrivateNote();
+  const { data: currentAgent } = useCurrentAgent();
   const { data: humans = [] } = useMentionableHumans();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursor, setCursor] = useState(draft.text.length);
@@ -47,6 +65,13 @@ export default function PrivateNoteComposer({
   const selectedHumans = draft.mentionedAgentIds
     .map((id) => humans.find((human) => human.id === id))
     .filter((human) => human !== undefined);
+  const transferTarget = getPrivateNoteTransferTarget({
+    role: currentAgent?.extra?.role,
+    currentAgentId: currentAgent?.id,
+    assignedAgentId: conversation?.assigned_agent_id,
+    text: draft.text,
+    selectedHumans,
+  });
 
   const selectMention = (agentId: string, name: string) => {
     if (!activeMention) return;
@@ -66,7 +91,7 @@ export default function PrivateNoteComposer({
 
   const submit = async () => {
     const text = draft.text.trim();
-    if (!text || createNote.isPending) return;
+    if (!text || createNote.isPending || transferConversation.isPending) return;
 
     const message = await createNote.mutateAsync({
       conversationId,
@@ -76,6 +101,41 @@ export default function PrivateNoteComposer({
 
     pushMessages([message]);
     setDraft(conversationId, { text: "", mentionedAgentIds: [] });
+  };
+
+  const confirmTransfer = () => {
+    if (!transferTarget || transferConversation.isPending) return;
+
+    Modal.confirm({
+      title: `${t("Transferir conversaci\u00f3n a")} ${transferTarget.name}`,
+      content: `${transferTarget.name} ${t("quedar\u00e1 asignada y perder\u00e1s acceso a esta conversaci\u00f3n.")}`,
+      okText: t("Transferir"),
+      cancelText: t("Cancelar"),
+      async onOk() {
+        try {
+          const result = await transferConversation.mutateAsync({
+            conversationId,
+            targetAgentId: transferTarget.id,
+            text: draft.text.trim(),
+          });
+
+          pushMessages([result.note]);
+          pushConversations([result.conversation]);
+          setDraft(conversationId, { text: "", mentionedAgentIds: [] });
+          setPrivateNoteMode(false);
+          setActiveConv(null);
+          await navigate({ to: "/conversations", hash: "" });
+          void message.success(t("Conversaci\u00f3n transferida"));
+        } catch {
+          void message.error(
+            t(
+              "No se pudo transferir la conversaci\u00f3n. No se realizaron cambios.",
+            ),
+          );
+          throw new Error("Conversation transfer failed");
+        }
+      },
+    });
   };
 
   return (
@@ -176,9 +236,22 @@ export default function PrivateNoteComposer({
           <Send className="h-5 w-5" />
         </button>
       </div>
-      {createNote.error && (
+      {transferTarget && (
+        <div className="flex justify-end px-2 pt-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-600 px-3 py-2 text-[13px] font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+            disabled={createNote.isPending || transferConversation.isPending}
+            onClick={confirmTransfer}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            {t("Transferir a")} {transferTarget.name}
+          </button>
+        </div>
+      )}
+      {(createNote.error || transferConversation.error) && (
         <div className="px-2 pt-1 text-[12px] text-red-700 dark:text-red-300">
-          {createNote.error.message}
+          {(createNote.error || transferConversation.error)?.message}
         </div>
       )}
     </div>

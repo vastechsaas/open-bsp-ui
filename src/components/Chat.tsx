@@ -304,6 +304,14 @@ export default function Chat() {
                     ? authorNames.get(envOrSep.message.agent_id)
                     : undefined
                 }
+                transferTargetName={
+                  isPrivateNote(envOrSep.message) &&
+                  envOrSep.message.content.transfer
+                    ? authorNames.get(
+                        envOrSep.message.content.transfer.to_agent_id,
+                      )
+                    : undefined
+                }
               />
             ) : (
               <Separator key={index} text={envOrSep.text} />
