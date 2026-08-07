@@ -225,6 +225,23 @@ void test("backend conversation queue keys derive from base conversation state",
     conversationQueueFilters.assigned(
       conversation({ assigned_agent_id: CURRENT_AGENT_ID }),
       [freshIncoming],
+      { currentAgentId: CURRENT_AGENT_ID, role: "agent" },
+    ),
+    true,
+  );
+  assert.equal(
+    conversationQueueFilters.assigned(
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      [freshIncoming],
+      { currentAgentId: CURRENT_AGENT_ID, role: "agent" },
+    ),
+    false,
+  );
+  assert.equal(
+    conversationQueueFilters.assigned(
+      conversation({ assigned_agent_id: OTHER_AGENT_ID }),
+      [freshIncoming],
+      { currentAgentId: CURRENT_AGENT_ID, role: "supervisor" },
     ),
     true,
   );

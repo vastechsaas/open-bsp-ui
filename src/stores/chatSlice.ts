@@ -53,6 +53,7 @@ export type ChatState = {
 
 export type ChatActions = {
   pushConversations: (convs: ConversationRow[]) => void;
+  removeConversations: (conversationIds: string[]) => void;
   pushMessages: (msgs: MessageRow[]) => void;
   setMediaLoad: (messageId: string, mediaLoad: MediaLoad) => void;
   setConversationTextDraft: (convId: string, textDraft: string) => void;
@@ -109,6 +110,44 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
           ...state.chat,
           conversations,
         },
+      };
+    }),
+  removeConversations: (conversationIds: string[]) =>
+    set((state) => {
+      const ids = new Set(conversationIds);
+      const conversations = new Map(state.chat.conversations);
+      const messages = new Map(state.chat.messages);
+      const textDrafts = new Map(state.chat.textDrafts);
+      const privateNoteDrafts = new Map(state.chat.privateNoteDrafts);
+      const fileDrafts = new Map(state.chat.fileDrafts);
+
+      for (const conversationId of ids) {
+        conversations.delete(conversationId);
+        messages.delete(conversationId);
+        textDrafts.delete(conversationId);
+        privateNoteDrafts.delete(conversationId);
+        fileDrafts.delete(conversationId);
+      }
+
+      const removedActiveConversation =
+        !!state.ui.activeConvId && ids.has(state.ui.activeConvId);
+
+      return {
+        chat: {
+          ...state.chat,
+          conversations,
+          messages,
+          textDrafts,
+          privateNoteDrafts,
+          fileDrafts,
+        },
+        ui: removedActiveConversation
+          ? {
+              ...state.ui,
+              activeConvId: null,
+              privateNoteMode: false,
+            }
+          : state.ui,
       };
     }),
   pushMessages: (msgsMixedVersions: MessageRow[]) =>

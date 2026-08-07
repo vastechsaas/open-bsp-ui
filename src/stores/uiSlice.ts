@@ -31,6 +31,7 @@ export type Filters = (typeof Filters)[keyof typeof Filters];
 
 export type FilterContext = {
   currentAgentId?: string | null;
+  role?: string | null;
 };
 
 export const filters: {
@@ -71,11 +72,16 @@ export const conversationQueueFilters: {
   [key in ConversationQueueKey]: (
     conv: ConversationRow,
     messages?: MessageRow[],
+    context?: FilterContext,
   ) => boolean;
 } = {
   all_active: (conv) => conv.status === "active",
-  assigned: (conv) =>
-    conv.status === "active" && conv.assigned_agent_id !== null,
+  assigned: (conv, _messages, context) =>
+    conv.status === "active" &&
+    (context?.role === "agent"
+      ? !!context.currentAgentId &&
+        conv.assigned_agent_id === context.currentAgentId
+      : conv.assigned_agent_id !== null),
   pending: (conv) =>
     conv.status === "active" && conv.assigned_agent_id === null,
   // Mentioned is intentionally resolved by its tenant-safe paginated RPC.

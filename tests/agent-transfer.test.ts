@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { getPrivateNoteTransferTarget } from "../src/utils/PrivateNoteUtils.ts";
+import { toConversationStateSignal } from "../src/utils/ConversationRealtimeUtils.ts";
 
 function readSource(path: string) {
   return readFileSync(new URL(path, import.meta.url), "utf8");
@@ -66,13 +67,45 @@ void test("a successful transfer clears Ali's draft and active conversation", ()
   const composer = readSource("../src/components/PrivateNoteComposer.tsx");
 
   assert.match(composer, /pushMessages\(\[result\.note\]\)/);
-  assert.match(composer, /pushConversations\(\[result\.conversation\]\)/);
+  assert.match(composer, /removeConversations\(\[result\.conversation\.id\]\)/);
   assert.match(
     composer,
     /setDraft\(conversationId, \{ text: "", mentionedAgentIds: \[\] \}\)/,
   );
   assert.match(composer, /setActiveConv\(null\)/);
   assert.match(composer, /navigate\(\{ to: "\/conversations", hash: "" \}\)/);
+});
+
+void test("assignment signals are validated before queue reconciliation", () => {
+  assert.deepEqual(
+    toConversationStateSignal({
+      organization_id: "org-1",
+      conversation_id: "conversation-1",
+      assigned_agent_id: "sara",
+    }),
+    {
+      organization_id: "org-1",
+      conversation_id: "conversation-1",
+    },
+  );
+  assert.equal(
+    toConversationStateSignal({ organization_id: "org-1" }),
+    undefined,
+  );
+  assert.equal(toConversationStateSignal("conversation-1"), undefined);
+});
+
+void test("every open client securely reconciles assignment changes", () => {
+  const realtime = readSource("../src/hooks/useRealtimeSubscription.ts");
+  const chatSlice = readSource("../src/stores/chatSlice.ts");
+
+  assert.match(realtime, /conversation-queue:\$\{activeOrgId\}/);
+  assert.match(realtime, /config: \{ private: true \}/);
+  assert.match(realtime, /conversation_state_changed/);
+  assert.match(realtime, /\.maybeSingle\(\)/);
+  assert.match(realtime, /removeConversations\(\[conversationId\]\)/);
+  assert.match(chatSlice, /activeConvId: null/);
+  assert.match(chatSlice, /messages\.delete\(conversationId\)/);
 });
 
 void test("structured transfer notes render the people and keep the explanation", () => {

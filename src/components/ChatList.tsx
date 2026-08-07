@@ -14,6 +14,7 @@ import {
   toMentionedPreviewMessage,
   useMentionedConversations,
 } from "@/queries/usePrivateNotes";
+import { useCurrentAgent } from "@/queries/useAgents";
 
 export type ConvMetadata = {
   convId: string;
@@ -52,6 +53,7 @@ const ChatList = () => {
     (state) => state.chat.pushConversations,
   );
   const pushMessages = useBoundStore((state) => state.chat.pushMessages);
+  const { data: currentAgent } = useCurrentAgent();
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
     for (const message of messages.get(convId)?.values() || []) {
@@ -104,6 +106,10 @@ const ChatList = () => {
         conversationQueueFilters[activeQueueKey](
           a.conv,
           getConversationMessages(a.convId),
+          {
+            currentAgentId: currentAgent?.id,
+            role: currentAgent?.extra?.role,
+          },
         ) &&
         !!a.mostRecentMsg,
     );

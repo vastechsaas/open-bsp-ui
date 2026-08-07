@@ -31,8 +31,8 @@ export default function PrivateNoteComposer({
     (state) => state.chat.setConversationPrivateNoteDraft,
   );
   const pushMessages = useBoundStore((state) => state.chat.pushMessages);
-  const pushConversations = useBoundStore(
-    (state) => state.chat.pushConversations,
+  const removeConversations = useBoundStore(
+    (state) => state.chat.removeConversations,
   );
   const conversation = useBoundStore((state) =>
     state.chat.conversations.get(conversationId),
@@ -120,7 +120,7 @@ export default function PrivateNoteComposer({
           });
 
           pushMessages([result.note]);
-          pushConversations([result.conversation]);
+          removeConversations([result.conversation.id]);
           setDraft(conversationId, { text: "", mentionedAgentIds: [] });
           setPrivateNoteMode(false);
           setActiveConv(null);
