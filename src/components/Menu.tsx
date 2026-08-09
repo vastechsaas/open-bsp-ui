@@ -10,6 +10,7 @@ import {
   LogOut,
   Megaphone,
   MessageSquareText,
+  MessagesSquare,
   NotebookTabs,
   PanelLeftClose,
   PanelLeftOpen,
@@ -126,6 +127,17 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
             expanded={expanded}
           >
             <MessageSquareText className="h-[21px] w-[21px] stroke-[2]" />
+          </LinkButton>
+
+          <LinkButton
+            to="/quick-replies"
+            access="quickReplies"
+            role={role}
+            title={t("Respuestas rápidas")}
+            isActive={pathname.startsWith("/quick-replies")}
+            expanded={expanded}
+          >
+            <MessagesSquare className="h-[21px] w-[21px] stroke-[2]" />
           </LinkButton>
 
           {/* AI agents are intentionally hidden for the Meta review.

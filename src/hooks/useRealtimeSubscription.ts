@@ -141,6 +141,11 @@ export const useRealtimeSubscription = () => {
       return recoveryPromise;
     };
 
+    const refreshQuickReplies = () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.quickReplies.all(activeOrgId),
+      });
+
     let cancelled = false;
     let dataChannel: ReturnType<typeof supabase.channel> | undefined;
     let queueChannel: ReturnType<typeof supabase.channel> | undefined;
@@ -208,6 +213,18 @@ export const useRealtimeSubscription = () => {
 
             //updateMessagesCache([message]);
           },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "quick_replies",
+            filter,
+          },
+          () => {
+            void refreshQuickReplies();
+          },
         );
 
       dataChannel = nextDataChannel;
@@ -218,6 +235,7 @@ export const useRealtimeSubscription = () => {
         dataSubscribed = status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED;
         if (dataSubscribed) {
           dataRetryAttempt = 0;
+          void refreshQuickReplies();
           return;
         }
 
@@ -288,6 +306,7 @@ export const useRealtimeSubscription = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine) return;
 
       void refreshConversationQueues();
+      void refreshQuickReplies();
       if (!dataSubscribed) startDataChannel();
       if (!queueSubscribed) void startQueueChannel();
     };

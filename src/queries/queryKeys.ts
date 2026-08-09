@@ -63,6 +63,13 @@ export const queryKeys = {
     mentionedConversations: (orgId: NullableId, search: string) =>
       [orgId, "private_notes", "mentioned_conversations", search] as const,
   },
+  quickReplies: {
+    all: (orgId: NullableId) => [orgId, "quick_replies"] as const,
+    library: (orgId: NullableId) =>
+      [orgId, "quick_replies", "library"] as const,
+    page: (orgId: NullableId, params: object) =>
+      [orgId, "quick_replies", "page", params] as const,
+  },
   dashboard: {
     metrics: (orgId: NullableId, days: number) =>
       [orgId, "dashboard", days] as const,

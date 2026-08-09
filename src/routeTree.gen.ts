@@ -20,6 +20,7 @@ import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
 import { Route as AuthWhatsappManagerRouteImport } from './routes/_auth/whatsapp-manager'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
+import { Route as AuthQuickRepliesRouteImport } from './routes/_auth/quick-replies'
 import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
 import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
 import { Route as AuthTeamMembersIndexRouteImport } from './routes/_auth/team-members/index'
@@ -130,6 +131,11 @@ const AuthWhatsappManagerRoute = AuthWhatsappManagerRouteImport.update({
 const AuthStatsRoute = AuthStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthQuickRepliesRoute = AuthQuickRepliesRouteImport.update({
+  id: '/quick-replies',
+  path: '/quick-replies',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthDashboardRoute = AuthDashboardRouteImport.update({
@@ -454,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/quick-replies': typeof AuthQuickRepliesRoute
   '/stats': typeof AuthStatsRouteWithChildren
   '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
@@ -523,6 +530,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/quick-replies': typeof AuthQuickRepliesRoute
   '/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -593,6 +601,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/quick-replies': typeof AuthQuickRepliesRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
   '/_auth/whatsapp-manager': typeof AuthWhatsappManagerRoute
   '/login_/email': typeof LoginEmailRoute
@@ -664,6 +673,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/dashboard'
+    | '/quick-replies'
     | '/stats'
     | '/whatsapp-manager'
     | '/login/email'
@@ -733,6 +743,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/dashboard'
+    | '/quick-replies'
     | '/whatsapp-manager'
     | '/login/email'
     | '/oauth/callback'
@@ -802,6 +813,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_auth/dashboard'
+    | '/_auth/quick-replies'
     | '/_auth/stats'
     | '/_auth/whatsapp-manager'
     | '/login_/email'
@@ -957,6 +969,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof AuthStatsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/quick-replies': {
+      id: '/_auth/quick-replies'
+      path: '/quick-replies'
+      fullPath: '/quick-replies'
+      preLoaderRoute: typeof AuthQuickRepliesRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/dashboard': {
@@ -1393,6 +1412,7 @@ const AuthTemplatesTemplateIdRouteWithChildren =
 
 interface AuthRouteChildren {
   AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthQuickRepliesRoute: typeof AuthQuickRepliesRoute
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
   AuthWhatsappManagerRoute: typeof AuthWhatsappManagerRoute
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
@@ -1448,6 +1468,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthDashboardRoute: AuthDashboardRoute,
+  AuthQuickRepliesRoute: AuthQuickRepliesRoute,
   AuthStatsRoute: AuthStatsRouteWithChildren,
   AuthWhatsappManagerRoute: AuthWhatsappManagerRoute,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
