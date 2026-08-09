@@ -1060,5 +1060,21 @@
   "Editar respuesta rápida": "Editar resposta rápida",
   "Nueva respuesta rápida": "Nova resposta rápida",
   "Usá hasta 30 caracteres: letras, números, guiones o guiones bajos.": "Use até 30 caracteres: letras, números, hífens ou sublinhados.",
-  "Escribí la respuesta reutilizable": "Escreva a resposta reutilizável"
+  "Escribí la respuesta reutilizable": "Escreva a resposta reutilizável",
+  "Detalles del cliente": "Detalhes do cliente",
+  "Los cambios se guardan en Contactos": "As alterações são salvas em Contatos",
+  "Cerrar detalles del cliente": "Fechar detalhes do cliente",
+  "Ver detalles del cliente": "Ver detalhes do cliente",
+  "No hay un contacto vinculado a esta conversación": "Não há contato vinculado a esta conversa",
+  "Contacto creado": "Contato criado",
+  "Última interacción": "Última interação",
+  "Sin actividad": "Sem atividade",
+  "Correo electrónico inválido": "Endereço de e-mail inválido",
+  "Empresa": "Empresa",
+  "Cargo": "Cargo",
+  "Ciudad": "Cidade",
+  "País": "País",
+  "Abrir contacto completo": "Abrir contato completo",
+  "Detalles del cliente actualizados": "Detalhes do cliente atualizados",
+  "No se pudieron guardar los detalles del cliente": "Não foi possível salvar os detalhes do cliente"
 }

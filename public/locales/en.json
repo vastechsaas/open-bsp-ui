@@ -1060,5 +1060,21 @@
   "Editar respuesta rápida": "Edit quick reply",
   "Nueva respuesta rápida": "New quick reply",
   "Usá hasta 30 caracteres: letras, números, guiones o guiones bajos.": "Use up to 30 characters: letters, numbers, hyphens, or underscores.",
-  "Escribí la respuesta reutilizable": "Write the reusable reply"
+  "Escribí la respuesta reutilizable": "Write the reusable reply",
+  "Detalles del cliente": "Customer details",
+  "Los cambios se guardan en Contactos": "Changes are saved in Contacts",
+  "Cerrar detalles del cliente": "Close customer details",
+  "Ver detalles del cliente": "View customer details",
+  "No hay un contacto vinculado a esta conversación": "There is no contact linked to this conversation",
+  "Contacto creado": "Contact created",
+  "Última interacción": "Last interaction",
+  "Sin actividad": "No activity",
+  "Correo electrónico inválido": "Invalid email address",
+  "Empresa": "Company",
+  "Cargo": "Job title",
+  "Ciudad": "City",
+  "País": "Country",
+  "Abrir contacto completo": "Open full contact",
+  "Detalles del cliente actualizados": "Customer details updated",
+  "No se pudieron guardar los detalles del cliente": "Customer details could not be saved"
 }

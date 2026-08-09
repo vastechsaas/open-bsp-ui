@@ -146,6 +146,15 @@ export const useRealtimeSubscription = () => {
         queryKey: queryKeys.quickReplies.all(activeOrgId),
       });
 
+    const refreshContacts = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.contacts.all(activeOrgId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [activeOrgId, "contacts_addresses"],
+      });
+    };
+
     let cancelled = false;
     let dataChannel: ReturnType<typeof supabase.channel> | undefined;
     let queueChannel: ReturnType<typeof supabase.channel> | undefined;
@@ -225,6 +234,18 @@ export const useRealtimeSubscription = () => {
           () => {
             void refreshQuickReplies();
           },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "contacts",
+            filter,
+          },
+          () => {
+            refreshContacts();
+          },
         );
 
       dataChannel = nextDataChannel;
@@ -236,6 +257,7 @@ export const useRealtimeSubscription = () => {
         if (dataSubscribed) {
           dataRetryAttempt = 0;
           void refreshQuickReplies();
+          refreshContacts();
           return;
         }
 
@@ -307,6 +329,7 @@ export const useRealtimeSubscription = () => {
 
       void refreshConversationQueues();
       void refreshQuickReplies();
+      refreshContacts();
       if (!dataSubscribed) startDataChannel();
       if (!queueSubscribed) void startQueueChannel();
     };

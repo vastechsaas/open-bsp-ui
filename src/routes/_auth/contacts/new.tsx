@@ -10,6 +10,10 @@ import { Plus, X } from "lucide-react";
 import type { ContactWithAddressesInsert } from "@/supabase/client";
 import { isValidPhoneNumber } from "@/utils/FormatUtils";
 import FieldError from "@/components/FieldError";
+import {
+  CUSTOMER_DETAILS_LIMITS,
+  isValidCustomerEmail,
+} from "@/utils/CustomerDetailsUtils";
 
 export const Route = createFileRoute("/_auth/contacts/new")({
   component: ContactNew,
@@ -61,6 +65,62 @@ function ContactNew() {
               className="text"
               placeholder={t("Nombre del contacto")}
               {...register("name")}
+            />
+          </label>
+
+          <label>
+            <div className="label">{t("Correo electrónico")}</div>
+            <input
+              type="email"
+              className="text"
+              maxLength={CUSTOMER_DETAILS_LIMITS.email}
+              placeholder="customer@example.com"
+              {...register("email", {
+                validate: (value) =>
+                  isValidCustomerEmail(value) ||
+                  t("Correo electrónico inválido"),
+              })}
+            />
+            <FieldError error={errors.email} />
+          </label>
+
+          <label>
+            <div className="label">{t("Empresa")}</div>
+            <input
+              type="text"
+              className="text"
+              maxLength={CUSTOMER_DETAILS_LIMITS.company}
+              {...register("company")}
+            />
+          </label>
+
+          <label>
+            <div className="label">{t("Cargo")}</div>
+            <input
+              type="text"
+              className="text"
+              maxLength={CUSTOMER_DETAILS_LIMITS.jobTitle}
+              {...register("job_title")}
+            />
+          </label>
+
+          <label>
+            <div className="label">{t("Ciudad")}</div>
+            <input
+              type="text"
+              className="text"
+              maxLength={CUSTOMER_DETAILS_LIMITS.city}
+              {...register("city")}
+            />
+          </label>
+
+          <label>
+            <div className="label">{t("País")}</div>
+            <input
+              type="text"
+              className="text"
+              maxLength={CUSTOMER_DETAILS_LIMITS.country}
+              {...register("country")}
             />
           </label>
 

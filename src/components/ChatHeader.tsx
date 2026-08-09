@@ -2,7 +2,7 @@ import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import Avatar from "./Avatar";
 import useBoundStore from "@/stores/useBoundStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ArrowLeft, Check, ChevronDown } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ContactRound } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
@@ -13,7 +13,13 @@ import AssignConversationButton from "./AssignConversationButton";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import ItemActions from "./ItemActions";
 
-export default function Header() {
+export default function Header({
+  customerDetailsOpen = false,
+  onToggleCustomerDetails,
+}: {
+  customerDetailsOpen?: boolean;
+  onToggleCustomerDetails?: () => void;
+}) {
   const navigate = useNavigate();
 
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
@@ -116,6 +122,22 @@ export default function Header() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        {onToggleCustomerDetails && (
+          <button
+            type="button"
+            onClick={onToggleCustomerDetails}
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+              customerDetailsOpen
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-muted/70 text-foreground hover:bg-accent"
+            }`}
+            title={t("Ver detalles del cliente")}
+            aria-label={t("Ver detalles del cliente")}
+            aria-expanded={customerDetailsOpen}
+          >
+            <ContactRound className="h-4 w-4" aria-hidden />
+          </button>
+        )}
         {isPendingAgent && (
           <AssignConversationButton
             conversationId={activeConvId}

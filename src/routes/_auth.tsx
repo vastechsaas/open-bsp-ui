@@ -33,6 +33,7 @@ import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
 import { isQuickRepliesWorkspacePath } from "@/utils/QuickReplyUtils";
+import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
   canAccessNavigation,
@@ -87,6 +88,7 @@ function AppLayout() {
     isQuickRepliesWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
+  const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
   const getMaxPanelWidth = useCallback(
     () => getResizablePanelMaxWidth(window.innerWidth, menuWidth),
     [menuWidth],
@@ -205,13 +207,31 @@ function AppLayout() {
             <StatsCenter />
           </div>
         ) : activeConvId ? (
-          <>
-            {isHoveringFiles && <FilePicker setHovering={setIsHoveringFiles} />}
-            <FilePreviewer />
-            <ChatHeader />
-            <Chat />
-            <ChatFooter />
-          </>
+          <div className="flex min-h-0 min-w-0 flex-1">
+            <div
+              className={`${
+                customerDetailsOpen ? "hidden md:flex" : "flex"
+              } min-h-0 min-w-0 flex-1 flex-col`}
+            >
+              {isHoveringFiles && (
+                <FilePicker setHovering={setIsHoveringFiles} />
+              )}
+              <FilePreviewer />
+              <ChatHeader
+                customerDetailsOpen={customerDetailsOpen}
+                onToggleCustomerDetails={() =>
+                  setCustomerDetailsOpen((open) => !open)
+                }
+              />
+              <Chat />
+              <ChatFooter />
+            </div>
+            {customerDetailsOpen && (
+              <CustomerDetailsPanel
+                onClose={() => setCustomerDetailsOpen(false)}
+              />
+            )}
+          </div>
         ) : (
           <div className="flex gap-[32px] items-center justify-center h-full">
             {!activeOrgId && (

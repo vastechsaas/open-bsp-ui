@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ContactAddressInsert,
+  type ContactUpdate,
   type ContactWithAddressesInsert,
   type ContactWithAddressesRow,
   type ContactWithAddressesUpdate,
@@ -10,6 +11,50 @@ import {
 import useBoundStore from "@/stores/useBoundStore";
 import { normalizePhoneNumber } from "@/utils/FormatUtils";
 import { queryKeys } from "./queryKeys";
+import { normalizeCustomerDetail } from "@/utils/CustomerDetailsUtils";
+
+export type CustomerDetailsUpdate = Pick<
+  ContactUpdate,
+  "id" | "name" | "email" | "company" | "job_title" | "city" | "country"
+> & { id: string };
+
+function invalidateContactQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  orgId: string | null,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.contacts.all(orgId),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: [orgId, "contacts_addresses"],
+  });
+}
+
+function normalizeStructuredContactDetails<T extends ContactUpdate>(data: T) {
+  return {
+    ...data,
+    ...(data.name !== undefined
+      ? { name: normalizeCustomerDetail(data.name) }
+      : {}),
+    ...(data.email !== undefined
+      ? {
+          email: normalizeCustomerDetail(data.email)?.toLowerCase() ?? null,
+        }
+      : {}),
+    ...(data.company !== undefined
+      ? { company: normalizeCustomerDetail(data.company) }
+      : {}),
+    ...(data.job_title !== undefined
+      ? { job_title: normalizeCustomerDetail(data.job_title) }
+      : {}),
+    ...(data.city !== undefined
+      ? { city: normalizeCustomerDetail(data.city) }
+      : {}),
+    ...(data.country !== undefined
+      ? { country: normalizeCustomerDetail(data.country) }
+      : {}),
+  };
+}
 
 export function useContactByAddress(address: string | null | undefined) {
   const userId = useBoundStore((state) => state.ui.user?.id);
@@ -95,6 +140,37 @@ export function useContact(id: string) {
   });
 }
 
+export function useLastCustomerInteraction(
+  conversationId: string | null | undefined,
+) {
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery({
+    queryKey: [
+      orgId,
+      "conversations",
+      conversationId,
+      "last_customer_interaction",
+    ],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("timestamp")
+        .eq("organization_id", orgId!)
+        .eq("conversation_id", conversationId!)
+        .in("direction", ["incoming", "outgoing"])
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .throwOnError();
+
+      return data?.timestamp ?? null;
+    },
+    enabled: !!userId && !!orgId && !!conversationId,
+  });
+}
+
 export function useCreateContact() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -104,11 +180,13 @@ export function useCreateContact() {
       if (!orgId) throw new Error("No active organization");
 
       const { addresses, ...contactData } = data;
+      const normalizedContactData =
+        normalizeStructuredContactDetails(contactData);
 
       // Create contact
       const { data: contact } = await supabase
         .from("contacts")
-        .insert({ ...contactData, organization_id: orgId })
+        .insert({ ...normalizedContactData, organization_id: orgId })
         .select()
         .single()
         .throwOnError();
@@ -141,9 +219,7 @@ export function useCreateContact() {
       return contact;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.contacts.all(orgId),
-      });
+      invalidateContactQueries(queryClient, orgId);
     },
   });
 }
@@ -158,10 +234,11 @@ export function useUpdateContact() {
       if (!data.id) throw new Error("No contact id");
 
       const { addresses: rawNewAddresses, ...newContact } = data;
+      const normalizedContact = normalizeStructuredContactDetails(newContact);
 
       const { data: contact } = await supabase
         .from("contacts")
-        .update(newContact)
+        .update(normalizedContact)
         .eq("id", data.id)
         .select()
         .single()
@@ -254,10 +331,40 @@ export function useUpdateContact() {
       return contact;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.contacts.all(orgId),
-      });
+      invalidateContactQueries(queryClient, orgId);
     },
+  });
+}
+
+export function useUpdateCustomerDetails() {
+  const queryClient = useQueryClient();
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useMutation({
+    mutationFn: async ({ id, ...details }: CustomerDetailsUpdate) => {
+      if (!orgId) throw new Error("No active organization");
+
+      const normalized = {
+        name: normalizeCustomerDetail(details.name),
+        email: normalizeCustomerDetail(details.email)?.toLowerCase() ?? null,
+        company: normalizeCustomerDetail(details.company),
+        job_title: normalizeCustomerDetail(details.job_title),
+        city: normalizeCustomerDetail(details.city),
+        country: normalizeCustomerDetail(details.country),
+      } satisfies ContactUpdate;
+
+      const { data } = await supabase
+        .from("contacts")
+        .update(normalized)
+        .eq("organization_id", orgId)
+        .eq("id", id)
+        .select()
+        .single()
+        .throwOnError();
+
+      return data;
+    },
+    onSuccess: () => invalidateContactQueries(queryClient, orgId),
   });
 }
 
@@ -272,9 +379,7 @@ export function useDeleteContact() {
       await supabase.from("contacts").delete().eq("id", id).throwOnError();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.contacts.all(orgId),
-      });
+      invalidateContactQueries(queryClient, orgId);
     },
   });
 }

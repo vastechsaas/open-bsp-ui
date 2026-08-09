@@ -1060,5 +1060,21 @@
   "Editar respuesta rápida": "Hariri jibu la haraka",
   "Nueva respuesta rápida": "Jibu jipya la haraka",
   "Usá hasta 30 caracteres: letras, números, guiones o guiones bajos.": "Tumia hadi herufi 30: herufi, nambari, vistari au mistari ya chini.",
-  "Escribí la respuesta reutilizable": "Andika jibu linaloweza kutumika tena"
+  "Escribí la respuesta reutilizable": "Andika jibu linaloweza kutumika tena",
+  "Detalles del cliente": "Maelezo ya mteja",
+  "Los cambios se guardan en Contactos": "Mabadiliko yanahifadhiwa kwenye Anwani",
+  "Cerrar detalles del cliente": "Funga maelezo ya mteja",
+  "Ver detalles del cliente": "Tazama maelezo ya mteja",
+  "No hay un contacto vinculado a esta conversación": "Hakuna anwani iliyounganishwa na mazungumzo haya",
+  "Contacto creado": "Anwani iliundwa",
+  "Última interacción": "Mwingiliano wa mwisho",
+  "Sin actividad": "Hakuna shughuli",
+  "Correo electrónico inválido": "Barua pepe si sahihi",
+  "Empresa": "Kampuni",
+  "Cargo": "Cheo cha kazi",
+  "Ciudad": "Jiji",
+  "País": "Nchi",
+  "Abrir contacto completo": "Fungua anwani kamili",
+  "Detalles del cliente actualizados": "Maelezo ya mteja yamesasishwa",
+  "No se pudieron guardar los detalles del cliente": "Maelezo ya mteja hayakuweza kuhifadhiwa"
 }
