@@ -105,6 +105,10 @@ void test("management uses backend pagination and authoritative mutation RPCs", 
   assert.match(routeSource, /maxLength=\{30\}/);
   assert.match(routeSource, /maxLength=\{1000\}/);
   assert.match(routeSource, /confirmDelete/);
+  assert.doesNotMatch(routeSource, /<Modal/);
+  assert.match(routeSource, /role="dialog"/);
+  assert.match(routeSource, /bg-background p-\[20px\] text-foreground/);
+  assert.match(routeSource, /placeholder:text-muted-foreground/);
 });
 
 void test("customer composer copies editable text without sending or exposing private notes", () => {
