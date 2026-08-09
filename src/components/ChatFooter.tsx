@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { MessageSquareText, Plus, StickyNote, X } from "lucide-react";
 import {
   newMessage,
@@ -19,6 +19,7 @@ import "dayjs/locale/es";
 import "dayjs/locale/pt";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useQuickReplyLibrary } from "@/queries/useQuickReplies";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
@@ -28,6 +29,10 @@ import {
   canComposePrivateNote,
   canSendCustomerReply,
 } from "@/utils/PrivateNoteUtils";
+import {
+  getQuickReplyKeyboardAction,
+  getQuickReplySuggestions,
+} from "@/utils/QuickReplyUtils";
 
 function TemplateVarInput({
   placeholder,
@@ -124,6 +129,15 @@ export default function ChatFooter() {
     agentId,
     conv?.assigned_agent_id,
   );
+  const { data: quickReplies = [] } = useQuickReplyLibrary();
+  const quickReplySuggestions = useMemo(
+    () => getQuickReplySuggestions(message || "", quickReplies),
+    [message, quickReplies],
+  );
+  const [selectedQuickReplyIndex, setSelectedQuickReplyIndex] = useState(0);
+  const [dismissedQuickReplyDraft, setDismissedQuickReplyDraft] = useState<
+    string | undefined
+  >();
 
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout>>();
 
@@ -154,6 +168,17 @@ export default function ChatFooter() {
   const inCSWindow =
     (conv?.service !== "whatsapp" && conv?.service !== "instagram") ||
     tick.isBefore(dayjs(mostRecentIncoming?.timestamp || 0).add(1, "day"));
+  const quickReplyPickerOpen =
+    inCSWindow &&
+    customerReplyAllowed &&
+    !templateDraftEntry?.template &&
+    !!message?.startsWith("/") &&
+    dismissedQuickReplyDraft !== message &&
+    quickReplySuggestions.length > 0;
+
+  useEffect(() => {
+    setSelectedQuickReplyIndex(0);
+  }, [message, quickReplySuggestions.length]);
 
   // WhatsApp customer service window lasts 24 hours since the last contact's message
   const remaining = tick
@@ -293,6 +318,27 @@ export default function ChatFooter() {
     if (editableDiv.current) {
       editableDiv.current.textContent = "";
     }
+  };
+
+  const selectQuickReply = (index: number) => {
+    const reply = quickReplySuggestions[index];
+    if (!reply || !activeConvId || !conv) return;
+
+    clearTimeout(timer);
+    setMessage(reply.content);
+    setDismissedQuickReplyDraft(reply.content);
+    setSelectedQuickReplyIndex(0);
+
+    if (conv.created_at !== conv.updated_at) {
+      debounce(() => saveDraft(conv, reply.content, sendAsContact), 3000);
+    }
+
+    requestAnimationFrame(() => {
+      if (!editableDiv.current) return;
+      editableDiv.current.textContent = reply.content;
+      editableDiv.current.focus();
+      moveCursorToEnd(editableDiv.current);
+    });
   };
 
   const sendTemplateMessage = async () => {
@@ -624,6 +670,37 @@ export default function ChatFooter() {
               renderTemplateBody()
             ) : (
               <>
+                {quickReplyPickerOpen && (
+                  <div
+                    role="listbox"
+                    aria-label={t("Respuestas rápidas")}
+                    className="absolute bottom-full left-0 right-0 z-30 mb-2 max-h-64 overflow-y-auto rounded-xl border border-border bg-background p-1 text-foreground shadow-xl"
+                  >
+                    {quickReplySuggestions.map((reply, index) => (
+                      <button
+                        key={reply.id}
+                        type="button"
+                        role="option"
+                        aria-selected={index === selectedQuickReplyIndex}
+                        className={`block w-full rounded-lg px-3 py-2 text-left ${
+                          index === selectedQuickReplyIndex
+                            ? "bg-accent"
+                            : "hover:bg-accent/70"
+                        }`}
+                        onMouseEnter={() => setSelectedQuickReplyIndex(index)}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectQuickReply(index)}
+                      >
+                        <span className="block text-[13px] font-semibold text-primary">
+                          {reply.shortcut}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
+                          {reply.content}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div
                   ref={editableDiv}
                   contentEditable={inCSWindow}
@@ -651,6 +728,35 @@ export default function ChatFooter() {
                     }
                   }}
                   onKeyDown={(event) => {
+                    if (
+                      quickReplyPickerOpen &&
+                      !event.ctrlKey &&
+                      !event.metaKey &&
+                      !event.shiftKey
+                    ) {
+                      const action = getQuickReplyKeyboardAction(
+                        event.key,
+                        selectedQuickReplyIndex,
+                        quickReplySuggestions.length,
+                      );
+
+                      if (action.type === "move") {
+                        event.preventDefault();
+                        setSelectedQuickReplyIndex(action.index);
+                        return;
+                      }
+                      if (action.type === "select") {
+                        event.preventDefault();
+                        selectQuickReply(action.index);
+                        return;
+                      }
+                      if (action.type === "close") {
+                        event.preventDefault();
+                        setDismissedQuickReplyDraft(message);
+                        return;
+                      }
+                    }
+
                     if (event.key === "Enter" && event.ctrlKey) {
                       // toggle("sendAsContact") is handled at window level, nonetheless this
                       // no-op block prevents from sending the message when pressing ctrl+enter

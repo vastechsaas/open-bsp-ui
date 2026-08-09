@@ -11,6 +11,7 @@ void test("Supervisor navigation contains only oversight workspaces", () => {
   assert.deepEqual(roleAccess.supervisor, [
     "dashboard",
     "conversations",
+    "quickReplies",
     "contacts",
     "teamMembers",
   ]);
@@ -37,6 +38,7 @@ void test("Supervisor route guard permits inbox oversight and denies management 
     "/dashboard",
     "/conversations",
     "/conversations/new",
+    "/quick-replies",
     "/contacts",
     "/contacts/contact-1",
     "/team-members",

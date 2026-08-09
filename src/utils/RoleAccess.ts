@@ -5,6 +5,7 @@ export type OrganizationRole = Database["public"]["Enums"]["role"];
 export type NavigationAccess =
   | "dashboard"
   | "conversations"
+  | "quickReplies"
   | "contacts"
   | "agents"
   | "campaigns"
@@ -19,6 +20,7 @@ export type NavigationAccess =
 const allNavigationAccess: readonly NavigationAccess[] = [
   "dashboard",
   "conversations",
+  "quickReplies",
   "contacts",
   "agents",
   "campaigns",
@@ -35,14 +37,21 @@ export const roleAccess: Record<OrganizationRole, readonly NavigationAccess[]> =
   {
     owner: allNavigationAccess,
     admin: allNavigationAccess,
-    member: allNavigationAccess,
-    supervisor: ["dashboard", "conversations", "contacts", "teamMembers"],
+    member: allNavigationAccess.filter((access) => access !== "quickReplies"),
+    supervisor: [
+      "dashboard",
+      "conversations",
+      "quickReplies",
+      "contacts",
+      "teamMembers",
+    ],
     agent: ["conversations", "contacts"],
   };
 
 const pathAccess: readonly [string, NavigationAccess][] = [
   ["/dashboard", "dashboard"],
   ["/conversations", "conversations"],
+  ["/quick-replies", "quickReplies"],
   ["/contacts", "contacts"],
   ["/agents", "agents"],
   ["/campaigns", "campaigns"],

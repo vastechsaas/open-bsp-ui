@@ -32,6 +32,7 @@ import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
 import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
 import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
+import { isQuickRepliesWorkspacePath } from "@/utils/QuickReplyUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
   canAccessNavigation,
@@ -82,7 +83,8 @@ function AppLayout() {
     isChatbotWorkspacePath(pathname) ||
     isTemplateWorkspacePath(pathname) ||
     isWhatsAppManagerWorkspacePath(pathname) ||
-    isTeamMembersWorkspacePath(pathname);
+    isTeamMembersWorkspacePath(pathname) ||
+    isQuickRepliesWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
   const getMaxPanelWidth = useCallback(
