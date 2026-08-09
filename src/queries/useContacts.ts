@@ -7,11 +7,54 @@ import {
   type ContactWithAddressesUpdate,
   supabase,
   type WhatsAppContactAddressExtra,
+  type Database,
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { normalizePhoneNumber } from "@/utils/FormatUtils";
 import { queryKeys } from "./queryKeys";
 import { normalizeCustomerDetail } from "@/utils/CustomerDetailsUtils";
+import type { DataTablePageParams } from "@/utils/DataTableUtils";
+
+export type ContactListRow =
+  Database["public"]["Functions"]["list_contacts_page"]["Returns"][number];
+
+export type ContactListAddress = {
+  service: "whatsapp" | "instagram" | "local";
+  address: string;
+  raw_address: string;
+  name?: string | null;
+  username?: string | null;
+};
+
+export function getContactListAddresses(contact: ContactListRow) {
+  return Array.isArray(contact.addresses)
+    ? (contact.addresses as ContactListAddress[])
+    : [];
+}
+
+export function useContactsPage(params: DataTablePageParams) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery({
+    queryKey: queryKeys.contacts.page(orgId, params),
+    queryFn: async () => {
+      const result = await supabase
+        .rpc("list_contacts_page", {
+          p_organization_id: orgId!,
+          p_page: params.page,
+          p_page_size: params.pageSize,
+          p_search: params.search || undefined,
+        })
+        .throwOnError();
+
+      return {
+        rows: result.data as ContactListRow[],
+        total: result.data[0]?.total_count || 0,
+      };
+    },
+    enabled: !!orgId,
+  });
+}
 
 export type CustomerDetailsUpdate = Pick<
   ContactUpdate,

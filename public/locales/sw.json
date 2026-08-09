@@ -1076,5 +1076,19 @@
   "País": "Nchi",
   "Abrir contacto completo": "Fungua anwani kamili",
   "Detalles del cliente actualizados": "Maelezo ya mteja yamesasishwa",
-  "No se pudieron guardar los detalles del cliente": "Maelezo ya mteja hayakuweza kuhifadhiwa"
+  "No se pudieron guardar los detalles del cliente": "Maelezo ya mteja hayakuweza kuhifadhiwa",
+  "Gestor de contactos": "Usimamizi wa anwani",
+  "Administrá los datos de los clientes de tu organización.": "Dhibiti taarifa za wateja wa shirika lako.",
+  "Buscar por nombre, canal o datos del cliente": "Tafuta kwa jina, kituo au maelezo ya mteja",
+  "Cliente": "Mteja",
+  "Canales": "Vituo",
+  "Empresa y cargo": "Kampuni na cheo",
+  "Ubicación": "Mahali",
+  "No se pudieron cargar los contactos": "Anwani hazikuweza kupakiwa",
+  "No hay contactos que coincidan con la búsqueda": "Hakuna anwani zinazolingana na utafutaji",
+  "Todavía no hay contactos": "Bado hakuna anwani",
+  "Probá con otro nombre, canal o dato del cliente.": "Jaribu jina, kituo au maelezo mengine ya mteja.",
+  "Agregá tu primer contacto para comenzar.": "Ongeza anwani yako ya kwanza ili kuanza.",
+  "Editar contacto": "Hariri anwani",
+  "contactos": "anwani"
 }

@@ -42,141 +42,143 @@ function ContactNew() {
   });
 
   return (
-    <>
-      <SectionHeader title={t("Nuevo contacto")} />
+    <div className="h-full min-h-0 bg-muted/30 p-[12px] text-foreground md:p-[24px]">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+        <SectionHeader title={t("Nuevo contacto")} />
 
-      <SectionBody>
-        <form
-          id="contact-form"
-          onSubmit={handleSubmit((data) =>
-            createContact.mutate(data, {
-              onSuccess: (contact) =>
-                navigate({
-                  to: `/contacts/${contact.id}`,
-                  hash: (prevHash) => prevHash!,
-                }),
-            }),
-          )}
-        >
-          <label>
-            <div className="label">{t("Nombre")}</div>
-            <input
-              type="text"
-              className="text"
-              placeholder={t("Nombre del contacto")}
-              {...register("name")}
-            />
-          </label>
-
-          <label>
-            <div className="label">{t("Correo electrónico")}</div>
-            <input
-              type="email"
-              className="text"
-              maxLength={CUSTOMER_DETAILS_LIMITS.email}
-              placeholder="customer@example.com"
-              {...register("email", {
-                validate: (value) =>
-                  isValidCustomerEmail(value) ||
-                  t("Correo electrónico inválido"),
-              })}
-            />
-            <FieldError error={errors.email} />
-          </label>
-
-          <label>
-            <div className="label">{t("Empresa")}</div>
-            <input
-              type="text"
-              className="text"
-              maxLength={CUSTOMER_DETAILS_LIMITS.company}
-              {...register("company")}
-            />
-          </label>
-
-          <label>
-            <div className="label">{t("Cargo")}</div>
-            <input
-              type="text"
-              className="text"
-              maxLength={CUSTOMER_DETAILS_LIMITS.jobTitle}
-              {...register("job_title")}
-            />
-          </label>
-
-          <label>
-            <div className="label">{t("Ciudad")}</div>
-            <input
-              type="text"
-              className="text"
-              maxLength={CUSTOMER_DETAILS_LIMITS.city}
-              {...register("city")}
-            />
-          </label>
-
-          <label>
-            <div className="label">{t("País")}</div>
-            <input
-              type="text"
-              className="text"
-              maxLength={CUSTOMER_DETAILS_LIMITS.country}
-              {...register("country")}
-            />
-          </label>
-
-          {fields.map((field, idx) => (
-            <label key={field.id}>
-              <div className="label">
-                {t("Teléfono")} {idx + 1}
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="tel"
-                  className={`text ${errors.addresses?.[idx]?.address ? "border-destructive" : ""}`}
-                  placeholder={t("+54 9 11 1234 5678")}
-                  {...register(`addresses.${idx}.address`, {
-                    validate: (value) =>
-                      !value ||
-                      isValidPhoneNumber(value) ||
-                      t("Número inválido"),
-                  })}
-                />
-                <button
-                  type="button"
-                  className="p-[8px] rounded-full hover:bg-muted transition-colors"
-                  onClick={() => remove(idx)}
-                  title={t("Eliminar")}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <FieldError error={errors.addresses?.[idx]?.address} />
-            </label>
-          ))}
-
-          {/* Add phone number button */}
-          <button
-            type="button"
-            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-full font-medium transition-colors w-fit text-[14px] flex items-center gap-2"
-            onClick={() => append({ address: "" })}
+        <SectionBody>
+          <form
+            id="contact-form"
+            onSubmit={handleSubmit((data) =>
+              createContact.mutate(data, {
+                onSuccess: (contact) =>
+                  navigate({
+                    to: `/contacts/${contact.id}`,
+                    hash: (prevHash) => prevHash!,
+                  }),
+              }),
+            )}
           >
-            <Plus className="w-4 h-4" />
-            {t("Agregar teléfono")}
-          </button>
-        </form>
-      </SectionBody>
+            <label>
+              <div className="label">{t("Nombre")}</div>
+              <input
+                type="text"
+                className="text"
+                placeholder={t("Nombre del contacto")}
+                {...register("name")}
+              />
+            </label>
 
-      <SectionFooter>
-        <Button
-          form="contact-form"
-          type="submit"
-          invalid={!isValid || !isDirty}
-          loading={createContact.isPending}
-          className="primary"
-        >
-          {t("Crear")}
-        </Button>
-      </SectionFooter>
-    </>
+            <label>
+              <div className="label">{t("Correo electrónico")}</div>
+              <input
+                type="email"
+                className="text"
+                maxLength={CUSTOMER_DETAILS_LIMITS.email}
+                placeholder="customer@example.com"
+                {...register("email", {
+                  validate: (value) =>
+                    isValidCustomerEmail(value) ||
+                    t("Correo electrónico inválido"),
+                })}
+              />
+              <FieldError error={errors.email} />
+            </label>
+
+            <label>
+              <div className="label">{t("Empresa")}</div>
+              <input
+                type="text"
+                className="text"
+                maxLength={CUSTOMER_DETAILS_LIMITS.company}
+                {...register("company")}
+              />
+            </label>
+
+            <label>
+              <div className="label">{t("Cargo")}</div>
+              <input
+                type="text"
+                className="text"
+                maxLength={CUSTOMER_DETAILS_LIMITS.jobTitle}
+                {...register("job_title")}
+              />
+            </label>
+
+            <label>
+              <div className="label">{t("Ciudad")}</div>
+              <input
+                type="text"
+                className="text"
+                maxLength={CUSTOMER_DETAILS_LIMITS.city}
+                {...register("city")}
+              />
+            </label>
+
+            <label>
+              <div className="label">{t("País")}</div>
+              <input
+                type="text"
+                className="text"
+                maxLength={CUSTOMER_DETAILS_LIMITS.country}
+                {...register("country")}
+              />
+            </label>
+
+            {fields.map((field, idx) => (
+              <label key={field.id}>
+                <div className="label">
+                  {t("Teléfono")} {idx + 1}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    className={`text ${errors.addresses?.[idx]?.address ? "border-destructive" : ""}`}
+                    placeholder={t("+54 9 11 1234 5678")}
+                    {...register(`addresses.${idx}.address`, {
+                      validate: (value) =>
+                        !value ||
+                        isValidPhoneNumber(value) ||
+                        t("Número inválido"),
+                    })}
+                  />
+                  <button
+                    type="button"
+                    className="p-[8px] rounded-full hover:bg-muted transition-colors"
+                    onClick={() => remove(idx)}
+                    title={t("Eliminar")}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <FieldError error={errors.addresses?.[idx]?.address} />
+              </label>
+            ))}
+
+            {/* Add phone number button */}
+            <button
+              type="button"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-full font-medium transition-colors w-fit text-[14px] flex items-center gap-2"
+              onClick={() => append({ address: "" })}
+            >
+              <Plus className="w-4 h-4" />
+              {t("Agregar teléfono")}
+            </button>
+          </form>
+        </SectionBody>
+
+        <SectionFooter>
+          <Button
+            form="contact-form"
+            type="submit"
+            invalid={!isValid || !isDirty}
+            loading={createContact.isPending}
+            className="primary"
+          >
+            {t("Crear")}
+          </Button>
+        </SectionFooter>
+      </div>
+    </div>
   );
 }

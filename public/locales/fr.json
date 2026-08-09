@@ -1076,5 +1076,19 @@
   "País": "Pays",
   "Abrir contacto completo": "Ouvrir la fiche complète",
   "Detalles del cliente actualizados": "Détails du client mis à jour",
-  "No se pudieron guardar los detalles del cliente": "Impossible d'enregistrer les détails du client"
+  "No se pudieron guardar los detalles del cliente": "Impossible d'enregistrer les détails du client",
+  "Gestor de contactos": "Gestionnaire de contacts",
+  "Administrá los datos de los clientes de tu organización.": "Gérez les informations clients de votre organisation.",
+  "Buscar por nombre, canal o datos del cliente": "Rechercher par nom, canal ou informations client",
+  "Cliente": "Client",
+  "Canales": "Canaux",
+  "Empresa y cargo": "Entreprise et fonction",
+  "Ubicación": "Localisation",
+  "No se pudieron cargar los contactos": "Impossible de charger les contacts",
+  "No hay contactos que coincidan con la búsqueda": "Aucun contact ne correspond à la recherche",
+  "Todavía no hay contactos": "Il n'y a pas encore de contacts",
+  "Probá con otro nombre, canal o dato del cliente.": "Essayez un autre nom, canal ou détail client.",
+  "Agregá tu primer contacto para comenzar.": "Ajoutez votre premier contact pour commencer.",
+  "Editar contacto": "Modifier le contact",
+  "contactos": "contacts"
 }

@@ -1076,5 +1076,19 @@
   "País": "Country",
   "Abrir contacto completo": "Open full contact",
   "Detalles del cliente actualizados": "Customer details updated",
-  "No se pudieron guardar los detalles del cliente": "Customer details could not be saved"
+  "No se pudieron guardar los detalles del cliente": "Customer details could not be saved",
+  "Gestor de contactos": "Contact Manager",
+  "Administrá los datos de los clientes de tu organización.": "Manage your organization's customer information.",
+  "Buscar por nombre, canal o datos del cliente": "Search by name, channel, or customer details",
+  "Cliente": "Customer",
+  "Canales": "Channels",
+  "Empresa y cargo": "Company and job title",
+  "Ubicación": "Location",
+  "No se pudieron cargar los contactos": "Contacts could not be loaded",
+  "No hay contactos que coincidan con la búsqueda": "No contacts match the search",
+  "Todavía no hay contactos": "There are no contacts yet",
+  "Probá con otro nombre, canal o dato del cliente.": "Try another name, channel, or customer detail.",
+  "Agregá tu primer contacto para comenzar.": "Add your first contact to get started.",
+  "Editar contacto": "Edit contact",
+  "contactos": "contacts"
 }

@@ -8,6 +8,7 @@ import {
   isValidCustomerEmail,
   normalizeCustomerDetail,
 } from "../src/utils/CustomerDetailsUtils.ts";
+import { isContactManagerWorkspacePath } from "../src/utils/ContactManagerUtils.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const readSource = (path: string) => readFileSync(`${root}/${path}`, "utf8");
@@ -78,6 +79,44 @@ void test("the full Contact Manager forms expose the same structured fields", ()
     const source = readSource(path);
     for (const field of ["email", "company", "job_title", "city", "country"]) {
       assert.match(source, new RegExp(`register\\("${field}"`));
+    }
+  }
+});
+
+void test("Contact Manager uses the shared backend-paginated workspace pattern", () => {
+  const route = readSource("src/routes/_auth/contacts/index.tsx");
+  const queries = readSource("src/queries/useContacts.ts");
+  const layout = readSource("src/routes/_auth.tsx");
+
+  assert.equal(isContactManagerWorkspacePath("/contacts"), true);
+  assert.equal(isContactManagerWorkspacePath("/contacts/new"), true);
+  assert.equal(isContactManagerWorkspacePath("/conversations"), false);
+  assert.match(route, /useContactsPage/);
+  assert.match(route, /DataTablePagination/);
+  assert.match(route, /hidden overflow-x-auto lg:block/);
+  assert.match(route, /divide-y divide-border lg:hidden/);
+  assert.doesNotMatch(route, /Fuse|contacts\.slice\(/);
+  assert.match(queries, /rpc\("list_contacts_page"/);
+  assert.match(layout, /isContactManagerWorkspacePath/);
+});
+
+void test("Contact Manager labels exist in every supported locale", () => {
+  const labels = [
+    "Gestor de contactos",
+    "Buscar por nombre, canal o datos del cliente",
+    "Cliente",
+    "Canales",
+    "Empresa y cargo",
+    "Ubicación",
+    "Editar contacto",
+  ];
+
+  for (const locale of ["en", "pt", "fr", "sw"]) {
+    const translations = JSON.parse(
+      readSource(`public/locales/${locale}.json`),
+    ) as Record<string, string>;
+    for (const label of labels) {
+      assert.ok(translations[label], `${locale} is missing ${label}`);
     }
   }
 });
