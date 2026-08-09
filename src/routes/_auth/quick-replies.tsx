@@ -1,7 +1,14 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Modal, message as toast } from "antd";
-import { MessageSquareReply, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { message as toast } from "antd";
+import {
+  MessageSquareReply,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import DataTablePagination from "@/components/DataTablePagination";
 import Spinner from "@/components/Spinner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -221,27 +228,37 @@ function QuickRepliesWorkspace() {
         />
       )}
 
-      <Modal
-        open={dialog?.type === "delete"}
-        title={t("Eliminar respuesta rápida")}
-        okText={t("Eliminar")}
-        cancelText={t("Cancelar")}
-        okButtonProps={{ danger: true }}
-        confirmLoading={deleteReply.isPending}
-        onCancel={() => setDialog(null)}
-        onOk={() =>
-          dialog?.type === "delete"
-            ? confirmDelete(dialog.reply)
-            : Promise.resolve()
-        }
-      >
-        <p>{t("Esta acción no se puede deshacer.")}</p>
-        {dialog?.type === "delete" && (
+      {dialog?.type === "delete" && (
+        <QuickReplyDialogShell
+          title={t("Eliminar respuesta rápida")}
+          onClose={() => setDialog(null)}
+        >
+          <p className="text-[14px] text-muted-foreground">
+            {t("Esta acción no se puede deshacer.")}
+          </p>
           <p className="mt-2 font-semibold text-primary">
             {dialog.reply.shortcut}
           </p>
-        )}
-      </Modal>
+          <div className="mt-[24px] flex justify-end gap-[10px]">
+            <button
+              type="button"
+              className="rounded-lg border border-border px-[16px] py-[9px] text-[13px] text-foreground hover:bg-muted"
+              disabled={deleteReply.isPending}
+              onClick={() => setDialog(null)}
+            >
+              {t("Cancelar")}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg bg-destructive px-[16px] py-[9px] text-[13px] text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={deleteReply.isPending}
+              onClick={() => void confirmDelete(dialog.reply)}
+            >
+              {deleteReply.isPending ? t("Cargando...") : t("Eliminar")}
+            </button>
+          </div>
+        </QuickReplyDialogShell>
+      )}
     </div>
   );
 }
@@ -313,15 +330,9 @@ function QuickReplyEditor({
   };
 
   return (
-    <Modal
-      open
+    <QuickReplyDialogShell
       title={reply ? t("Editar respuesta rápida") : t("Nueva respuesta rápida")}
-      okText={reply ? t("Guardar") : t("Crear")}
-      cancelText={t("Cancelar")}
-      confirmLoading={saving}
-      okButtonProps={{ disabled: !validation.valid }}
-      onCancel={onClose}
-      onOk={() => save()}
+      onClose={onClose}
     >
       <form className="space-y-4 pt-2" onSubmit={save}>
         <label className="block">
@@ -330,7 +341,7 @@ function QuickReplyEditor({
           </span>
           <input
             autoFocus
-            className="h-[40px] w-full rounded-lg border border-input bg-background px-[12px] text-[14px] outline-none focus:border-primary"
+            className="h-[42px] w-full rounded-lg border border-input bg-background px-[12px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
             value={shortcut}
             maxLength={30}
             placeholder="/welcome"
@@ -349,7 +360,7 @@ function QuickReplyEditor({
             {t("Respuesta")}
           </span>
           <textarea
-            className="min-h-[140px] w-full resize-y rounded-lg border border-input bg-background px-[12px] py-[10px] text-[14px] outline-none focus:border-primary"
+            className="min-h-[160px] w-full resize-y rounded-lg border border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
             value={content}
             maxLength={1000}
             placeholder={t("Escribí la respuesta reutilizable")}
@@ -359,8 +370,75 @@ function QuickReplyEditor({
             {content.length} / 1000
           </span>
         </label>
+        <div className="flex justify-end gap-[10px] pt-[6px]">
+          <button
+            type="button"
+            className="rounded-lg border border-border px-[16px] py-[9px] text-[13px] text-foreground hover:bg-muted"
+            disabled={saving}
+            onClick={onClose}
+          >
+            {t("Cancelar")}
+          </button>
+          <button
+            type="submit"
+            className="rounded-lg bg-primary px-[16px] py-[9px] text-[13px] text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!validation.valid || saving}
+          >
+            {saving ? t("Cargando...") : reply ? t("Guardar") : t("Crear")}
+          </button>
+        </div>
       </form>
-    </Modal>
+    </QuickReplyDialogShell>
+  );
+}
+
+function QuickReplyDialogShell({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  const { translate: t } = useTranslation();
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-[16px]"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="max-h-[calc(100vh-32px)] w-full max-w-[620px] overflow-y-auto rounded-xl border border-border bg-background p-[20px] text-foreground shadow-2xl"
+      >
+        <div className="mb-[18px] flex items-center gap-[12px]">
+          <h2 className="text-[18px] font-semibold">{title}</h2>
+          <button
+            type="button"
+            className="ml-auto rounded-lg p-[7px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={t("Cerrar")}
+            onClick={onClose}
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+        {children}
+      </section>
+    </div>
   );
 }
 
