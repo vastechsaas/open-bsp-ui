@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { getPrivateNoteTransferTarget } from "../src/utils/PrivateNoteUtils.ts";
-import { toConversationStateSignal } from "../src/utils/ConversationRealtimeUtils.ts";
+import {
+  getInaccessibleConversationIds,
+  getRealtimeRetryDelayMs,
+  shouldRetryRealtimeStatus,
+  toConversationStateSignal,
+} from "../src/utils/ConversationRealtimeUtils.ts";
 
 function readSource(path: string) {
   return readFileSync(new URL(path, import.meta.url), "utf8");
@@ -103,9 +108,39 @@ void test("every open client securely reconciles assignment changes", () => {
   assert.match(realtime, /config: \{ private: true \}/);
   assert.match(realtime, /conversation_state_changed/);
   assert.match(realtime, /\.maybeSingle\(\)/);
+  assert.match(realtime, /\.eq\("conversation_id", conversationId\)/);
+  assert.match(realtime, /pushMessages\(messages as MessageRow\[\]\)/);
+  assert.match(realtime, /subscribe\(\(status\) =>/);
+  assert.match(realtime, /refreshConversationQueues/);
+  assert.match(realtime, /window\.addEventListener\("online"/);
+  assert.match(realtime, /document\.addEventListener\("visibilitychange"/);
   assert.match(realtime, /removeConversations\(\[conversationId\]\)/);
   assert.match(chatSlice, /activeConvId: null/);
   assert.match(chatSlice, /messages\.delete\(conversationId\)/);
+});
+
+void test("realtime failures retry with capped backoff", () => {
+  assert.equal(shouldRetryRealtimeStatus("SUBSCRIBED"), false);
+  assert.equal(shouldRetryRealtimeStatus("CHANNEL_ERROR"), true);
+  assert.equal(shouldRetryRealtimeStatus("TIMED_OUT"), true);
+  assert.equal(shouldRetryRealtimeStatus("CLOSED"), true);
+  assert.deepEqual(
+    [0, 1, 2, 3, 4, 99].map(getRealtimeRetryDelayMs),
+    [1_000, 2_000, 5_000, 10_000, 10_000, 10_000],
+  );
+});
+
+void test("authoritative recovery removes only inaccessible conversations in the active organization", () => {
+  const cached = [
+    { id: "still-visible", organization_id: "org-1" },
+    { id: "transferred-away", organization_id: "org-1" },
+    { id: "other-org", organization_id: "org-2" },
+  ];
+
+  assert.deepEqual(
+    getInaccessibleConversationIds(cached, new Set(["still-visible"]), "org-1"),
+    ["transferred-away"],
+  );
 });
 
 void test("structured transfer notes render the people and keep the explanation", () => {
