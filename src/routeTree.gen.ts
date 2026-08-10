@@ -11,10 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlatformIndexRouteImport } from './routes/platform/index'
+import { Route as PlatformOrganizationIdRouteImport } from './routes/platform/$organizationId'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
@@ -89,6 +92,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -107,6 +115,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformIndexRoute = PlatformIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformOrganizationIdRoute = PlatformOrganizationIdRouteImport.update({
+  id: '/$organizationId',
+  path: '/$organizationId',
+  getParentRoute: () => PlatformRoute,
 } as any)
 const OauthInstagramRoute = OauthInstagramRouteImport.update({
   id: '/oauth/instagram',
@@ -457,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
+  '/platform': typeof PlatformRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthDashboardRoute
@@ -466,6 +485,8 @@ export interface FileRoutesByFullPath {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
+  '/platform/': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
   '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
@@ -535,6 +556,8 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
+  '/platform': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
   '/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
@@ -598,6 +621,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/data-deletion': typeof DataDeletionRoute
   '/login': typeof LoginRoute
+  '/platform': typeof PlatformRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
@@ -607,6 +631,8 @@ export interface FileRoutesById {
   '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
+  '/platform/': typeof PlatformIndexRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
   '/_auth/campaigns/$campaignId': typeof AuthCampaignsCampaignIdRoute
@@ -670,6 +696,7 @@ export interface FileRouteTypes {
     | '/'
     | '/data-deletion'
     | '/login'
+    | '/platform'
     | '/privacy'
     | '/terms'
     | '/dashboard'
@@ -679,6 +706,8 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/$organizationId'
+    | '/platform/'
     | '/agents/$agentId'
     | '/agents/new'
     | '/campaigns/$campaignId'
@@ -748,6 +777,8 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/$organizationId'
+    | '/platform'
     | '/agents/$agentId'
     | '/agents/new'
     | '/campaigns/$campaignId'
@@ -810,6 +841,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/data-deletion'
     | '/login'
+    | '/platform'
     | '/privacy'
     | '/terms'
     | '/_auth/dashboard'
@@ -819,6 +851,8 @@ export interface FileRouteTypes {
     | '/login_/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/$organizationId'
+    | '/platform/'
     | '/_auth/agents/$agentId'
     | '/_auth/agents/new'
     | '/_auth/campaigns/$campaignId'
@@ -882,6 +916,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   DataDeletionRoute: typeof DataDeletionRoute
   LoginRoute: typeof LoginRoute
+  PlatformRoute: typeof PlatformRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   LoginEmailRoute: typeof LoginEmailRoute
@@ -906,6 +941,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -935,6 +977,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/platform/': {
+      id: '/platform/'
+      path: '/'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof PlatformIndexRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/$organizationId': {
+      id: '/platform/$organizationId'
+      path: '/$organizationId'
+      fullPath: '/platform/$organizationId'
+      preLoaderRoute: typeof PlatformOrganizationIdRouteImport
+      parentRoute: typeof PlatformRoute
     }
     '/oauth/instagram': {
       id: '/oauth/instagram'
@@ -1537,11 +1593,26 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PlatformRouteChildren {
+  PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRoute
+  PlatformIndexRoute: typeof PlatformIndexRoute
+}
+
+const PlatformRouteChildren: PlatformRouteChildren = {
+  PlatformOrganizationIdRoute: PlatformOrganizationIdRoute,
+  PlatformIndexRoute: PlatformIndexRoute,
+}
+
+const PlatformRouteWithChildren = PlatformRoute._addFileChildren(
+  PlatformRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   DataDeletionRoute: DataDeletionRoute,
   LoginRoute: LoginRoute,
+  PlatformRoute: PlatformRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   LoginEmailRoute: LoginEmailRoute,
