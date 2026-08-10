@@ -116,8 +116,12 @@ void test("Contact Manager labels exist in every supported locale", () => {
     "Editar contacto",
     "Eliminar contacto",
     "Detalles del contacto",
-    "NÃºmeros de telÃ©fono",
+    "Información principal y ubicación del cliente.",
+    "Números de teléfono",
+    "Agregá uno o más números de WhatsApp.",
     "Contacto eliminado",
+    "No se pudo eliminar el contacto",
+    "¿Querés eliminar a {{name}}?",
   ];
 
   for (const locale of ["en", "pt", "fr", "sw"]) {

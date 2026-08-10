@@ -1124,11 +1124,11 @@
   "Información de la organización": "Organization information",
   "Creado": "Created",
   "Detalles del contacto": "Contact details",
-  "InformaciÃ³n principal y ubicaciÃ³n del cliente.": "Primary customer information and location.",
-  "NÃºmeros de telÃ©fono": "Phone numbers",
-  "AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.": "Add one or more WhatsApp numbers.",
+  "Información principal y ubicación del cliente.": "Primary customer information and location.",
+  "Números de teléfono": "Phone numbers",
+  "Agregá uno o más números de WhatsApp.": "Add one or more WhatsApp numbers.",
   "Contacto eliminado": "Contact deleted",
   "No se pudo eliminar el contacto": "The contact could not be deleted",
   "Eliminar contacto": "Delete contact",
-  "Â¿QuerÃ©s eliminar a {{name}}?": "Do you want to delete {{name}}?"
+  "¿Querés eliminar a {{name}}?": "Do you want to delete {{name}}?"
 }
