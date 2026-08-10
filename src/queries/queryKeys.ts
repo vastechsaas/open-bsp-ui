@@ -103,4 +103,18 @@ export const queryKeys = {
     page: (orgId: NullableId, params: object) =>
       [orgId, "members", "page", params] as const,
   },
+  platform: {
+    root: () => ["platform"] as const,
+    access: (
+      scope: "global" | "tenant",
+      organizationId: NullableId,
+      requestId: string,
+    ) => ["platform", "access", scope, organizationId, requestId] as const,
+    authorization: () => ["platform", "authorization"] as const,
+    overview: () => ["platform", "overview"] as const,
+    organizations: (params: object) =>
+      ["platform", "organizations", params] as const,
+    tenant: (organizationId: NullableId) =>
+      ["platform", "tenant", organizationId] as const,
+  },
 };

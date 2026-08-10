@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useInitialDataFetch } from "@/hooks/useInitalDataFetch";
@@ -6,14 +6,26 @@ import useBoundStore from "@/stores/useBoundStore";
 import { redirect } from "@tanstack/react-router";
 import { supabase } from "@/supabase/client";
 import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
+import { resolveAuthenticatedHome } from "@/queries/usePlatformAdmin";
+import { isPlatformPath } from "@/utils/PlatformAdminUtils";
 
-function RootLayout() {
-  useAuth();
+function TenantRuntime() {
   useSetActiveOrg();
   useRealtimeSubscription();
   useInitialDataFetch();
+  return null;
+}
 
-  return <Outlet />;
+function RootLayout() {
+  useAuth();
+  const location = useLocation();
+
+  return (
+    <>
+      {!isPlatformPath(location.pathname) && <TenantRuntime />}
+      <Outlet />
+    </>
+  );
 }
 
 const ALWAYS_PUBLIC_PATH_PREFIXES = [
@@ -44,13 +56,13 @@ export const Route = createRootRoute({
 
     if (user && location.pathname.startsWith("/login")) {
       throw redirect({
-        to: search.redirect || "/dashboard",
+        to: search.redirect || (await resolveAuthenticatedHome()),
       });
     }
 
     if (user && isLandingPage) {
       throw redirect({
-        to: "/dashboard",
+        to: await resolveAuthenticatedHome(),
       });
     }
 

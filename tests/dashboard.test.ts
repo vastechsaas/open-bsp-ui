@@ -55,7 +55,7 @@ void test("dashboard metrics JSON is normalized defensively", () => {
   assert.deepEqual(parseContactActivity(null), []);
 });
 
-void test("sign-in, authenticated home, and organization switch target dashboard", () => {
+void test("sign-in resolves platform access while organization switches target dashboard", () => {
   const rootRoute = readFileSync(
     new URL("../src/routes/__root.tsx", import.meta.url),
     "utf8",
@@ -69,9 +69,18 @@ void test("sign-in, authenticated home, and organization switch target dashboard
     "utf8",
   );
 
-  assert.match(rootRoute, /search\.redirect \|\| "\/dashboard"/);
-  assert.match(rootRoute, /isLandingPage[\s\S]*?to: "\/dashboard"/);
-  assert.match(loginRoute, /redirect \|\| "\/dashboard"/);
+  assert.match(
+    rootRoute,
+    /search\.redirect \|\|\s*\(await resolveAuthenticatedHome\(\)\)/,
+  );
+  assert.match(
+    rootRoute,
+    /isLandingPage[\s\S]*?to: await resolveAuthenticatedHome\(\)/,
+  );
+  assert.match(
+    loginRoute,
+    /redirect \|\|\s*\(await resolveAuthenticatedHome\(\)\)/,
+  );
   assert.match(
     menu,
     /setActiveOrg\(organization\.id\);\s*void navigate\(\{ to: "\/dashboard" \}\)/,
