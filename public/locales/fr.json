@@ -1122,5 +1122,13 @@
   "Nivel": "Niveau",
   "Sin nivel": "Aucun niveau",
   "Información de la organización": "Informations sur l’organisation",
-  "Creado": "Créé"
+  "Creado": "Créé",
+  "Detalles del contacto": "DÃ©tails du contact",
+  "InformaciÃ³n principal y ubicaciÃ³n del cliente.": "Informations principales et localisation du client.",
+  "NÃºmeros de telÃ©fono": "NumÃ©ros de tÃ©lÃ©phone",
+  "AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.": "Ajoutez un ou plusieurs numÃ©ros WhatsApp.",
+  "Contacto eliminado": "Contact supprimÃ©",
+  "No se pudo eliminar el contacto": "Le contact n'a pas pu Ãªtre supprimÃ©",
+  "Eliminar contacto": "Supprimer le contact",
+  "Â¿QuerÃ©s eliminar a {{name}}?": "Voulez-vous supprimer {{name}} ?"
 }

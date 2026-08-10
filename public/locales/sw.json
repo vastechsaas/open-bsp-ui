@@ -1122,5 +1122,13 @@
   "Nivel": "Kiwango",
   "Sin nivel": "Hakuna kiwango",
   "Información de la organización": "Taarifa za shirika",
-  "Creado": "Imeundwa"
+  "Creado": "Imeundwa",
+  "Detalles del contacto": "Maelezo ya mwasiliani",
+  "InformaciÃ³n principal y ubicaciÃ³n del cliente.": "Taarifa kuu na eneo la mteja.",
+  "NÃºmeros de telÃ©fono": "Namba za simu",
+  "AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.": "Ongeza namba moja au zaidi za WhatsApp.",
+  "Contacto eliminado": "Mwasiliani amefutwa",
+  "No se pudo eliminar el contacto": "Mwasiliani hakuweza kufutwa",
+  "Eliminar contacto": "Futa mwasiliani",
+  "Â¿QuerÃ©s eliminar a {{name}}?": "Unataka kufuta {{name}}?"
 }

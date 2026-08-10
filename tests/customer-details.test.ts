@@ -85,6 +85,7 @@ void test("the full Contact Manager forms expose the same structured fields", ()
 
 void test("Contact Manager uses the shared backend-paginated workspace pattern", () => {
   const route = readSource("src/routes/_auth/contacts/index.tsx");
+  const detailRoute = readSource("src/routes/_auth/contacts/$contactId.tsx");
   const queries = readSource("src/queries/useContacts.ts");
   const layout = readSource("src/routes/_auth.tsx");
 
@@ -96,6 +97,10 @@ void test("Contact Manager uses the shared backend-paginated workspace pattern",
   assert.match(route, /hidden overflow-x-auto lg:block/);
   assert.match(route, /divide-y divide-border lg:hidden/);
   assert.doesNotMatch(route, /Fuse|contacts\.slice\(/);
+  assert.match(route, /useDeleteContact/);
+  assert.match(route, /ContactActions/);
+  assert.match(route, /Trash2/);
+  assert.doesNotMatch(detailRoute, /useDeleteContact|Trash2|onDelete/);
   assert.match(queries, /rpc\("list_contacts_page"/);
   assert.match(layout, /isContactManagerWorkspacePath/);
 });
@@ -109,6 +114,10 @@ void test("Contact Manager labels exist in every supported locale", () => {
     "Empresa y cargo",
     "Ubicación",
     "Editar contacto",
+    "Eliminar contacto",
+    "Detalles del contacto",
+    "NÃºmeros de telÃ©fono",
+    "Contacto eliminado",
   ];
 
   for (const locale of ["en", "pt", "fr", "sw"]) {
