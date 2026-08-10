@@ -1090,5 +1090,13 @@
   "Probá con otro nombre, canal o dato del cliente.": "Try another name, channel, or customer detail.",
   "Agregá tu primer contacto para comenzar.": "Add your first contact to get started.",
   "Editar contacto": "Edit contact",
-  "contactos": "contacts"
+  "contactos": "contacts",
+  "Detalles del contacto": "Contact details",
+  "InformaciÃ³n principal y ubicaciÃ³n del cliente.": "Primary customer information and location.",
+  "NÃºmeros de telÃ©fono": "Phone numbers",
+  "AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.": "Add one or more WhatsApp numbers.",
+  "Contacto eliminado": "Contact deleted",
+  "No se pudo eliminar el contacto": "The contact could not be deleted",
+  "Eliminar contacto": "Delete contact",
+  "Â¿QuerÃ©s eliminar a {{name}}?": "Do you want to delete {{name}}?"
 }

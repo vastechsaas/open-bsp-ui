@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { message as toast } from "antd";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import "dayjs/locale/pt";
@@ -12,6 +13,8 @@ import {
   Pencil,
   Plus,
   Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { InstagramOutlined, WhatsAppOutlined } from "@ant-design/icons";
 import Avatar from "@/components/Avatar";
@@ -24,6 +27,7 @@ import {
   type ContactListRow,
   getContactListAddresses,
   useContactsPage,
+  useDeleteContact,
 } from "@/queries/useContacts";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
@@ -86,6 +90,9 @@ function ContactManager() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_DATA_TABLE_PAGE_SIZE);
+  const [contactToDelete, setContactToDelete] = useState<ContactListRow | null>(
+    null,
+  );
   const debouncedSearch = useDebouncedValue(search.trim());
   const { data, isLoading, isError } = useContactsPage({
     page,
@@ -98,8 +105,21 @@ function ContactManager() {
   const contacts = data?.rows || [];
   const total = data?.total || 0;
   const hasSearch = !!search.trim();
+  const deleteContact = useDeleteContact();
   const editContact = (id: string) =>
     void navigate({ to: `/contacts/${id}`, hash: undefined });
+
+  const confirmDelete = async () => {
+    if (!contactToDelete) return;
+
+    try {
+      await deleteContact.mutateAsync(contactToDelete.id);
+      setContactToDelete(null);
+      void toast.success(t("Contacto eliminado"));
+    } catch {
+      void toast.error(t("No se pudo eliminar el contacto"));
+    }
+  };
 
   return (
     <div className="h-full min-w-0 overflow-y-auto bg-background p-[16px] text-foreground md:p-[28px]">
@@ -184,6 +204,7 @@ function ContactManager() {
                           .locale(currentLanguage)
                           .format("ll")}
                         onEdit={() => editContact(contact.id)}
+                        onDelete={() => setContactToDelete(contact)}
                       />
                     ))}
                   </tbody>
@@ -199,6 +220,7 @@ function ContactManager() {
                       .locale(currentLanguage)
                       .format("ll")}
                     onEdit={() => editContact(contact.id)}
+                    onDelete={() => setContactToDelete(contact)}
                   />
                 ))}
               </div>
@@ -223,6 +245,15 @@ function ContactManager() {
           </div>
         </div>
       </div>
+
+      {contactToDelete && (
+        <ContactDeleteDialog
+          contact={contactToDelete}
+          loading={deleteContact.isPending}
+          onCancel={() => setContactToDelete(null)}
+          onConfirm={() => void confirmDelete()}
+        />
+      )}
     </div>
   );
 }
@@ -231,10 +262,12 @@ function ContactTableRow({
   contact,
   updatedAt,
   onEdit,
+  onDelete,
 }: {
   contact: ContactListRow;
   updatedAt: string;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const { translate: t } = useTranslation();
   const location = [contact.city, contact.country].filter(Boolean).join(", ");
@@ -274,15 +307,7 @@ function ContactTableRow({
         {updatedAt}
       </td>
       <td className="px-4 py-3 text-right">
-        <button
-          type="button"
-          className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          onClick={onEdit}
-          title={t("Editar contacto")}
-          aria-label={t("Editar contacto")}
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
+        <ContactActions onEdit={onEdit} onDelete={onDelete} />
       </td>
     </tr>
   );
@@ -292,10 +317,12 @@ function ContactCard({
   contact,
   updatedAt,
   onEdit,
+  onDelete,
 }: {
   contact: ContactListRow;
   updatedAt: string;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const { translate: t } = useTranslation();
   const location = [contact.city, contact.country].filter(Boolean).join(", ");
@@ -316,15 +343,7 @@ function ContactCard({
             <ContactChannels contact={contact} />
           </div>
         </div>
-        <button
-          type="button"
-          className="rounded-lg border border-border p-2 text-muted-foreground"
-          onClick={onEdit}
-          title={t("Editar contacto")}
-          aria-label={t("Editar contacto")}
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
+        <ContactActions onEdit={onEdit} onDelete={onDelete} />
       </div>
 
       <div className="mt-3 grid gap-2 text-[13px]">
@@ -353,6 +372,122 @@ function ContactCard({
         {t("Actualizado")}: {updatedAt}
       </div>
     </article>
+  );
+}
+
+function ContactActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { translate: t } = useTranslation();
+
+  return (
+    <div className="flex justify-end gap-[6px]">
+      <button
+        type="button"
+        className="rounded-lg border border-border p-[8px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        onClick={onEdit}
+        title={t("Editar contacto")}
+        aria-label={t("Editar contacto")}
+      >
+        <Pencil className="h-[15px] w-[15px]" />
+      </button>
+      <button
+        type="button"
+        className="rounded-lg border border-destructive/40 p-[8px] text-destructive transition-colors hover:bg-destructive/10"
+        onClick={onDelete}
+        title={t("Eliminar contacto")}
+        aria-label={t("Eliminar contacto")}
+      >
+        <Trash2 className="h-[15px] w-[15px]" />
+      </button>
+    </div>
+  );
+}
+
+function ContactDeleteDialog({
+  contact,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  contact: ContactListRow;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { translate: t } = useTranslation();
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !loading) onCancel();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [loading, onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-[16px]"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target && !loading) onCancel();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Eliminar contacto")}
+        className="w-full max-w-[480px] rounded-xl border border-border bg-background p-[20px] text-foreground shadow-2xl"
+      >
+        <div className="mb-[18px] flex items-center gap-[12px]">
+          <h2 className="text-[18px] font-semibold">
+            {t("Eliminar contacto")}
+          </h2>
+          <button
+            type="button"
+            className="ml-auto rounded-lg p-[7px] text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+            disabled={loading}
+            aria-label={t("Cerrar")}
+            onClick={onCancel}
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+
+        <p className="text-[14px] text-muted-foreground">
+          {t("Â¿QuerÃ©s eliminar a {{name}}?").replace(
+            "{{name}}",
+            contact.name || t("Sin nombre"),
+          )}
+        </p>
+        <p className="mt-[8px] text-[12px] text-muted-foreground">
+          {t("Esta acciÃ³n no se puede deshacer.")}
+        </p>
+
+        <div className="mt-[24px] flex justify-end gap-[10px]">
+          <button
+            type="button"
+            className="rounded-lg border border-border px-[16px] py-[9px] text-[13px] hover:bg-muted disabled:opacity-50"
+            disabled={loading}
+            onClick={onCancel}
+          >
+            {t("Cancelar")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg bg-destructive px-[16px] py-[9px] text-[13px] text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={loading}
+            onClick={onConfirm}
+          >
+            {loading ? t("Cargando...") : t("Eliminar")}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 

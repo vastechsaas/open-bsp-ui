@@ -1090,5 +1090,13 @@
   "Probá con otro nombre, canal o dato del cliente.": "Jaribu jina, kituo au maelezo mengine ya mteja.",
   "Agregá tu primer contacto para comenzar.": "Ongeza anwani yako ya kwanza ili kuanza.",
   "Editar contacto": "Hariri anwani",
-  "contactos": "anwani"
+  "contactos": "anwani",
+  "Detalles del contacto": "Maelezo ya mwasiliani",
+  "InformaciÃ³n principal y ubicaciÃ³n del cliente.": "Taarifa kuu na eneo la mteja.",
+  "NÃºmeros de telÃ©fono": "Namba za simu",
+  "AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.": "Ongeza namba moja au zaidi za WhatsApp.",
+  "Contacto eliminado": "Mwasiliani amefutwa",
+  "No se pudo eliminar el contacto": "Mwasiliani hakuweza kufutwa",
+  "Eliminar contacto": "Futa mwasiliani",
+  "Â¿QuerÃ©s eliminar a {{name}}?": "Unataka kufuta {{name}}?"
 }
