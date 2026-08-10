@@ -24,6 +24,7 @@ import {
   getPlatformScopePath,
 } from "@/utils/PlatformAdminUtils";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
+import Spinner from "@/components/Spinner";
 
 type PlatformLayoutProps = {
   children: ReactNode;
@@ -39,6 +40,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   };
   const organizationId = params.organizationId || null;
   const [tenantSearch, setTenantSearch] = useState("");
+  const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
   const organizations = usePlatformOrganizations({
     page: 1,
@@ -64,24 +66,31 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
     });
   }
 
-  const scopeName = organizationId
-    ? tenant.data?.organization_name || t("Tenant seleccionado")
-    : t("Todos los tenants");
+  const scopeName = pendingScope
+    ? t("Cargando...")
+    : organizationId
+      ? tenant.data?.organization_name || t("Tenant seleccionado")
+      : t("Todos los tenants");
 
   const selectTenant = async (value: string) => {
+    setPendingScope(value);
     await queryClient.cancelQueries({
       queryKey: queryKeys.platform.tenant(organizationId),
     });
 
-    if (value === ALL_TENANTS_VALUE) {
-      await navigate({ to: "/platform" });
-      return;
-    }
+    try {
+      if (value === ALL_TENANTS_VALUE) {
+        await navigate({ to: "/platform" });
+        return;
+      }
 
-    await navigate({
-      to: "/platform/$organizationId",
-      params: { organizationId: value },
-    });
+      await navigate({
+        to: "/platform/$organizationId",
+        params: { organizationId: value },
+      });
+    } finally {
+      setPendingScope(null);
+    }
   };
 
   return (
@@ -191,7 +200,15 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           </div>
         </header>
 
-        <main key={getPlatformScopePath(organizationId)}>{children}</main>
+        <main key={getPlatformScopePath(organizationId)}>
+          {pendingScope ? (
+            <div className="flex min-h-[520px] items-center justify-center">
+              <Spinner size={30} className="text-primary" />
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );
