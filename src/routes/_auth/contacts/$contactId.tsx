@@ -96,7 +96,7 @@ function ContactDetail() {
             <div className="mb-[18px]">
               <h2 className="font-medium">{t("Detalles del contacto")}</h2>
               <p className="mt-[3px] text-[12px] text-muted-foreground">
-                {t("InformaciÃ³n principal y ubicaciÃ³n del cliente.")}
+                {t("Información principal y ubicación del cliente.")}
               </p>
             </div>
 
@@ -111,7 +111,7 @@ function ContactDetail() {
                 />
               </ContactField>
 
-              <ContactField label={t("Correo electrÃ³nico")}>
+              <ContactField label={t("Correo electrónico")}>
                 <input
                   type="email"
                   className={`${inputClass} ${errors.email ? "border-destructive" : ""}`}
@@ -120,7 +120,7 @@ function ContactDetail() {
                   {...register("email", {
                     validate: (value) =>
                       isValidCustomerEmail(value) ||
-                      t("Correo electrÃ³nico invÃ¡lido"),
+                      t("Correo electrónico inválido"),
                   })}
                 />
                 <FieldError error={errors.email} />
@@ -153,7 +153,7 @@ function ContactDetail() {
                 />
               </ContactField>
 
-              <ContactField label={t("PaÃ­s")}>
+              <ContactField label={t("País")}>
                 <input
                   type="text"
                   className={inputClass}
@@ -166,9 +166,9 @@ function ContactDetail() {
 
           <section className="rounded-xl border border-border bg-background p-[16px] md:p-[20px]">
             <div className="mb-[18px]">
-              <h2 className="font-medium">{t("NÃºmeros de telÃ©fono")}</h2>
+              <h2 className="font-medium">{t("Números de teléfono")}</h2>
               <p className="mt-[3px] text-[12px] text-muted-foreground">
-                {t("AgregÃ¡ uno o mÃ¡s nÃºmeros de WhatsApp.")}
+                {t("Agregá uno o más números de WhatsApp.")}
               </p>
             </div>
 
@@ -182,7 +182,7 @@ function ContactDetail() {
                 return (
                   <ContactField
                     key={field.id}
-                    label={`${t("TelÃ©fono")} ${idx + 1}${isSynced ? ` (${t("Sincronizado")})` : ""}`}
+                    label={`${t("Teléfono")} ${idx + 1}${isSynced ? ` (${t("Sincronizado")})` : ""}`}
                   >
                     <div className="flex items-center gap-[8px]">
                       {isExisting ? (
@@ -196,12 +196,12 @@ function ContactDetail() {
                         <input
                           type="tel"
                           className={`${inputClass} ${errors.addresses?.[idx]?.address ? "border-destructive" : ""}`}
-                          placeholder={t("+54 9 11 1234 5678")}
+                          placeholder="+54 9 11 1234 5678"
                           {...register(`addresses.${idx}.address`, {
                             validate: (value) =>
                               !value ||
                               isValidPhoneNumber(value) ||
-                              t("NÃºmero invÃ¡lido"),
+                              t("Número inválido"),
                           })}
                         />
                       )}
@@ -226,7 +226,7 @@ function ContactDetail() {
               onClick={() => append({ address: "" })}
             >
               <Plus className="h-[16px] w-[16px]" />
-              {t("Agregar telÃ©fono")}
+              {t("Agregar teléfono")}
             </button>
           </section>
         </form>

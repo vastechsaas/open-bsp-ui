@@ -459,13 +459,13 @@ function ContactDeleteDialog({
         </div>
 
         <p className="text-[14px] text-muted-foreground">
-          {t("Â¿QuerÃ©s eliminar a {{name}}?").replace(
+          {t("¿Querés eliminar a {{name}}?").replace(
             "{{name}}",
             contact.name || t("Sin nombre"),
           )}
         </p>
         <p className="mt-[8px] text-[12px] text-muted-foreground">
-          {t("Esta acciÃ³n no se puede deshacer.")}
+          {t("Esta acción no se puede deshacer.")}
         </p>
 
         <div className="mt-[24px] flex justify-end gap-[10px]">
