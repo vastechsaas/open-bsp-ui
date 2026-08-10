@@ -92,6 +92,11 @@ void test("tenant selection is URL-backed and cancels the previous tenant reques
   assert.match(layout, /queryClient\.cancelQueries/);
   assert.match(layout, /setPendingScope\(value\)/);
   assert.match(layout, /pendingScope \? \(/);
+  assert.match(layout, /pendingOrganizationId !== organizationId/);
+  assert.match(
+    layout,
+    /requestAnimationFrame\(\(\) => setPendingScope\(null\)\)/,
+  );
   assert.match(layout, /to: "\/platform\/\$organizationId"/);
   assert.match(layout, /params: \{ organizationId: value \}/);
   assert.doesNotMatch(layout, /setActiveOrg/);

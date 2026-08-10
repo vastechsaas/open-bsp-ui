@@ -7,7 +7,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -72,6 +72,18 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
       ? tenant.data?.organization_name || t("Tenant seleccionado")
       : t("Todos los tenants");
 
+  useEffect(() => {
+    if (!pendingScope) return;
+
+    const pendingOrganizationId =
+      pendingScope === ALL_TENANTS_VALUE ? null : pendingScope;
+
+    if (pendingOrganizationId !== organizationId) return;
+
+    const frame = requestAnimationFrame(() => setPendingScope(null));
+    return () => cancelAnimationFrame(frame);
+  }, [organizationId, pendingScope]);
+
   const selectTenant = async (value: string) => {
     setPendingScope(value);
     await queryClient.cancelQueries({
@@ -88,8 +100,9 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
         to: "/platform/$organizationId",
         params: { organizationId: value },
       });
-    } finally {
+    } catch (error) {
       setPendingScope(null);
+      throw error;
     }
   };
 
