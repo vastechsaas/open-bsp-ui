@@ -1145,5 +1145,9 @@
   "Reporte CSV descargado": "Ripoti ya CSV imepakuliwa",
   "No se pudo generar el reporte": "Ripoti haikuweza kutengenezwa",
   "El CSV no contiene filas para este mes.": "CSV haina mistari kwa mwezi huu.",
-  "filas exportadas": "mistari iliyohamishwa"
+  "filas exportadas": "mistari iliyohamishwa",
+  "Administra la configuración de tu organización y las herramientas para desarrolladores.": "Dhibiti mipangilio ya shirika lako na zana za wasanidi programu.",
+  "Información y comportamiento del espacio de trabajo.": "Taarifa na tabia ya nafasi ya kazi.",
+  "Eventos para sistemas externos.": "Matukio kwa mifumo ya nje.",
+  "Credenciales para integraciones.": "Vitambulisho vya miunganisho."
 }

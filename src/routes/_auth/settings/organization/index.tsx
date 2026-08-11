@@ -61,7 +61,8 @@ function EditOrganization() {
   return (
     <>
       <SectionHeader
-        title={t("Editar organización")}
+        title={t("Organización")}
+        hideBackButton
         onDelete={() =>
           deleteOrg.mutate(undefined, {
             onSuccess: () => {

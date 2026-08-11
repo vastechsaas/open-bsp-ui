@@ -44,8 +44,7 @@ https://github.com/user-attachments/assets/1ef30dde-9de1-4f5a-856a-db34ca2e3063
 - **Templates** — WhatsApp message template builder with variable pills,
   formatting preview, and category management
 - **Integrations** — WhatsApp Business account connection via Embedded Signup
-- **Settings** — Organization management, team members with roles
-  (owner/admin/supervisor/member), API keys, webhooks
+- **Settings** — Organization management, API keys, and webhooks
 - **Stats** — Usage charts and billing quota dashboards
 - **Multi-org** — Switch between organizations; invite and onboard team members
 

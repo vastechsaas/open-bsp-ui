@@ -20,7 +20,7 @@ function ListWebhooks() {
 
   return (
     <>
-      <SectionHeader title={t("Webhooks")} />
+      <SectionHeader title={t("Webhooks")} hideBackButton />
 
       <SectionBody>
         <SectionItem
