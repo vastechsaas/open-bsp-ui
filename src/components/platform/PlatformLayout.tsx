@@ -1,6 +1,7 @@
 import { Select } from "antd";
 import {
   Building2,
+  FileBarChart,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -8,7 +9,12 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -33,12 +39,14 @@ type PlatformLayoutProps = {
 export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const user = useBoundStore((state) => state.ui.user);
   const params = useParams({ strict: false }) as {
     organizationId?: string;
   };
   const organizationId = params.organizationId || null;
+  const reportsActive = location.pathname.endsWith("/reports");
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -126,11 +134,29 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
         <nav className="flex-1 space-y-2 p-3">
           <Link
             to="/platform"
-            className="flex items-center gap-3 rounded-lg bg-sidebar-accent px-3 py-2.5 text-[14px] font-medium text-sidebar-accent-foreground"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+              reportsActive
+                ? "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                : "bg-sidebar-accent text-sidebar-accent-foreground"
+            }`}
           >
             <LayoutDashboard className="h-5 w-5" />
             {t("Vista general")}
           </Link>
+          {organizationId && (
+            <Link
+              to="/platform/$organizationId/reports"
+              params={{ organizationId }}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+                reportsActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              <FileBarChart className="h-5 w-5" />
+              {t("Reportes")}
+            </Link>
+          )}
           <Link
             to="/dashboard"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

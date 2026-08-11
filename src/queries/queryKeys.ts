@@ -116,5 +116,7 @@ export const queryKeys = {
       ["platform", "organizations", params] as const,
     tenant: (organizationId: NullableId) =>
       ["platform", "tenant", organizationId] as const,
+    reports: (organizationId: NullableId, month: string) =>
+      ["platform", "reports", organizationId, month] as const,
   },
 };
