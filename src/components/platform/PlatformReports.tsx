@@ -45,13 +45,13 @@ const REPORTS: Array<{
     icon: MessageSquareText,
     title: "Conversaciones",
     description:
-      "Una fila por conversaciÃ³n con actividad externa durante el mes.",
+      "Una fila por conversación con actividad externa durante el mes.",
   },
   {
     type: "campaigns",
     icon: Megaphone,
-    title: "CampaÃ±as",
-    description: "Una fila por campaÃ±a lanzada durante el mes.",
+    title: "Campañas",
+    description: "Una fila por campaña lanzada durante el mes.",
   },
 ];
 
@@ -175,7 +175,7 @@ export default function PlatformReports({
           <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
             {t(
-              "Los reportes se recalculan con datos actuales. El estado y la asignaciÃ³n reflejan el momento de la descarga.",
+              "Los reportes se recalculan con datos actuales. El estado y la asignación reflejan el momento de la descarga.",
             )}
           </p>
         </div>
