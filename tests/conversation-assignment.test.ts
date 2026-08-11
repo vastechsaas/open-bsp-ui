@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  canManageConversationAssignments,
   getConversationAssignee,
   getConversationAssigneeName,
   getConversationAssignmentAction,
@@ -18,6 +19,16 @@ import type {
   ConversationRow,
   MessageRow,
 } from "../src/supabase/client.ts";
+
+void test("Owner, Admin, and Supervisor can manage conversation assignments", () => {
+  for (const role of ["owner", "admin", "supervisor"]) {
+    assert.equal(canManageConversationAssignments(role), true, role);
+  }
+
+  for (const role of ["agent", "member", null, undefined]) {
+    assert.equal(canManageConversationAssignments(role), false, String(role));
+  }
+});
 
 const ORG_ID = "00000000-0000-4000-8000-000000000001";
 const CURRENT_AGENT_ID = "00000000-0000-4000-8000-000000000002";

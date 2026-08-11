@@ -10,7 +10,10 @@ import {
   updateConvExtra,
 } from "@/utils/ConversationUtils";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
-import { getConversationAssignmentAction } from "@/utils/AssignmentUtils";
+import {
+  canManageConversationAssignments,
+  getConversationAssignmentAction,
+} from "@/utils/AssignmentUtils";
 import { Check } from "lucide-react";
 
 export default function ItemActions({
@@ -124,8 +127,11 @@ export default function ItemActions({
     currentAssignee &&
     !currentAssignee.ai &&
     currentAssignee.extra?.role === "agent";
+  const isAssignmentManager = canManageConversationAssignments(
+    currentAgent.data?.extra?.role,
+  );
   const canManageAgentAssignment =
-    currentAgent.data?.extra?.role === "supervisor" &&
+    isAssignmentManager &&
     (!conversation.assigned_agent_id || currentAssigneeIsAgent);
 
   if (canManageAgentAssignment) {
@@ -157,10 +163,10 @@ export default function ItemActions({
     });
   }
 
-  const supervisorAssignmentItems: MenuProps["items"] = [];
+  const managerAssignmentItems: MenuProps["items"] = [];
   if (canManageAgentAssignment) {
     if (conversation.assigned_agent_id) {
-      supervisorAssignmentItems.push(
+      managerAssignmentItems.push(
         {
           key: "unassign-agent-only",
           label: t("Desasignar"),
@@ -170,7 +176,7 @@ export default function ItemActions({
       );
     }
 
-    supervisorAssignmentItems.push(
+    managerAssignmentItems.push(
       ...acceptedAgents.map((agent) => ({
         key: `assign-agent-only-${agent.id}`,
         label: agent.name,
@@ -222,12 +228,11 @@ export default function ItemActions({
         },
       ];
 
-  const assignmentOnlyItems: MenuProps["items"] =
-    currentAgent.data?.extra?.role === "supervisor"
-      ? supervisorAssignmentItems
-      : currentAgent.data?.extra?.role === "agent"
-        ? assignmentItems
-        : [];
+  const assignmentOnlyItems: MenuProps["items"] = isAssignmentManager
+    ? managerAssignmentItems
+    : currentAgent.data?.extra?.role === "agent"
+      ? assignmentItems
+      : [];
 
   const items: MenuProps["items"] = assignmentOnly
     ? assignmentOnlyItems

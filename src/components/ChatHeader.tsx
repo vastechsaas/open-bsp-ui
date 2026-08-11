@@ -8,7 +8,10 @@ import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
-import { getConversationAssigneeName } from "@/utils/AssignmentUtils";
+import {
+  canManageConversationAssignments,
+  getConversationAssigneeName,
+} from "@/utils/AssignmentUtils";
 import AssignConversationButton from "./AssignConversationButton";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import ItemActions from "./ItemActions";
@@ -66,7 +69,9 @@ export default function Header({
   const { translate: t } = useTranslation();
 
   const assigneeName = getConversationAssigneeName(conversation, agents);
-  const isSupervisor = currentAgent?.extra?.role === "supervisor";
+  const isAssignmentManager = canManageConversationAssignments(
+    currentAgent?.extra?.role,
+  );
   const isPendingAgent =
     currentAgent?.extra?.role === "agent" &&
     conversation?.assigned_agent_id === null;
@@ -76,8 +81,8 @@ export default function Header({
   const currentAssignee = agents?.find(
     (agent) => agent.id === conversation?.assigned_agent_id,
   );
-  const supervisorCanManageAssignment =
-    isSupervisor &&
+  const managerCanManageAssignment =
+    isAssignmentManager &&
     (!conversation?.assigned_agent_id ||
       (!currentAssignee?.ai && currentAssignee?.extra?.role === "agent"));
 
@@ -85,7 +90,9 @@ export default function Header({
     service === "local" && t("Contacto de prueba"),
     service === "whatsapp" && address && formatPhoneNumber(address),
     service === "instagram" && igExtra?.username && `@${igExtra.username}`,
-    !isSupervisor && assigneeName && `${t("Asignado a")} ${assigneeName}`,
+    !isAssignmentManager &&
+      assigneeName &&
+      `${t("Asignado a")} ${assigneeName}`,
   ].filter(Boolean);
 
   if (!activeConvId) {
@@ -158,9 +165,9 @@ export default function Header({
             </button>
           </ItemActions>
         )}
-        {isSupervisor &&
+        {isAssignmentManager &&
           conversation &&
-          (supervisorCanManageAssignment ? (
+          (managerCanManageAssignment ? (
             <ItemActions
               itemId={activeConvId}
               trigger={["click"]}
