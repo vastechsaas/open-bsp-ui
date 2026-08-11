@@ -107,17 +107,17 @@ void test("Supervisors can manage Members and Agents without privilege escalatio
   assert.deepEqual(getInvitableTeamMemberRoles("member"), []);
 });
 
-void test("Team Members is canonical in the sidebar and Settings", () => {
+void test("Team Members is canonical in the sidebar and removed from Settings", () => {
   const menu = readFileSync(
     new URL("../src/components/Menu.tsx", import.meta.url),
     "utf8",
   );
-  const settings = readFileSync(
-    new URL("../src/routes/_auth/settings/index.tsx", import.meta.url),
+  const legacySettingsMembers = readFileSync(
+    new URL("../src/routes/_auth/settings/members/index.tsx", import.meta.url),
     "utf8",
   );
   assert.match(menu, /to="\/team-members"/);
-  assert.match(settings, /to: "\/team-members"/);
+  assert.match(legacySettingsMembers, /redirect\(\{ to: "\/team-members" \}\)/);
 });
 
 void test("owners can select and filter the Supervisor role", () => {

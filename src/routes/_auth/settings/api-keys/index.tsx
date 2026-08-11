@@ -26,7 +26,7 @@ function ListApiKeys() {
 
   return (
     <>
-      <SectionHeader title={t("Claves API")} />
+      <SectionHeader title={t("Claves API")} hideBackButton />
 
       <SectionBody>
         <SectionItem

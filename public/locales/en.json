@@ -1145,5 +1145,9 @@
   "Reporte CSV descargado": "CSV report downloaded",
   "No se pudo generar el reporte": "The report could not be generated",
   "El CSV no contiene filas para este mes.": "The CSV has no rows for this month.",
-  "filas exportadas": "rows exported"
+  "filas exportadas": "rows exported",
+  "Administra la configuración de tu organización y las herramientas para desarrolladores.": "Manage your organization settings and developer tools.",
+  "Información y comportamiento del espacio de trabajo.": "Workspace information and behavior.",
+  "Eventos para sistemas externos.": "Events for external systems.",
+  "Credenciales para integraciones.": "Credentials for integrations."
 }

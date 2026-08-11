@@ -1145,5 +1145,9 @@
   "Reporte CSV descargado": "Rapport CSV téléchargé",
   "No se pudo generar el reporte": "Le rapport n’a pas pu être généré",
   "El CSV no contiene filas para este mes.": "Le CSV ne contient aucune ligne pour ce mois.",
-  "filas exportadas": "lignes exportées"
+  "filas exportadas": "lignes exportées",
+  "Administra la configuración de tu organización y las herramientas para desarrolladores.": "Gérez les paramètres de votre organisation et les outils de développement.",
+  "Información y comportamiento del espacio de trabajo.": "Informations et comportement de l’espace de travail.",
+  "Eventos para sistemas externos.": "Événements pour les systèmes externes.",
+  "Credenciales para integraciones.": "Identifiants pour les intégrations."
 }

@@ -34,6 +34,7 @@ import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
 import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
 import { isQuickRepliesWorkspacePath } from "@/utils/QuickReplyUtils";
 import { isContactManagerWorkspacePath } from "@/utils/ContactManagerUtils";
+import { isSettingsWorkspacePath } from "@/utils/SettingsUtils";
 import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
@@ -87,7 +88,8 @@ function AppLayout() {
     isWhatsAppManagerWorkspacePath(pathname) ||
     isTeamMembersWorkspacePath(pathname) ||
     isQuickRepliesWorkspacePath(pathname) ||
-    isContactManagerWorkspacePath(pathname);
+    isContactManagerWorkspacePath(pathname) ||
+    isSettingsWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
   const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
