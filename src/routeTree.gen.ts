@@ -25,6 +25,7 @@ import { Route as AuthWhatsappManagerRouteImport } from './routes/_auth/whatsapp
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
 import { Route as AuthQuickRepliesRouteImport } from './routes/_auth/quick-replies'
 import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+import { Route as PlatformOrganizationIdIndexRouteImport } from './routes/platform/$organizationId/index'
 import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
 import { Route as AuthTeamMembersIndexRouteImport } from './routes/_auth/team-members/index'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
@@ -35,6 +36,7 @@ import { Route as AuthContactsIndexRouteImport } from './routes/_auth/contacts/i
 import { Route as AuthChatbotsIndexRouteImport } from './routes/_auth/chatbots/index'
 import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns/index'
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
+import { Route as PlatformOrganizationIdReportsRouteImport } from './routes/platform/$organizationId/reports'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
 import { Route as OnboardInstagramCallbackRouteImport } from './routes/onboard.instagram.callback'
 import { Route as OnboardInstagramTokenRouteImport } from './routes/onboard.instagram.$token'
@@ -161,6 +163,12 @@ const AuthDashboardRoute = AuthDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthRoute,
 } as any)
+const PlatformOrganizationIdIndexRoute =
+  PlatformOrganizationIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
 const AuthTemplatesIndexRoute = AuthTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -211,6 +219,12 @@ const AuthAgentsIndexRoute = AuthAgentsIndexRouteImport.update({
   path: '/agents/',
   getParentRoute: () => AuthRoute,
 } as any)
+const PlatformOrganizationIdReportsRoute =
+  PlatformOrganizationIdReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
 const OnboardWhatsappTokenRoute = OnboardWhatsappTokenRouteImport.update({
   id: '/onboard/whatsapp/$token',
   path: '/onboard/whatsapp/$token',
@@ -485,7 +499,7 @@ export interface FileRoutesByFullPath {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
   '/platform/': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
@@ -503,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
+  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
   '/chatbots': typeof AuthChatbotsIndexRoute
@@ -513,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/stats/': typeof AuthStatsIndexRoute
   '/team-members': typeof AuthTeamMembersIndexRoute
   '/templates': typeof AuthTemplatesIndexRoute
+  '/platform/$organizationId/': typeof PlatformOrganizationIdIndexRoute
   '/campaigns/$campaignId/edit': typeof AuthCampaignsCampaignIdEditRoute
   '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -556,7 +572,6 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
   '/platform': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
@@ -574,6 +589,7 @@ export interface FileRoutesByTo {
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
+  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
   '/chatbots': typeof AuthChatbotsIndexRoute
@@ -584,6 +600,7 @@ export interface FileRoutesByTo {
   '/stats': typeof AuthStatsIndexRoute
   '/team-members': typeof AuthTeamMembersIndexRoute
   '/templates': typeof AuthTemplatesIndexRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdIndexRoute
   '/campaigns/$campaignId/edit': typeof AuthCampaignsCampaignIdEditRoute
   '/campaigns/$campaignId/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -631,7 +648,7 @@ export interface FileRoutesById {
   '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
-  '/platform/$organizationId': typeof PlatformOrganizationIdRoute
+  '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
   '/platform/': typeof PlatformIndexRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
@@ -649,6 +666,7 @@ export interface FileRoutesById {
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
+  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
   '/_auth/campaigns/': typeof AuthCampaignsIndexRoute
   '/_auth/chatbots/': typeof AuthChatbotsIndexRoute
@@ -659,6 +677,7 @@ export interface FileRoutesById {
   '/_auth/stats/': typeof AuthStatsIndexRoute
   '/_auth/team-members/': typeof AuthTeamMembersIndexRoute
   '/_auth/templates/': typeof AuthTemplatesIndexRoute
+  '/platform/$organizationId/': typeof PlatformOrganizationIdIndexRoute
   '/_auth/campaigns/$campaignId_/edit': typeof AuthCampaignsCampaignIdEditRoute
   '/_auth/campaigns/$campaignId_/review': typeof AuthCampaignsCampaignIdReviewRoute
   '/_auth/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
@@ -724,6 +743,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
+    | '/platform/$organizationId/reports'
     | '/agents'
     | '/campaigns'
     | '/chatbots'
@@ -734,6 +754,7 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/team-members'
     | '/templates'
+    | '/platform/$organizationId/'
     | '/campaigns/$campaignId/edit'
     | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
@@ -777,7 +798,6 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
-    | '/platform/$organizationId'
     | '/platform'
     | '/agents/$agentId'
     | '/agents/new'
@@ -795,6 +815,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
+    | '/platform/$organizationId/reports'
     | '/agents'
     | '/campaigns'
     | '/chatbots'
@@ -805,6 +826,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/team-members'
     | '/templates'
+    | '/platform/$organizationId'
     | '/campaigns/$campaignId/edit'
     | '/campaigns/$campaignId/review'
     | '/integrations/instagram/new'
@@ -869,6 +891,7 @@ export interface FileRouteTypes {
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
+    | '/platform/$organizationId/reports'
     | '/_auth/agents/'
     | '/_auth/campaigns/'
     | '/_auth/chatbots/'
@@ -879,6 +902,7 @@ export interface FileRouteTypes {
     | '/_auth/stats/'
     | '/_auth/team-members/'
     | '/_auth/templates/'
+    | '/platform/$organizationId/'
     | '/_auth/campaigns/$campaignId_/edit'
     | '/_auth/campaigns/$campaignId_/review'
     | '/_auth/integrations/instagram/new'
@@ -1041,6 +1065,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/platform/$organizationId/': {
+      id: '/platform/$organizationId/'
+      path: '/'
+      fullPath: '/platform/$organizationId/'
+      preLoaderRoute: typeof PlatformOrganizationIdIndexRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
+    }
     '/_auth/templates/': {
       id: '/_auth/templates/'
       path: '/templates'
@@ -1110,6 +1141,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/agents'
       preLoaderRoute: typeof AuthAgentsIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/platform/$organizationId/reports': {
+      id: '/platform/$organizationId/reports'
+      path: '/reports'
+      fullPath: '/platform/$organizationId/reports'
+      preLoaderRoute: typeof PlatformOrganizationIdReportsRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
     }
     '/onboard/whatsapp/$token': {
       id: '/onboard/whatsapp/$token'
@@ -1593,13 +1631,29 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PlatformOrganizationIdRouteChildren {
+  PlatformOrganizationIdReportsRoute: typeof PlatformOrganizationIdReportsRoute
+  PlatformOrganizationIdIndexRoute: typeof PlatformOrganizationIdIndexRoute
+}
+
+const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
+  {
+    PlatformOrganizationIdReportsRoute: PlatformOrganizationIdReportsRoute,
+    PlatformOrganizationIdIndexRoute: PlatformOrganizationIdIndexRoute,
+  }
+
+const PlatformOrganizationIdRouteWithChildren =
+  PlatformOrganizationIdRoute._addFileChildren(
+    PlatformOrganizationIdRouteChildren,
+  )
+
 interface PlatformRouteChildren {
-  PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRoute
+  PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRouteWithChildren
   PlatformIndexRoute: typeof PlatformIndexRoute
 }
 
 const PlatformRouteChildren: PlatformRouteChildren = {
-  PlatformOrganizationIdRoute: PlatformOrganizationIdRoute,
+  PlatformOrganizationIdRoute: PlatformOrganizationIdRouteWithChildren,
   PlatformIndexRoute: PlatformIndexRoute,
 }
 

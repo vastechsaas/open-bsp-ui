@@ -1130,5 +1130,20 @@
   "Contacto eliminado": "Contact deleted",
   "No se pudo eliminar el contacto": "The contact could not be deleted",
   "Eliminar contacto": "Delete contact",
-  "¿Querés eliminar a {{name}}?": "Do you want to delete {{name}}?"
+  "¿Querés eliminar a {{name}}?": "Do you want to delete {{name}}?",
+  "Reportes": "Reports",
+  "Reportes mensuales": "Monthly reports",
+  "Volver al resumen del tenant": "Back to tenant summary",
+  "Mes del reporte (UTC)": "Report month (UTC)",
+  "Los reportes se recalculan con datos actuales. El estado y la asignación reflejan el momento de la descarga.": "Reports are recalculated from live data. Status and assignment reflect the time of download.",
+  "Conversaciones": "Conversations",
+  "Una fila por conversación con actividad externa durante el mes.": "One row per conversation with external activity during the month.",
+  "Campañas": "Campaigns",
+  "Una fila por campaña lanzada durante el mes.": "One row per campaign launched during the month.",
+  "Descargar CSV": "Download CSV",
+  "Generando CSV...": "Generating CSV...",
+  "Reporte CSV descargado": "CSV report downloaded",
+  "No se pudo generar el reporte": "The report could not be generated",
+  "El CSV no contiene filas para este mes.": "The CSV has no rows for this month.",
+  "filas exportadas": "rows exported"
 }

@@ -1130,5 +1130,20 @@
   "Contacto eliminado": "Mwasiliani amefutwa",
   "No se pudo eliminar el contacto": "Mwasiliani hakuweza kufutwa",
   "Eliminar contacto": "Futa mwasiliani",
-  "¿Querés eliminar a {{name}}?": "Unataka kufuta {{name}}?"
+  "¿Querés eliminar a {{name}}?": "Unataka kufuta {{name}}?",
+  "Reportes": "Ripoti",
+  "Reportes mensuales": "Ripoti za kila mwezi",
+  "Volver al resumen del tenant": "Rudi kwenye muhtasari wa tenant",
+  "Mes del reporte (UTC)": "Mwezi wa ripoti (UTC)",
+  "Los reportes se recalculan con datos actuales. El estado y la asignación reflejan el momento de la descarga.": "Ripoti huhesabiwa upya kwa data ya sasa. Hali na mgawo huonyesha wakati wa upakuaji.",
+  "Conversaciones": "Mazungumzo",
+  "Una fila por conversación con actividad externa durante el mes.": "Mstari mmoja kwa kila mazungumzo yenye shughuli za nje katika mwezi.",
+  "Campañas": "Kampeni",
+  "Una fila por campaña lanzada durante el mes.": "Mstari mmoja kwa kila kampeni iliyozinduliwa katika mwezi.",
+  "Descargar CSV": "Pakua CSV",
+  "Generando CSV...": "Inatengeneza CSV...",
+  "Reporte CSV descargado": "Ripoti ya CSV imepakuliwa",
+  "No se pudo generar el reporte": "Ripoti haikuweza kutengenezwa",
+  "El CSV no contiene filas para este mes.": "CSV haina mistari kwa mwezi huu.",
+  "filas exportadas": "mistari iliyohamishwa"
 }

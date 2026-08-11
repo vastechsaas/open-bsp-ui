@@ -1130,5 +1130,20 @@
   "Información de la organización": "Informations sur l’organisation",
   "Creado": "Créé",
   "Eliminar contacto": "Supprimer le contact",
-  "¿Querés eliminar a {{name}}?": "Voulez-vous supprimer {{name}} ?"
+  "¿Querés eliminar a {{name}}?": "Voulez-vous supprimer {{name}} ?",
+  "Reportes": "Rapports",
+  "Reportes mensuales": "Rapports mensuels",
+  "Volver al resumen del tenant": "Retour au résumé du tenant",
+  "Mes del reporte (UTC)": "Mois du rapport (UTC)",
+  "Los reportes se recalculan con datos actuales. El estado y la asignación reflejan el momento de la descarga.": "Les rapports sont recalculés à partir des données actuelles. Le statut et l’affectation reflètent le moment du téléchargement.",
+  "Conversaciones": "Conversations",
+  "Una fila por conversación con actividad externa durante el mes.": "Une ligne par conversation ayant une activité externe pendant le mois.",
+  "Campañas": "Campagnes",
+  "Una fila por campaña lanzada durante el mes.": "Une ligne par campagne lancée pendant le mois.",
+  "Descargar CSV": "Télécharger le CSV",
+  "Generando CSV...": "Génération du CSV...",
+  "Reporte CSV descargado": "Rapport CSV téléchargé",
+  "No se pudo generar el reporte": "Le rapport n’a pas pu être généré",
+  "El CSV no contiene filas para este mes.": "Le CSV ne contient aucune ligne pour ce mois.",
+  "filas exportadas": "lignes exportées"
 }

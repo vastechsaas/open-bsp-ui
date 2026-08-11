@@ -1,11 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import PlatformTenantSummary from "@/components/platform/PlatformTenantSummary";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/platform/$organizationId")({
-  component: PlatformTenantRoute,
+  component: Outlet,
 });
-
-function PlatformTenantRoute() {
-  const { organizationId } = Route.useParams();
-  return <PlatformTenantSummary organizationId={organizationId} />;
-}
