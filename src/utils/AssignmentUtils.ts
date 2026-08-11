@@ -2,6 +2,12 @@ import type { AgentRow, ConversationRow } from "@/supabase/client";
 
 export type ConversationAssignmentAction = "assign-to-me" | "unassign-from-me";
 
+export function canManageConversationAssignments(
+  role?: string | null,
+): boolean {
+  return role === "owner" || role === "admin" || role === "supervisor";
+}
+
 export function getConversationAssignmentAction(
   conversation: ConversationRow,
   currentAgentId?: string | null,

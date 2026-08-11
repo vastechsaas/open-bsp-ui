@@ -29,6 +29,7 @@ import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { fetchMentionedConversationMessages } from "@/queries/usePrivateNotes";
+import { canManageConversationAssignments } from "@/utils/AssignmentUtils";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -185,7 +186,9 @@ export default function ChatListItem({
   const { data: agent } = useCurrentAgent();
   const { data: agents } = useCurrentAgents();
   const isAdmin = ["admin", "owner"].includes(agent?.extra?.role || "");
-  const isSupervisor = agent?.extra?.role === "supervisor";
+  const isAssignmentManager = canManageConversationAssignments(
+    agent?.extra?.role,
+  );
 
   const messages: MessageRow[] | undefined = Array.from(
     useBoundStore((state) => state.chat.messages.get(itemId || ""))?.values() ||
@@ -413,7 +416,7 @@ export default function ChatListItem({
               </div>
 
               <div className="flex flex-row items-center">
-                {isSupervisor && (
+                {isAssignmentManager && (
                   <ConversationAssignmentBadge
                     conversation={conversation}
                     agents={agents}

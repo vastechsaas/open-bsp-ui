@@ -58,9 +58,9 @@ void test("Agent-created conversations use the atomic self-assignment RPC", () =
   assert.match(utilities, /supabase\.rpc\("create_conversation_for_me"/);
 });
 
-void test("Supervisor assignment menu targets accepted Agent users only", () => {
+void test("manager assignment menu targets accepted Agent users only", () => {
   const actions = readSource("../src/components/ItemActions.tsx");
-  assert.match(actions, /currentAgent\.data\?\.extra\?\.role === "supervisor"/);
+  assert.match(actions, /canManageConversationAssignments/);
   assert.match(actions, /agent\.extra\?\.role !== "agent"/);
   assert.match(actions, /agent\.extra\.invitation\.status === "accepted"/);
   assert.match(actions, /setConversationAgentAssignment/);

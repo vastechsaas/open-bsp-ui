@@ -23,16 +23,17 @@ void test("Agent uses one loading-aware self-assignment action in header and foo
   assert.match(footer, /AssignConversationButton conversationId=\{conv.id\}/);
 });
 
-void test("Supervisor list badges are informational and header badge opens only assignment controls", () => {
+void test("assignment managers see list badges and assignment-only header controls", () => {
   const listItem = readSource("../src/components/ChatListItem.tsx");
   const header = readSource("../src/components/ChatHeader.tsx");
   const actions = readSource("../src/components/ItemActions.tsx");
 
-  assert.match(listItem, /const isSupervisor/);
-  assert.match(listItem, /isSupervisor && \(/);
+  assert.match(listItem, /const isAssignmentManager/);
+  assert.match(listItem, /isAssignmentManager && \(/);
   assert.match(listItem, /<ConversationAssignmentBadge/);
-  assert.match(header, /supervisorCanManageAssignment/);
+  assert.match(header, /managerCanManageAssignment/);
   assert.match(header, /assignmentOnly/);
+  assert.match(actions, /canManageConversationAssignments/);
   assert.match(actions, /assignmentOnly\s*\? assignmentOnlyItems/);
   assert.match(actions, /role === "agent"\s*\? assignmentItems/);
   assert.match(actions, /placement=\{assignmentOnly \? "bottomRight"/);
