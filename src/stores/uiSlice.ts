@@ -133,6 +133,7 @@ export type UIState = {
   sendAsContact: boolean;
   filter: keyof typeof filters;
   conversationQueueKey: ConversationQueueKey;
+  routingQueueId: string | null;
   searchPattern: string;
   isLoading: boolean;
   language: Language;
@@ -148,6 +149,7 @@ export type UIActions = {
   setPrivateNoteMode: (privateNoteMode: boolean) => void;
   setFilter: (filter: keyof typeof filters) => void;
   setConversationQueueKey: (queueKey: ConversationQueueKey) => void;
+  setRoutingQueueId: (routingQueueId: string | null) => void;
   setSearchPattern: (searchPattern: string) => void;
   setTemplateDraft: (convId: string, draft: TemplateDraft | null) => void;
   setLanguage: (lang: Language) => void;
@@ -175,6 +177,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   sendAsContact: false,
   filter: "todas" as keyof typeof filters,
   conversationQueueKey: DEFAULT_CONVERSATION_QUEUE_KEY,
+  routingQueueId: null,
   searchPattern: "",
   isLoading: false,
   language: detectDefaultLanguage(),
@@ -191,6 +194,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       ui: {
         ...state.ui,
         activeOrgId,
+        routingQueueId: null,
       },
     })),
   setSidebarCollapsed: (sidebarCollapsed: boolean) =>
@@ -241,6 +245,13 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       ui: {
         ...state.ui,
         conversationQueueKey,
+      },
+    })),
+  setRoutingQueueId: (routingQueueId: string | null) =>
+    set((state) => ({
+      ui: {
+        ...state.ui,
+        routingQueueId,
       },
     })),
   setSearchPattern: (searchPattern: string) =>

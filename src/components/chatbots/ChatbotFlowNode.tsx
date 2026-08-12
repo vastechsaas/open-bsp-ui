@@ -125,6 +125,10 @@ export default function ChatbotFlowNode({
     isAssignAgent && typeof data.config.agent_id === "string"
       ? data.config.agent_id
       : "";
+  const routingQueueId =
+    isAssignAgent && typeof data.config.routing_queue_id === "string"
+      ? data.config.routing_queue_id
+      : "";
   const webhookUrl =
     isWebhook && typeof data.config.url === "string" ? data.config.url : "";
 
@@ -273,10 +277,16 @@ export default function ChatbotFlowNode({
         <div className="border-t border-border px-[12px] py-[9px]">
           <p
             className={`truncate text-[10px] ${
-              assignedAgentId ? "text-violet-500" : "text-destructive"
+              routingQueueId || assignedAgentId
+                ? "text-violet-500"
+                : "text-destructive"
             }`}
           >
-            {assignedAgentId ? t("Agente configurado") : t("Agente requerido")}
+            {routingQueueId
+              ? t("Cola configurada")
+              : assignedAgentId
+                ? t("Agente heredado configurado")
+                : t("Cola requerida")}
           </p>
         </div>
       )}

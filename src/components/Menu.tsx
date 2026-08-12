@@ -288,7 +288,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                       void navigate({ to: "/dashboard" });
                     },
                   })) || []),
-                  ...(canAccessNavigation(role, "settings")
+                  ...((role === "owner" || role === "admin") &&
+                  canAccessNavigation(role, "settings")
                     ? [
                         {
                           key: "new_org",

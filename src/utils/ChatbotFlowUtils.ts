@@ -73,6 +73,7 @@ export type ChatbotNodeConfig = {
   button_text?: string;
   sections?: ChatbotListSection[];
   agent_id?: string;
+  routing_queue_id?: string;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   url?: string;
   headers?: ChatbotWebhookHeader[];
@@ -480,7 +481,7 @@ export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "list_message") return "Mensaje de lista";
   if (type === "collect_input") return "Recopilar respuesta";
   if (type === "condition") return "Condición";
-  if (type === "assign_agent") return "Asignar agente";
+  if (type === "assign_agent") return "Entrega humana";
   if (type === "webhook") return "Webhook / API";
   return "Fin";
 }
@@ -553,7 +554,7 @@ export function createChatbotNode(
                 : type === "condition"
                   ? { variable: "" }
                   : type === "assign_agent"
-                    ? { agent_id: "" }
+                    ? { routing_queue_id: "" }
                     : type === "webhook"
                       ? {
                           method: "POST",
@@ -630,11 +631,30 @@ export function updateChatbotAssignAgent(
 ): ChatbotFlowNode {
   if (node.data.node_type !== "assign_agent") return node;
 
+  const config = { ...node.data.config };
+  delete config.routing_queue_id;
   return {
     ...node,
     data: {
       ...node.data,
-      config: { ...node.data.config, agent_id: agentId },
+      config: { ...config, agent_id: agentId },
+    },
+  };
+}
+
+export function updateChatbotHandoffQueue(
+  node: ChatbotFlowNode,
+  routingQueueId: string,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "assign_agent") return node;
+
+  const config = { ...node.data.config };
+  delete config.agent_id;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: { ...config, routing_queue_id: routingQueueId },
     },
   };
 }

@@ -16,7 +16,7 @@ void test("Settings is a full-width workspace route", () => {
   assert.match(layout, /isSettingsWorkspacePath\(pathname\)/);
 });
 
-void test("Settings navigation contains only the existing three modules", () => {
+void test("Settings navigation adds routing queues without unrelated modules", () => {
   const workspace = readSource(
     "../src/components/settings/SettingsWorkspaceLayout.tsx",
   );
@@ -24,6 +24,7 @@ void test("Settings navigation contains only the existing three modules", () => 
   assert.match(workspace, /to: "\/settings\/organization"/);
   assert.match(workspace, /to: "\/settings\/webhooks"/);
   assert.match(workspace, /to: "\/settings\/api-keys"/);
+  assert.match(workspace, /to: "\/settings\/routing-queues"/);
   assert.doesNotMatch(workspace, /members|Miembros/);
   assert.doesNotMatch(workspace, /Billing|Notifications|Security/);
 });
@@ -37,7 +38,9 @@ void test("Settings landing and legacy member routes use their canonical workspa
     "../src/routes/_auth/settings/members/$memberId.tsx",
   );
 
-  assert.match(indexRoute, /redirect\(\{ to: "\/settings\/organization" \}\)/);
+  assert.match(indexRoute, /role === "supervisor"/);
+  assert.match(indexRoute, /"\/settings\/routing-queues"/);
+  assert.match(indexRoute, /"\/settings\/organization"/);
   assert.match(membersRoute, /redirect\(\{ to: "\/team-members" \}\)/);
   assert.match(memberRoute, /redirect\(\{ to: "\/team-members" \}\)/);
 });

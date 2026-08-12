@@ -71,6 +71,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
+  type RoutingQueueOption,
+  useRoutingQueueOptions,
+} from "@/queries/useRoutingQueues";
+import {
   type ChatbotFlowEditorData,
   type ChatbotFlowVersion,
   type ChatbotWebhookCredential,
@@ -138,7 +142,7 @@ import {
   type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
-  updateChatbotAssignAgent,
+  updateChatbotHandoffQueue,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
@@ -210,6 +214,7 @@ function ChatbotFlowEditor() {
   >(null);
   const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
   const { data: agents, isLoading: agentsLoading } = useCurrentAgents();
+  const routingQueuesQuery = useRoutingQueueOptions();
   const webhookCredentialsQuery = useChatbotWebhookCredentials();
   const handoffAgents = (agents ?? [])
     .filter(isActiveHumanAgent)
@@ -227,7 +232,7 @@ function ChatbotFlowEditor() {
     }
   };
 
-  if (agentLoading || agentsLoading) {
+  if (agentLoading || agentsLoading || routingQueuesQuery.isLoading) {
     return <EditorLoading label={t("Cargando editor")} />;
   }
 
@@ -276,6 +281,7 @@ function ChatbotFlowEditor() {
         onPublished={setLastPublishedVersion}
         onDismissPublished={() => setLastPublishedVersion(null)}
         handoffAgents={handoffAgents}
+        routingQueues={routingQueuesQuery.data ?? []}
         webhookCredentials={webhookCredentialsQuery.data ?? []}
       />
     </ReactFlowProvider>
@@ -292,6 +298,7 @@ function FlowEditorWorkspace({
   onPublished,
   onDismissPublished,
   handoffAgents,
+  routingQueues,
   webhookCredentials,
 }: {
   editor: ChatbotFlowEditorData;
@@ -303,6 +310,7 @@ function FlowEditorWorkspace({
   onPublished: (version: number) => void;
   onDismissPublished: () => void;
   handoffAgents: ChatbotHandoffAgent[];
+  routingQueues: RoutingQueueOption[];
   webhookCredentials: ChatbotWebhookCredential[];
 }) {
   const { translate: t } = useTranslation();
@@ -717,11 +725,13 @@ function FlowEditorWorkspace({
     [setNodes],
   );
 
-  const updateAssignedAgent = useCallback(
-    (nodeId: string, agentId: string) => {
+  const updateHandoffQueue = useCallback(
+    (nodeId: string, routingQueueId: string) => {
       setNodes((currentNodes) =>
         currentNodes.map((node) =>
-          node.id === nodeId ? updateChatbotAssignAgent(node, agentId) : node,
+          node.id === nodeId
+            ? updateChatbotHandoffQueue(node, routingQueueId)
+            : node,
         ),
       );
     },
@@ -1296,7 +1306,8 @@ function FlowEditorWorkspace({
             onCollectInputChange={updateCollectInput}
             onInteractiveChange={updateInteractive}
             handoffAgents={handoffAgents}
-            onAssignedAgentChange={updateAssignedAgent}
+            routingQueues={routingQueues}
+            onHandoffQueueChange={updateHandoffQueue}
             webhookCredentials={webhookCredentials}
             creatingWebhookCredential={createWebhookCredential.isPending}
             onWebhookChange={updateWebhook}
@@ -1457,8 +1468,8 @@ function NodeLibrary({
     },
     {
       type: "assign_agent" as const,
-      label: t("Asignar agente"),
-      description: t("Transfiere la conversación a una persona"),
+      label: t("Entrega humana"),
+      description: t("Envía la conversación pendiente a una cola"),
       icon: UserRoundCheck,
       locked: false,
     },
@@ -1619,7 +1630,8 @@ function NodeInspector({
   onCollectInputChange,
   onInteractiveChange,
   handoffAgents,
-  onAssignedAgentChange,
+  routingQueues,
+  onHandoffQueueChange,
   webhookCredentials,
   creatingWebhookCredential,
   onWebhookChange,
@@ -1645,7 +1657,8 @@ function NodeInspector({
     updates: Partial<ChatbotNodeConfig>,
   ) => void;
   handoffAgents: ChatbotHandoffAgent[];
-  onAssignedAgentChange: (nodeId: string, agentId: string) => void;
+  routingQueues: RoutingQueueOption[];
+  onHandoffQueueChange: (nodeId: string, routingQueueId: string) => void;
   webhookCredentials: ChatbotWebhookCredential[];
   creatingWebhookCredential: boolean;
   onWebhookChange: (
@@ -1791,10 +1804,13 @@ function NodeInspector({
               onChange={(updates) => onInteractiveChange(node.id, updates)}
             />
           ) : isAssignAgent ? (
-            <AssignAgentInspector
+            <HumanHandoffInspector
               node={node}
               agents={handoffAgents}
-              onChange={(agentId) => onAssignedAgentChange(node.id, agentId)}
+              queues={routingQueues}
+              onQueueChange={(routingQueueId) =>
+                onHandoffQueueChange(node.id, routingQueueId)
+              }
             />
           ) : isWebhook ? (
             <WebhookInspector
@@ -1867,56 +1883,78 @@ function NodeInspector({
   );
 }
 
-function AssignAgentInspector({
+function HumanHandoffInspector({
   node,
   agents,
-  onChange,
+  queues,
+  onQueueChange,
 }: {
   node: ChatbotFlowNodeType;
   agents: ChatbotHandoffAgent[];
-  onChange: (agentId: string) => void;
+  queues: RoutingQueueOption[];
+  onQueueChange: (routingQueueId: string) => void;
 }) {
   const { translate: t } = useTranslation();
   const agentId =
     typeof node.data.config.agent_id === "string"
       ? node.data.config.agent_id
       : "";
+  const routingQueueId =
+    typeof node.data.config.routing_queue_id === "string"
+      ? node.data.config.routing_queue_id
+      : "";
   const selectedAgentAvailable = agents.some((agent) => agent.id === agentId);
+  const selectedQueueAvailable = queues.some(
+    (queue) => queue.id === routingQueueId,
+  );
+  const legacyAgent = agents.find((agent) => agent.id === agentId);
 
   return (
     <div className="space-y-[8px]">
       <label className="block">
-        <span className="text-[11px] font-medium">{t("Agente humano")}</span>
+        <span className="text-[11px] font-medium">{t("Cola de destino")}</span>
         <select
-          value={selectedAgentAvailable ? agentId : ""}
-          aria-invalid={!selectedAgentAvailable}
-          onChange={(event) => onChange(event.target.value)}
+          value={selectedQueueAvailable ? routingQueueId : ""}
+          aria-invalid={!selectedQueueAvailable}
+          onChange={(event) => onQueueChange(event.target.value)}
           className={`mt-[6px] h-[38px] w-full rounded-lg border bg-background px-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20 ${
-            selectedAgentAvailable
+            selectedQueueAvailable
               ? "border-border focus:border-primary"
               : "border-destructive"
           }`}
         >
-          <option value="">{t("Seleccioná un agente")}</option>
-          {agents.map((agent) => (
-            <option key={agent.id} value={agent.id}>
-              {agent.name}
+          <option value="">{t("Seleccioná una cola")}</option>
+          {queues.map((queue) => (
+            <option key={queue.id} value={queue.id}>
+              {queue.name}
             </option>
           ))}
         </select>
       </label>
+      {agentId && (
+        <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 p-[9px] text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">
+          {t("Destino heredado")}: {legacyAgent?.name ?? agentId}.{" "}
+          {t("Seleccioná una cola para actualizar este nodo.")}
+        </div>
+      )}
       <p
         className={`text-[10px] leading-relaxed ${
-          selectedAgentAvailable ? "text-muted-foreground" : "text-destructive"
+          selectedQueueAvailable || selectedAgentAvailable
+            ? "text-muted-foreground"
+            : "text-destructive"
         }`}
       >
-        {agents.length === 0
-          ? t("No hay agentes humanos activos disponibles.")
-          : selectedAgentAvailable
+        {queues.length === 0
+          ? t("Creá una cola activa en Configuración antes de publicar.")
+          : selectedQueueAvailable
             ? t(
-                "La automatización terminará y la conversación quedará asignada a esta persona.",
+                "La automatización terminará y la conversación quedará pendiente y sin asignar en esta cola.",
               )
-            : t("Seleccioná un agente humano activo.")}
+            : selectedAgentAvailable
+              ? t(
+                  "Este flujo publicado conserva temporalmente su asignación heredada.",
+                )
+              : t("Seleccioná una cola de destino activa.")}
       </p>
     </div>
   );

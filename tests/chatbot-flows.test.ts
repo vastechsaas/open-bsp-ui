@@ -33,6 +33,7 @@ import {
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotAssignAgent,
+  updateChatbotHandoffQueue,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
@@ -65,6 +66,20 @@ void test("assign agent is a configured terminal builder node", () => {
     ),
     false,
   );
+});
+
+void test("new human handoffs target one routing queue without assigning an agent", () => {
+  const queueId = "22222222-2222-4222-8222-222222222222";
+  const handoff = createChatbotNode(
+    "assign_agent",
+    { x: 200, y: 0 },
+    "handoff",
+  );
+
+  assert.deepEqual(handoff.data.config, { routing_queue_id: "" });
+  assert.deepEqual(updateChatbotHandoffQueue(handoff, queueId).data.config, {
+    routing_queue_id: queueId,
+  });
 });
 
 void test("webhook node stores only a credential reference and has two outcome routes", () => {

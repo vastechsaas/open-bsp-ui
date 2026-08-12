@@ -43,6 +43,10 @@ const ChatList = () => {
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
   const queueKey = useBoundStore((state) => state.ui.conversationQueueKey);
+  const routingQueueId = useBoundStore((state) => state.ui.routingQueueId);
+  const setRoutingQueueId = useBoundStore(
+    (state) => state.ui.setRoutingQueueId,
+  );
   const setConversationQueueKey = useBoundStore(
     (state) => state.ui.setConversationQueueKey,
   );
@@ -111,6 +115,9 @@ const ChatList = () => {
             role: currentAgent?.extra?.role,
           },
         ) &&
+        (isMentionedQueue ||
+          routingQueueId === null ||
+          a.conv.routing_queue_id === routingQueueId) &&
         !!a.mostRecentMsg,
     );
 
@@ -185,11 +192,13 @@ const ChatList = () => {
             </div>
           )}
           {(searchPattern ||
+            routingQueueId !== null ||
             activeQueueKey !== DEFAULT_CONVERSATION_QUEUE_KEY) && (
             <button
               className="text-[13px] text-primary"
               onClick={() => {
                 setSearchPattern("");
+                setRoutingQueueId(null);
                 setConversationQueueKey(
                   queues[0]?.key ?? DEFAULT_CONVERSATION_QUEUE_KEY,
                 );

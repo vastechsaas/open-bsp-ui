@@ -47,6 +47,8 @@ function conversation(
     name: "Test Customer",
     organization_address: "15557654321",
     organization_id: ORG_ID,
+    routed_at: null,
+    routing_queue_id: null,
     service: "whatsapp",
     status: "active",
     updated_at: "2026-07-12T00:00:00.000Z",

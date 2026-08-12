@@ -1,13 +1,20 @@
-import { Building2, KeyRound, Webhook } from "lucide-react";
+import { Building2, KeyRound, Route, Webhook } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrentAgent } from "@/queries/useAgents";
 
 type SettingsWorkspaceLayoutProps = {
   children: ReactNode;
 };
 
 const settingsNavigation = [
+  {
+    to: "/settings/routing-queues",
+    title: "Colas de enrutamiento",
+    description: "Destinos de entrega humana y sus agentes.",
+    icon: Route,
+  },
   {
     to: "/settings/organization",
     title: "Organización",
@@ -33,6 +40,13 @@ export default function SettingsWorkspaceLayout({
 }: SettingsWorkspaceLayoutProps) {
   const { translate: t } = useTranslation();
   const location = useLocation();
+  const { data: currentAgent } = useCurrentAgent();
+  const navigation =
+    currentAgent?.extra?.role === "supervisor"
+      ? settingsNavigation.filter(
+          (item) => item.to === "/settings/routing-queues",
+        )
+      : settingsNavigation;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">
@@ -53,7 +67,7 @@ export default function SettingsWorkspaceLayout({
             aria-label={t("Preferencias")}
             className="grid gap-1 sm:grid-cols-3 lg:grid-cols-1"
           >
-            {settingsNavigation.map((item) => {
+            {navigation.map((item) => {
               const Icon = item.icon;
               const active = location.pathname.startsWith(item.to);
 

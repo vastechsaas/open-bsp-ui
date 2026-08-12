@@ -57,6 +57,13 @@ export const queryKeys = {
   conversationQueues: {
     config: (orgId: NullableId) => [orgId, "conversation_queues"] as const,
   },
+  routingQueues: {
+    all: (orgId: NullableId) => [orgId, "routing_queues"] as const,
+    options: (orgId: NullableId) =>
+      [orgId, "routing_queues", "options"] as const,
+    page: (orgId: NullableId, params: object) =>
+      [orgId, "routing_queues", "page", params] as const,
+  },
   privateNotes: {
     mentionableHumans: (orgId: NullableId, search: string) =>
       [orgId, "private_notes", "mentionable_humans", search] as const,

@@ -45,6 +45,7 @@ import { Route as AuthTemplatesNewRouteImport } from './routes/_auth/templates/n
 import { Route as AuthTemplatesTemplateIdRouteImport } from './routes/_auth/templates/$templateId'
 import { Route as AuthStatsUsageRouteImport } from './routes/_auth/stats/usage'
 import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas'
+import { Route as AuthSettingsRoutingQueuesRouteImport } from './routes/_auth/settings/routing-queues'
 import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes/_auth/integrations/media-preprocessing'
 import { Route as AuthConversationsNewRouteImport } from './routes/_auth/conversations/new'
 import { Route as AuthContactsNewRouteImport } from './routes/_auth/contacts/new'
@@ -267,6 +268,12 @@ const AuthStatsQuotasRoute = AuthStatsQuotasRouteImport.update({
   path: '/quotas',
   getParentRoute: () => AuthStatsRoute,
 } as any)
+const AuthSettingsRoutingQueuesRoute =
+  AuthSettingsRoutingQueuesRouteImport.update({
+    id: '/routing-queues',
+    path: '/routing-queues',
+    getParentRoute: () => AuthSettingsRoute,
+  } as any)
 const AuthIntegrationsMediaPreprocessingRoute =
   AuthIntegrationsMediaPreprocessingRouteImport.update({
     id: '/integrations/media-preprocessing',
@@ -517,6 +524,7 @@ export interface FileRoutesByFullPath {
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
   '/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
@@ -589,6 +597,7 @@ export interface FileRoutesByTo {
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
   '/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
@@ -667,6 +676,7 @@ export interface FileRoutesById {
   '/_auth/contacts/new': typeof AuthContactsNewRoute
   '/_auth/conversations/new': typeof AuthConversationsNewRoute
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/_auth/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
   '/_auth/stats/usage': typeof AuthStatsUsageRoute
   '/_auth/templates/$templateId': typeof AuthTemplatesTemplateIdRouteWithChildren
@@ -745,6 +755,7 @@ export interface FileRouteTypes {
     | '/contacts/new'
     | '/conversations/new'
     | '/integrations/media-preprocessing'
+    | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
     | '/templates/$templateId'
@@ -817,6 +828,7 @@ export interface FileRouteTypes {
     | '/contacts/new'
     | '/conversations/new'
     | '/integrations/media-preprocessing'
+    | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
     | '/templates/$templateId'
@@ -894,6 +906,7 @@ export interface FileRouteTypes {
     | '/_auth/contacts/new'
     | '/_auth/conversations/new'
     | '/_auth/integrations/media-preprocessing'
+    | '/_auth/settings/routing-queues'
     | '/_auth/stats/quotas'
     | '/_auth/stats/usage'
     | '/_auth/templates/$templateId'
@@ -1215,6 +1228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthStatsQuotasRouteImport
       parentRoute: typeof AuthStatsRoute
     }
+    '/_auth/settings/routing-queues': {
+      id: '/_auth/settings/routing-queues'
+      path: '/routing-queues'
+      fullPath: '/settings/routing-queues'
+      preLoaderRoute: typeof AuthSettingsRoutingQueuesRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/integrations/media-preprocessing': {
       id: '/_auth/integrations/media-preprocessing'
       path: '/integrations/media-preprocessing'
@@ -1492,6 +1512,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthSettingsRouteChildren {
+  AuthSettingsRoutingQueuesRoute: typeof AuthSettingsRoutingQueuesRoute
   AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
   AuthSettingsApiKeysApiKeyIdRoute: typeof AuthSettingsApiKeysApiKeyIdRoute
   AuthSettingsApiKeysNewRoute: typeof AuthSettingsApiKeysNewRoute
@@ -1507,6 +1528,7 @@ interface AuthSettingsRouteChildren {
 }
 
 const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
+  AuthSettingsRoutingQueuesRoute: AuthSettingsRoutingQueuesRoute,
   AuthSettingsIndexRoute: AuthSettingsIndexRoute,
   AuthSettingsApiKeysApiKeyIdRoute: AuthSettingsApiKeysApiKeyIdRoute,
   AuthSettingsApiKeysNewRoute: AuthSettingsApiKeysNewRoute,

@@ -14,6 +14,7 @@ void test("Supervisor navigation contains only oversight workspaces", () => {
     "quickReplies",
     "contacts",
     "teamMembers",
+    "settings",
   ]);
 
   for (const access of roleAccess.supervisor) {
@@ -27,7 +28,6 @@ void test("Supervisor navigation contains only oversight workspaces", () => {
     "integrations",
     "stats",
     "whatsappManager",
-    "settings",
   ] as const) {
     assert.equal(canAccessNavigation("supervisor", access), false);
   }
@@ -42,6 +42,8 @@ void test("Supervisor route guard permits inbox oversight and denies management 
     "/contacts",
     "/contacts/contact-1",
     "/team-members",
+    "/settings",
+    "/settings/routing-queues",
   ]) {
     assert.equal(canAccessPath("supervisor", path), true, path);
   }
@@ -54,7 +56,6 @@ void test("Supervisor route guard permits inbox oversight and denies management 
     "/integrations",
     "/stats",
     "/whatsapp-manager",
-    "/settings",
     "/settings/api-keys",
   ]) {
     assert.equal(canAccessPath("supervisor", path), false, path);

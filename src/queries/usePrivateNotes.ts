@@ -111,6 +111,8 @@ export function toMentionedConversation(
     name: row.name || null,
     organization_address: row.organization_address,
     organization_id: row.organization_id,
+    routed_at: row.routed_at || null,
+    routing_queue_id: row.routing_queue_id || null,
     service: row.service,
     status: row.status,
     updated_at: row.updated_at,

@@ -44,6 +44,7 @@ export const roleAccess: Record<OrganizationRole, readonly NavigationAccess[]> =
       "quickReplies",
       "contacts",
       "teamMembers",
+      "settings",
     ],
     agent: ["conversations", "contacts"],
   };
@@ -76,6 +77,12 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!role) return false;
+  if (role === "supervisor" && pathname.startsWith("/settings")) {
+    return (
+      pathname === "/settings" ||
+      pathname.startsWith("/settings/routing-queues")
+    );
+  }
   const route = pathAccess.find(
     ([path]) => pathname === path || pathname.startsWith(`${path}/`),
   );
