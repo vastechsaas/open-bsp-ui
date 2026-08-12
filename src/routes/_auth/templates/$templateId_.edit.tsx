@@ -5,7 +5,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTemplateRecord } from "@/queries/useTemplates";
 import { isSubmittedTemplateEditable } from "@/utils/TemplateDraftUtils";
 
-export const Route = createFileRoute("/_auth/templates/$templateId/edit")({
+export const Route = createFileRoute("/_auth/templates/$templateId_/edit")({
   component: TemplateEdit,
 });
 
