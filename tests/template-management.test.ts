@@ -77,6 +77,21 @@ void test("template manager routes use the full-width workspace", () => {
   assert.equal(isTemplateWorkspacePath("/integrations"), false);
 });
 
+void test("submitted template editing is not nested under the read-only detail route", () => {
+  const editRoute = readFileSync(
+    new URL(
+      "../src/routes/_auth/templates/$templateId_.edit.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    editRoute,
+    /createFileRoute\("\/_auth\/templates\/\$templateId_\/edit"\)/,
+  );
+});
+
 const readyTemplate: TemplateEditorValues = {
   organizationAddress: "15550000000",
   name: "order_update",
@@ -99,7 +114,7 @@ void test("template manager labels exist in every supported locale", () => {
       import.meta.url,
     ),
     new URL(
-      "../src/routes/_auth/templates/$templateId.edit.tsx",
+      "../src/routes/_auth/templates/$templateId_.edit.tsx",
       import.meta.url,
     ),
   ];
