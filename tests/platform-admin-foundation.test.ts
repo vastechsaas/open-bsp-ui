@@ -103,7 +103,7 @@ void test("tenant selection is URL-backed and cancels the previous tenant reques
   assert.match(layout, /Todos los tenants/);
 });
 
-void test("foundation views remain read-only", () => {
+void test("foundation views remain read-only outside explicit queue management", () => {
   const files = [
     read("../src/components/platform/PlatformLayout.tsx"),
     read("../src/components/platform/PlatformOverview.tsx"),
@@ -111,7 +111,6 @@ void test("foundation views remain read-only", () => {
     read("../src/queries/usePlatformAdmin.ts"),
   ].join("\n");
 
-  assert.match(files, /Solo lectura/);
   assert.doesNotMatch(files, /update_platform/);
   assert.doesNotMatch(files, /delete_platform/);
   assert.doesNotMatch(files, /service_role/);

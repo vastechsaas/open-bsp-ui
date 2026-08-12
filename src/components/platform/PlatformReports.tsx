@@ -5,9 +5,7 @@ import {
   FileSpreadsheet,
   Megaphone,
   MessageSquareText,
-  ShieldCheck,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -15,10 +13,7 @@ import {
   downloadPlatformReport,
   savePlatformReport,
 } from "@/queries/usePlatformReports";
-import {
-  usePlatformAccessAudit,
-  usePlatformTenantSummary,
-} from "@/queries/usePlatformAdmin";
+import { usePlatformTenantSummary } from "@/queries/usePlatformAdmin";
 import {
   getPreviousUtcMonth,
   getUtcMonth,
@@ -67,8 +62,6 @@ export default function PlatformReports({
   const [result, setResult] = useState<DownloadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const activeDownload = useRef<AbortController | null>(null);
-
-  usePlatformAccessAudit("tenant", organizationId, tenant.isSuccess);
 
   useEffect(() => {
     return () => activeDownload.current?.abort();
@@ -126,27 +119,14 @@ export default function PlatformReports({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 p-4 sm:p-6 lg:p-7">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex w-full flex-col gap-5 p-5 sm:p-6">
+      <header>
         <div>
-          <Link
-            to="/platform/$organizationId"
-            params={{ organizationId }}
-            className="mb-3 inline-flex text-[12px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            {t("Volver al resumen del tenant")}
-          </Link>
-          <h1 className="text-[26px] font-semibold tracking-tight">
-            {t("Reportes mensuales")}
-          </h1>
+          <h2 className="text-xl font-semibold">{t("Reportes mensuales")}</h2>
           <p className="mt-1 text-[14px] text-muted-foreground">
             {tenant.data.organization_name}
           </p>
         </div>
-        <span className="inline-flex h-9 items-center gap-2 self-start rounded-full border border-primary/30 bg-primary/10 px-3 text-[12px] font-medium text-primary">
-          <ShieldCheck className="h-4 w-4" />
-          {t("Solo lectura")}
-        </span>
       </header>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">

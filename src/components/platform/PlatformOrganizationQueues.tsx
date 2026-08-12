@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { message as toast } from "antd";
 import { Archive, Pencil, Plus, RotateCcw, Search } from "lucide-react";
 import DataTablePagination from "@/components/DataTablePagination";
@@ -7,106 +6,84 @@ import RoutingQueueEditorDialog from "@/components/routing-queues/RoutingQueueEd
 import Spinner from "@/components/Spinner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import {
-  type RoutingQueueListRow,
-  useCreateRoutingQueue,
-  useRoutingQueuesPage,
-  useUpdateRoutingQueue,
-} from "@/queries/useRoutingQueues";
+  type PlatformRoutingQueueRow,
+  useCreatePlatformRoutingQueue,
+  usePlatformOrganizationAgentsPage,
+  usePlatformRoutingQueuesPage,
+  useUpdatePlatformRoutingQueue,
+} from "@/queries/usePlatformOrganizationManagement";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
-import type { AgentRow } from "@/supabase/client";
 
-export const Route = createFileRoute("/_auth/settings/routing-queues")({
-  component: RoutingQueuesSettings,
-});
-
-function isAcceptedAgent(
-  agent: AgentRow,
-): agent is Extract<AgentRow, { ai: false }> {
-  if (agent.ai) return false;
-  return (
-    !!agent.user_id &&
-    agent.extra?.role === "agent" &&
-    (!agent.extra.invitation || agent.extra.invitation.status === "accepted")
-  );
-}
-
-function RoutingQueuesSettings() {
+export default function PlatformOrganizationQueues({
+  organizationId,
+}: {
+  organizationId: string;
+}) {
   const { translate: t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"active" | "archived" | "">("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_DATA_TABLE_PAGE_SIZE);
-  const [editing, setEditing] = useState<RoutingQueueListRow | "create" | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<
+    PlatformRoutingQueueRow | "create" | null
+  >(null);
   const debouncedSearch = useDebouncedValue(search.trim());
-  const { data: currentAgent } = useCurrentAgent();
-  const { data: agents = [] } = useCurrentAgents();
-  const createQueue = useCreateRoutingQueue();
-  const updateQueue = useUpdateRoutingQueue();
-  const canManage = ["owner", "admin", "supervisor"].includes(
-    currentAgent?.extra?.role ?? "",
-  );
-  const query = useRoutingQueuesPage({
+  const queues = usePlatformRoutingQueuesPage(organizationId, {
     page,
     pageSize,
     search: debouncedSearch || undefined,
+    status: status || undefined,
   });
-  const rows = query.data?.rows ?? [];
-  const total = query.data?.total ?? 0;
-  const eligibleAgents = agents.filter(isAcceptedAgent);
-  const namesById = useMemo(
-    () => new Map(eligibleAgents.map((agent) => [agent.id, agent.name])),
-    [eligibleAgents],
-  );
+  const agents = usePlatformOrganizationAgentsPage(organizationId, {
+    page: 1,
+    pageSize: 50,
+  });
+  const createQueue = useCreatePlatformRoutingQueue(organizationId);
+  const updateQueue = useUpdatePlatformRoutingQueue(organizationId);
 
-  useEffect(() => setPage(1), [debouncedSearch]);
+  useEffect(() => setPage(1), [debouncedSearch, status]);
+
+  const rows = queues.data?.rows ?? [];
+  const total = queues.data?.total ?? 0;
+  const agentOptions = (agents.data?.rows ?? []).map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+  }));
 
   const changeStatus = async (
-    queue: RoutingQueueListRow,
-    status: "active" | "archived",
+    queue: PlatformRoutingQueueRow,
+    nextStatus: "active" | "archived",
   ) => {
     try {
       await updateQueue.mutateAsync({
         id: queue.id,
         name: queue.name,
-        status,
+        status: nextStatus,
         agentIds: queue.member_ids ?? [],
       });
       void toast.success(
-        status === "active" ? t("Cola restaurada") : t("Cola archivada"),
+        nextStatus === "active" ? t("Cola restaurada") : t("Cola archivada"),
       );
     } catch {
       void toast.error(t("No se pudo actualizar la cola"));
     }
   };
 
-  if (!canManage) {
-    return (
-      <SettingsState
-        title={t("No tenés permisos para administrar colas")}
-        description={t(
-          "Solo propietarios, administradores y supervisores pueden configurar el enrutamiento.",
-        )}
-      />
-    );
-  }
-
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <header className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:px-6">
+    <div className="p-5 sm:p-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div>
-          <h2 className="text-xl font-semibold">
-            {t("Colas de enrutamiento")}
-          </h2>
+          <h2 className="text-xl font-semibold">{t("Colas de negocio")}</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {t("Dirigí las entregas humanas a los agentes adecuados.")}
+            {t(
+              "Administrá el enrutamiento y los agentes elegibles de esta organización.",
+            )}
           </p>
         </div>
         <button
           type="button"
-          className="primary flex items-center justify-center gap-2 px-4 py-2 sm:ml-auto"
+          className="primary inline-flex items-center justify-center gap-2 px-4 py-2 sm:ml-auto"
           onClick={() => setEditing("create")}
         >
           <Plus className="h-4 w-4" />
@@ -114,48 +91,73 @@ function RoutingQueuesSettings() {
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-5">
-        <label className="flex h-10 max-w-md items-center gap-2 rounded-lg border border-input px-3">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <label className="flex h-10 flex-1 items-center gap-2 rounded-lg border border-input bg-background px-3 sm:max-w-md">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("Buscar cola")}
-            className="w-full bg-transparent text-sm outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </label>
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value as typeof status)}
+          className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+        >
+          <option value="">{t("Todos los estados")}</option>
+          <option value="active">{t("Activas")}</option>
+          <option value="archived">{t("Archivadas")}</option>
+        </select>
+      </div>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-xl border border-border">
-          {query.isLoading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Spinner />
-            </div>
-          ) : query.isError ? (
-            <SettingsState
-              title={t("No se pudieron cargar las colas")}
-              description={t("Intentá nuevamente en unos minutos.")}
-            />
-          ) : rows.length === 0 ? (
-            <SettingsState
-              title={t("Todavía no hay colas")}
-              description={t(
-                "Creá VIP Support para comenzar a enrutar entregas humanas.",
-              )}
-            />
-          ) : (
-            <table className="w-full min-w-[720px] text-left">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border">
+        {queues.isPending ? (
+          <div className="flex h-64 items-center justify-center">
+            <Spinner />
+          </div>
+        ) : queues.isError ? (
+          <State title={t("No se pudieron cargar las colas")} />
+        ) : rows.length === 0 ? (
+          <State title={t("No se encontraron colas")} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[840px] text-left">
               <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">{t("Nombre")}</th>
-                  <th className="px-4 py-3">{t("Estado")}</th>
                   <th className="px-4 py-3">{t("Agentes")}</th>
+                  <th className="px-4 py-3">{t("Estrategia de asignación")}</th>
+                  <th className="px-4 py-3">{t("Estado")}</th>
                   <th className="px-4 py-3 text-right">{t("Acciones")}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {rows.map((queue) => (
-                  <tr key={queue.id} className="border-t border-border">
+                  <tr key={queue.id} className="text-[13px]">
                     <td className="px-4 py-4 font-semibold">{queue.name}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        {(queue.member_names ?? []).slice(0, 3).map((name) => (
+                          <span
+                            key={`${queue.id}-${name}`}
+                            title={name}
+                            className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-semibold"
+                          >
+                            {initials(name)}
+                          </span>
+                        ))}
+                        <span className="text-muted-foreground">
+                          {queue.member_count === 0
+                            ? t("Sin agentes")
+                            : `${queue.member_count} ${t("agentes")}`}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {t("Manual")}
+                    </td>
                     <td className="px-4 py-4">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${queue.status === "active" ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}
@@ -164,11 +166,6 @@ function RoutingQueuesSettings() {
                           ? t("Activa")
                           : t("Archivada")}
                       </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">
-                      {(queue.member_ids ?? [])
-                        .map((id) => namesById.get(id) ?? id)
-                        .join(", ") || t("Sin agentes")}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
@@ -208,22 +205,22 @@ function RoutingQueuesSettings() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        <div className="mt-3 flex justify-end">
-          <DataTablePagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            disabled={query.isLoading}
-            onPageChange={setPage}
-            onPageSizeChange={(value) => {
-              setPageSize(value);
-              setPage(1);
-            }}
-          />
-        </div>
+      <div className="mt-3 flex justify-end">
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          disabled={queues.isFetching}
+          onPageChange={setPage}
+          onPageSizeChange={(value) => {
+            setPageSize(value);
+            setPage(1);
+          }}
+        />
       </div>
 
       {editing && (
@@ -233,7 +230,7 @@ function RoutingQueuesSettings() {
           initialAgentIds={
             editing === "create" ? undefined : (editing.member_ids ?? [])
           }
-          agents={eligibleAgents.map(({ id, name }) => ({ id, name }))}
+          agents={agentOptions}
           saving={createQueue.isPending || updateQueue.isPending}
           onSave={async ({ name, agentIds }) => {
             try {
@@ -262,19 +259,19 @@ function RoutingQueuesSettings() {
   );
 }
 
-function SettingsState({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function State({ title }: { title: string }) {
   return (
-    <div className="flex h-64 flex-col items-center justify-center p-6 text-center">
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        {description}
-      </p>
+    <div className="flex h-64 items-center justify-center p-6 text-center text-sm text-muted-foreground">
+      {title}
     </div>
   );
 }

@@ -123,6 +123,14 @@ export const queryKeys = {
       ["platform", "organizations", params] as const,
     tenant: (organizationId: NullableId) =>
       ["platform", "tenant", organizationId] as const,
+    organizationQueues: (organizationId: NullableId) =>
+      ["platform", "tenant", organizationId, "routing-queues"] as const,
+    organizationQueuesPage: (organizationId: NullableId, params: object) =>
+      ["platform", "tenant", organizationId, "routing-queues", params] as const,
+    organizationAgents: (organizationId: NullableId) =>
+      ["platform", "tenant", organizationId, "agents"] as const,
+    organizationAgentsPage: (organizationId: NullableId, params: object) =>
+      ["platform", "tenant", organizationId, "agents", params] as const,
     reports: (organizationId: NullableId, month: string) =>
       ["platform", "reports", organizationId, month] as const,
   },

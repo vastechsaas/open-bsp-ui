@@ -1,7 +1,6 @@
 import { Select } from "antd";
 import {
   Building2,
-  FileBarChart,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -46,7 +45,11 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
     organizationId?: string;
   };
   const organizationId = params.organizationId || null;
-  const reportsActive = location.pathname.endsWith("/reports");
+  const overviewActive =
+    location.pathname === "/platform" || location.pathname === "/platform/";
+  const organizationDetailsActive =
+    !!organizationId &&
+    location.pathname.startsWith(`/platform/${organizationId}`);
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -135,9 +138,9 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           <Link
             to="/platform"
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
-              reportsActive
-                ? "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                : "bg-sidebar-accent text-sidebar-accent-foreground"
+              overviewActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             }`}
           >
             <LayoutDashboard className="h-5 w-5" />
@@ -145,16 +148,16 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           </Link>
           {organizationId && (
             <Link
-              to="/platform/$organizationId/reports"
+              to="/platform/$organizationId"
               params={{ organizationId }}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
-                reportsActive
+                organizationDetailsActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >
-              <FileBarChart className="h-5 w-5" />
-              {t("Reportes")}
+              <Building2 className="h-5 w-5" />
+              {t("Detalles de la organización")}
             </Link>
           )}
           <Link
