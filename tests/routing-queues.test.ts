@@ -83,3 +83,24 @@ void test("settings, queue picker, and Mentioned-global behavior are wired", () 
   assert.match(filter, /Todas las colas/);
   assert.match(list, /isMentionedQueue \|\|\s+routingQueueId === null/s);
 });
+
+void test("routing queue labels are readable in the English workspace", () => {
+  const english = JSON.parse(
+    readFileSync(new URL("../public/locales/en.json", import.meta.url), "utf8"),
+  ) as Record<string, string>;
+
+  for (const label of [
+    "Colas de enrutamiento",
+    "Dirigí las entregas humanas a los agentes adecuados.",
+    "Nueva cola",
+    "Buscar cola",
+    "No se pudieron cargar las colas",
+    "Todavía no hay colas",
+    "Agentes elegibles",
+    "Todas las colas",
+    "Entrega humana",
+    "Cola de destino",
+  ]) {
+    assert.ok(english[label], `Missing English translation: ${label}`);
+  }
+});
