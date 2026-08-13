@@ -106,7 +106,13 @@ void test("the reports view exposes UTC, live, progress, empty, and error states
   assert.match(component, /type="month"/);
   assert.match(component, /getPreviousUtcMonth/);
   assert.match(component, /Mes del reporte \(UTC\)/);
-  assert.match(component, /Los reportes se recalculan con datos actuales/);
+  assert.match(component, /UTC · Datos actuales/);
+  assert.match(component, /Reportes disponibles/);
+  assert.match(component, /Datos incluidos/);
+  assert.match(component, /Fuente de datos/);
+  assert.match(component, /<table/);
+  assert.doesNotMatch(component, /<article/);
+  assert.doesNotMatch(component, /lg:grid-cols-2/);
   assert.match(component, /Generando CSV\.\.\./);
   assert.match(component, /El CSV no contiene filas para este mes\./);
   assert.match(component, /No se pudo generar el reporte/);
@@ -117,6 +123,12 @@ void test("report labels exist in every supported locale", () => {
     "Reportes",
     "Reportes mensuales",
     "Mes del reporte (UTC)",
+    "Generá exportaciones operativas específicas del tenant.",
+    "UTC · Datos actuales",
+    "Reportes disponibles",
+    "Datos incluidos",
+    "Fuente de datos",
+    "Datos actuales",
     "Descargar CSV",
     "Generando CSV...",
     "No se pudo generar el reporte",
