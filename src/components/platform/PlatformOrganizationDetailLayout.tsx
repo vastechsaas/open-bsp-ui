@@ -43,7 +43,7 @@ export default function PlatformOrganizationDetailLayout({
   }
 
   const summary = tenant.data;
-  const tabs = [
+  const navigation = [
     {
       label: t("Vista general"),
       to: "/platform/$organizationId" as const,
@@ -117,28 +117,30 @@ export default function PlatformOrganizationDetailLayout({
         </dl>
       </header>
 
-      <nav
-        className="flex overflow-x-auto border-b border-border"
-        aria-label={t("Detalles de la organizaci\u00f3n")}
-      >
-        {tabs.map((tab) => (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            params={{ organizationId }}
-            className={`whitespace-nowrap border-b-2 px-4 py-3.5 text-[13px] font-medium ${
-              tab.active
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="grid min-h-[560px] lg:grid-cols-[220px_minmax(0,1fr)]">
+        <nav
+          className="flex overflow-x-auto border-b border-border py-2 lg:block lg:overflow-visible lg:border-b-0 lg:border-r lg:py-5 lg:pr-5"
+          aria-label={t("Detalles de la organizaci\u00f3n")}
+        >
+          {navigation.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              params={{ organizationId }}
+              className={`block whitespace-nowrap border-b-2 px-4 py-3 text-[13px] font-medium lg:border-b-0 lg:border-l-2 ${
+                item.active
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-      <div className="pt-5">
-        <Outlet />
+        <div className="min-w-0 py-5 lg:pl-7">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

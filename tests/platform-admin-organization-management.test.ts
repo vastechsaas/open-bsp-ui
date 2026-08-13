@@ -30,15 +30,20 @@ void test("selected organizations expose one reusable detail shell", () => {
   assert.doesNotMatch(shell, /max-w-\[1760px\]/);
   assert.doesNotMatch(shell, /accepted_agent_count/);
   assert.match(shell, /border-b border-border pb-5/);
+  assert.match(shell, /lg:grid-cols-\[220px_minmax\(0,1fr\)\]/);
+  assert.match(shell, /lg:border-r/);
   assert.match(shell, /<Outlet \/>/);
 });
 
-void test("organization overview uses a dense responsive metric grid", () => {
+void test("organization overview uses flat administrative rows without cards", () => {
   const summary = read("../src/components/platform/PlatformTenantSummary.tsx");
 
-  assert.match(summary, /xl:grid-cols-5/);
-  assert.doesNotMatch(summary, /2xl:grid-cols-5/);
-  assert.doesNotMatch(summary, /text-xl font-semibold/);
+  assert.match(summary, /AdminSection/);
+  assert.match(summary, /AdminRow/);
+  assert.match(summary, /ChannelRow/);
+  assert.match(summary, /\/platform\/\$organizationId\/agents/);
+  assert.doesNotMatch(summary, /PlatformMetricCard/);
+  assert.doesNotMatch(summary, /rounded-xl border border-border bg-card/);
 });
 
 void test("platform queue management uses protected platform RPCs and request ids", () => {
@@ -84,6 +89,10 @@ void test("new organization-management labels exist in every locale", () => {
       read(`../public/locales/${locale}.json`),
     ) as Record<string, string>;
     for (const key of [
+      "Resumen de la organización",
+      "Acceso operativo",
+      "Canales conectados",
+      "Abrir agentes",
       "Detalles de la organización",
       "Colas de negocio",
       "Estrategia de asignación",

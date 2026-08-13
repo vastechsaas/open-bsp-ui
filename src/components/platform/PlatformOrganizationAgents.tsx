@@ -29,7 +29,7 @@ export default function PlatformOrganizationAgents({
   const total = agents.data?.total ?? 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+    <div>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div>
           <h2 className="text-xl font-semibold">{t("Agentes")}</h2>
