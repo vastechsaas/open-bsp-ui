@@ -102,11 +102,6 @@ export default function PlatformTenantSummary({
           count={summary.connected_whatsapp_account_count}
           t={t}
         />
-        <ChannelRow
-          channel="Instagram"
-          count={summary.connected_instagram_account_count}
-          t={t}
-        />
       </AdminSection>
     </div>
   );

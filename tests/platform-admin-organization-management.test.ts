@@ -40,6 +40,7 @@ void test("selected organizations expose one reusable detail shell", () => {
 
 void test("organization overview uses flat administrative rows without cards", () => {
   const summary = read("../src/components/platform/PlatformTenantSummary.tsx");
+  const overview = read("../src/components/platform/PlatformOverview.tsx");
 
   assert.match(summary, /AdminSection/);
   assert.match(summary, /AdminRow/);
@@ -47,6 +48,12 @@ void test("organization overview uses flat administrative rows without cards", (
   assert.match(summary, /\/platform\/\$organizationId\/agents/);
   assert.doesNotMatch(summary, /PlatformMetricCard/);
   assert.doesNotMatch(summary, /rounded-xl border border-border bg-card/);
+  assert.match(summary, /channel="WhatsApp"/);
+  assert.doesNotMatch(summary, /Instagram/);
+  assert.doesNotMatch(summary, /connected_instagram_account_count/);
+  assert.match(overview, /label="WhatsApp"/);
+  assert.doesNotMatch(overview, /Instagram/);
+  assert.doesNotMatch(overview, /connected_instagram_account_count/);
 });
 
 void test("platform queue management uses protected platform RPCs and request ids", () => {

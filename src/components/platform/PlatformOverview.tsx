@@ -1,7 +1,6 @@
 import {
   Building2,
   ContactRound,
-  Instagram,
   MessageSquareText,
   UsersRound,
 } from "lucide-react";
@@ -42,7 +41,7 @@ export default function PlatformOverview() {
           {t("No se pudo cargar la vista general.")}
         </div>
       ) : (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           <PlatformMetricCard
             icon={<Building2 />}
             label={t("Tenants")}
@@ -68,12 +67,6 @@ export default function PlatformOverview() {
             icon={<WhatsAppOutlined />}
             label="WhatsApp"
             value={overview.data.connected_whatsapp_account_count}
-            caption={t("Cuentas conectadas")}
-          />
-          <PlatformMetricCard
-            icon={<Instagram />}
-            label="Instagram"
-            value={overview.data.connected_instagram_account_count}
             caption={t("Cuentas conectadas")}
           />
         </section>
