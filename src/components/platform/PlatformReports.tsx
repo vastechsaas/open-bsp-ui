@@ -119,10 +119,12 @@ export default function PlatformReports({
   }
 
   return (
-    <div className="flex w-full flex-col gap-5 p-5 sm:p-6">
+    <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-5 p-4 sm:p-6 lg:p-7">
       <header>
         <div>
-          <h2 className="text-xl font-semibold">{t("Reportes mensuales")}</h2>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("Reportes mensuales")}
+          </h1>
           <p className="mt-1 text-[14px] text-muted-foreground">
             {tenant.data.organization_name}
           </p>

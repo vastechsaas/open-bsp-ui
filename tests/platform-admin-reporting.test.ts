@@ -74,15 +74,17 @@ void test("platform reporting uses the authenticated server export endpoint", ()
 });
 
 void test("selected-tenant reporting has a guarded route and visible navigation", () => {
-  const route = read("../src/routes/platform/$organizationId/reports.tsx");
-  const layout = read(
+  const route = read("../src/routes/platform/reports/$organizationId.tsx");
+  const layout = read("../src/components/platform/PlatformLayout.tsx");
+  const organization = read(
     "../src/components/platform/PlatformOrganizationDetailLayout.tsx",
   );
   const parentGuard = read("../src/routes/platform.tsx");
 
-  assert.match(route, /\/platform\/\$organizationId\/reports/);
+  assert.match(route, /\/platform\/reports\/\$organizationId/);
   assert.match(route, /PlatformReports/);
-  assert.match(layout, /to: "\/platform\/\$organizationId\/reports"/);
+  assert.match(layout, /to="\/platform\/reports\/\$organizationId"/);
+  assert.doesNotMatch(organization, /Reportes/);
   assert.match(parentGuard, /fetchIsPlatformAdmin\(\)/);
 });
 

@@ -37,7 +37,7 @@ import { Route as AuthContactsIndexRouteImport } from './routes/_auth/contacts/i
 import { Route as AuthChatbotsIndexRouteImport } from './routes/_auth/chatbots/index'
 import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns/index'
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
-import { Route as PlatformOrganizationIdReportsRouteImport } from './routes/platform/$organizationId/reports'
+import { Route as PlatformReportsOrganizationIdRouteImport } from './routes/platform/reports/$organizationId'
 import { Route as PlatformOrganizationIdQueuesRouteImport } from './routes/platform/$organizationId/queues'
 import { Route as PlatformOrganizationIdAgentsRouteImport } from './routes/platform/$organizationId/agents'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
@@ -228,11 +228,11 @@ const AuthAgentsIndexRoute = AuthAgentsIndexRouteImport.update({
   path: '/agents/',
   getParentRoute: () => AuthRoute,
 } as any)
-const PlatformOrganizationIdReportsRoute =
-  PlatformOrganizationIdReportsRouteImport.update({
-    id: '/reports',
-    path: '/reports',
-    getParentRoute: () => PlatformOrganizationIdRoute,
+const PlatformReportsOrganizationIdRoute =
+  PlatformReportsOrganizationIdRouteImport.update({
+    id: '/reports/$organizationId',
+    path: '/reports/$organizationId',
+    getParentRoute: () => PlatformRoute,
   } as any)
 const PlatformOrganizationIdQueuesRoute =
   PlatformOrganizationIdQueuesRouteImport.update({
@@ -548,7 +548,7 @@ export interface FileRoutesByFullPath {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
-  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
+  '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
   '/chatbots': typeof AuthChatbotsIndexRoute
@@ -623,7 +623,7 @@ export interface FileRoutesByTo {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
-  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
+  '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
   '/chatbots': typeof AuthChatbotsIndexRoute
@@ -704,7 +704,7 @@ export interface FileRoutesById {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
-  '/platform/$organizationId/reports': typeof PlatformOrganizationIdReportsRoute
+  '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
   '/_auth/campaigns/': typeof AuthCampaignsIndexRoute
   '/_auth/chatbots/': typeof AuthChatbotsIndexRoute
@@ -785,7 +785,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/queues'
-    | '/platform/$organizationId/reports'
+    | '/platform/reports/$organizationId'
     | '/agents'
     | '/campaigns'
     | '/chatbots'
@@ -860,7 +860,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/queues'
-    | '/platform/$organizationId/reports'
+    | '/platform/reports/$organizationId'
     | '/agents'
     | '/campaigns'
     | '/chatbots'
@@ -940,7 +940,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/queues'
-    | '/platform/$organizationId/reports'
+    | '/platform/reports/$organizationId'
     | '/_auth/agents/'
     | '/_auth/campaigns/'
     | '/_auth/chatbots/'
@@ -1198,12 +1198,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAgentsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/platform/$organizationId/reports': {
-      id: '/platform/$organizationId/reports'
-      path: '/reports'
-      fullPath: '/platform/$organizationId/reports'
-      preLoaderRoute: typeof PlatformOrganizationIdReportsRouteImport
-      parentRoute: typeof PlatformOrganizationIdRoute
+    '/platform/reports/$organizationId': {
+      id: '/platform/reports/$organizationId'
+      path: '/reports/$organizationId'
+      fullPath: '/platform/reports/$organizationId'
+      preLoaderRoute: typeof PlatformReportsOrganizationIdRouteImport
+      parentRoute: typeof PlatformRoute
     }
     '/platform/$organizationId/queues': {
       id: '/platform/$organizationId/queues'
@@ -1713,7 +1713,6 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface PlatformOrganizationIdRouteChildren {
   PlatformOrganizationIdAgentsRoute: typeof PlatformOrganizationIdAgentsRoute
   PlatformOrganizationIdQueuesRoute: typeof PlatformOrganizationIdQueuesRoute
-  PlatformOrganizationIdReportsRoute: typeof PlatformOrganizationIdReportsRoute
   PlatformOrganizationIdIndexRoute: typeof PlatformOrganizationIdIndexRoute
 }
 
@@ -1721,7 +1720,6 @@ const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
   {
     PlatformOrganizationIdAgentsRoute: PlatformOrganizationIdAgentsRoute,
     PlatformOrganizationIdQueuesRoute: PlatformOrganizationIdQueuesRoute,
-    PlatformOrganizationIdReportsRoute: PlatformOrganizationIdReportsRoute,
     PlatformOrganizationIdIndexRoute: PlatformOrganizationIdIndexRoute,
   }
 
@@ -1733,11 +1731,13 @@ const PlatformOrganizationIdRouteWithChildren =
 interface PlatformRouteChildren {
   PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRouteWithChildren
   PlatformIndexRoute: typeof PlatformIndexRoute
+  PlatformReportsOrganizationIdRoute: typeof PlatformReportsOrganizationIdRoute
 }
 
 const PlatformRouteChildren: PlatformRouteChildren = {
   PlatformOrganizationIdRoute: PlatformOrganizationIdRouteWithChildren,
   PlatformIndexRoute: PlatformIndexRoute,
+  PlatformReportsOrganizationIdRoute: PlatformReportsOrganizationIdRoute,
 }
 
 const PlatformRouteWithChildren = PlatformRoute._addFileChildren(

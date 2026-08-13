@@ -1,6 +1,7 @@
 import { Select } from "antd";
 import {
   Building2,
+  FileSpreadsheet,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -50,6 +51,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const organizationDetailsActive =
     !!organizationId &&
     location.pathname.startsWith(`/platform/${organizationId}`);
+  const reportsActive = location.pathname.startsWith("/platform/reports/");
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -107,10 +109,17 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
         return;
       }
 
-      await navigate({
-        to: "/platform/$organizationId",
-        params: { organizationId: value },
-      });
+      await navigate(
+        reportsActive
+          ? {
+              to: "/platform/reports/$organizationId",
+              params: { organizationId: value },
+            }
+          : {
+              to: "/platform/$organizationId",
+              params: { organizationId: value },
+            },
+      );
     } catch (error) {
       setPendingScope(null);
       throw error;
@@ -158,6 +167,20 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
             >
               <Building2 className="h-5 w-5" />
               {t("Detalles de la organización")}
+            </Link>
+          )}
+          {organizationId && (
+            <Link
+              to="/platform/reports/$organizationId"
+              params={{ organizationId }}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+                reportsActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              <FileSpreadsheet className="h-5 w-5" />
+              {t("Reportes")}
             </Link>
           )}
           <Link

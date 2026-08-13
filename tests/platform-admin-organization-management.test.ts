@@ -25,7 +25,9 @@ void test("selected organizations expose one reusable detail shell", () => {
   assert.match(parentRoute, /PlatformOrganizationDetailLayout/);
   assert.match(shell, /\/platform\/\$organizationId\/queues/);
   assert.match(shell, /\/platform\/\$organizationId\/agents/);
-  assert.match(shell, /\/platform\/\$organizationId\/reports/);
+  assert.doesNotMatch(shell, /Reportes/);
+  assert.doesNotMatch(shell, /xl:grid-cols-\[280px/);
+  assert.match(shell, /max-w-\[1760px\]/);
   assert.match(shell, /accepted_agent_count/);
   assert.match(shell, /connected_whatsapp_account_count/);
 });
