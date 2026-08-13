@@ -127,7 +127,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   };
 
   return (
-    <div className="grid min-h-dvh bg-muted/30 text-foreground lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="grid min-h-dvh bg-background text-foreground lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="hidden min-h-dvh flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
           <img
@@ -265,7 +265,10 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           </div>
         </header>
 
-        <main key={getPlatformScopePath(organizationId)}>
+        <main
+          key={getPlatformScopePath(organizationId)}
+          className="min-h-[calc(100dvh-104px)] bg-background text-foreground"
+        >
           {pendingScope ? (
             <div className="flex min-h-[520px] items-center justify-center">
               <Spinner size={30} className="text-primary" />

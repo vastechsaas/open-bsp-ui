@@ -12,6 +12,9 @@ void test("global platform overview relies on the authoritative tenant selector"
   assert.doesNotMatch(overview, /DataTablePagination/);
   assert.doesNotMatch(overview, /usePlatformOrganizations/);
   assert.match(layout, /showSearch/);
+  assert.match(layout, /min-h-dvh bg-background text-foreground/);
+  assert.match(layout, /min-h-\[calc\(100dvh-104px\)\] bg-background/);
+  assert.doesNotMatch(layout, /min-h-dvh bg-muted\/30/);
   assert.match(layout, /Detalles de la organización/);
   assert.match(layout, /to="\/platform\/\$organizationId"/);
 });
