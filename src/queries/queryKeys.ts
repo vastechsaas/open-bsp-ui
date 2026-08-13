@@ -131,6 +131,22 @@ export const queryKeys = {
       ["platform", "tenant", organizationId, "agents"] as const,
     organizationAgentsPage: (organizationId: NullableId, params: object) =>
       ["platform", "tenant", organizationId, "agents", params] as const,
+    whatsappHealth: (organizationId: NullableId) =>
+      ["platform", "tenant", organizationId, "waba-health"] as const,
+    whatsappHealthPage: (organizationId: NullableId, params: object) =>
+      ["platform", "tenant", organizationId, "waba-health", params] as const,
+    whatsappHealthDetail: (
+      organizationId: NullableId,
+      phoneNumberId: NullableId,
+    ) =>
+      [
+        "platform",
+        "tenant",
+        organizationId,
+        "waba-health",
+        "detail",
+        phoneNumberId,
+      ] as const,
     reports: (organizationId: NullableId, month: string) =>
       ["platform", "reports", organizationId, month] as const,
   },

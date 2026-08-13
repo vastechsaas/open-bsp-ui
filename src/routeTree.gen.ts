@@ -38,6 +38,7 @@ import { Route as AuthChatbotsIndexRouteImport } from './routes/_auth/chatbots/i
 import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns/index'
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
 import { Route as PlatformReportsOrganizationIdRouteImport } from './routes/platform/reports/$organizationId'
+import { Route as PlatformOrganizationIdWabaHealthRouteImport } from './routes/platform/$organizationId/waba-health'
 import { Route as PlatformOrganizationIdQueuesRouteImport } from './routes/platform/$organizationId/queues'
 import { Route as PlatformOrganizationIdAgentsRouteImport } from './routes/platform/$organizationId/agents'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
@@ -57,12 +58,14 @@ import { Route as AuthCampaignsNewRouteImport } from './routes/_auth/campaigns/n
 import { Route as AuthCampaignsCampaignIdRouteImport } from './routes/_auth/campaigns/$campaignId'
 import { Route as AuthAgentsNewRouteImport } from './routes/_auth/agents/new'
 import { Route as AuthAgentsAgentIdRouteImport } from './routes/_auth/agents/$agentId'
+import { Route as PlatformOrganizationIdWabaHealthIndexRouteImport } from './routes/platform/$organizationId/waba-health/index'
 import { Route as AuthSettingsWebhooksIndexRouteImport } from './routes/_auth/settings/webhooks/index'
 import { Route as AuthSettingsOrganizationIndexRouteImport } from './routes/_auth/settings/organization/index'
 import { Route as AuthSettingsMembersIndexRouteImport } from './routes/_auth/settings/members/index'
 import { Route as AuthSettingsApiKeysIndexRouteImport } from './routes/_auth/settings/api-keys/index'
 import { Route as AuthIntegrationsWhatsappIndexRouteImport } from './routes/_auth/integrations/whatsapp/index'
 import { Route as AuthIntegrationsInstagramIndexRouteImport } from './routes/_auth/integrations/instagram/index'
+import { Route as PlatformOrganizationIdWabaHealthPhoneNumberIdRouteImport } from './routes/platform/$organizationId/waba-health/$phoneNumberId'
 import { Route as AuthTemplatesTemplateIdEditRouteImport } from './routes/_auth/templates/$templateId_.edit'
 import { Route as AuthSettingsWebhooksNewRouteImport } from './routes/_auth/settings/webhooks/new'
 import { Route as AuthSettingsWebhooksWebhookIdRouteImport } from './routes/_auth/settings/webhooks/$webhookId'
@@ -234,6 +237,12 @@ const PlatformReportsOrganizationIdRoute =
     path: '/reports/$organizationId',
     getParentRoute: () => PlatformRoute,
   } as any)
+const PlatformOrganizationIdWabaHealthRoute =
+  PlatformOrganizationIdWabaHealthRouteImport.update({
+    id: '/waba-health',
+    path: '/waba-health',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
 const PlatformOrganizationIdQueuesRoute =
   PlatformOrganizationIdQueuesRouteImport.update({
     id: '/queues',
@@ -334,6 +343,12 @@ const AuthAgentsAgentIdRoute = AuthAgentsAgentIdRouteImport.update({
   path: '/agents/$agentId',
   getParentRoute: () => AuthRoute,
 } as any)
+const PlatformOrganizationIdWabaHealthIndexRoute =
+  PlatformOrganizationIdWabaHealthIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PlatformOrganizationIdWabaHealthRoute,
+  } as any)
 const AuthSettingsWebhooksIndexRoute =
   AuthSettingsWebhooksIndexRouteImport.update({
     id: '/webhooks/',
@@ -369,6 +384,12 @@ const AuthIntegrationsInstagramIndexRoute =
     id: '/integrations/instagram/',
     path: '/integrations/instagram/',
     getParentRoute: () => AuthRoute,
+  } as any)
+const PlatformOrganizationIdWabaHealthPhoneNumberIdRoute =
+  PlatformOrganizationIdWabaHealthPhoneNumberIdRouteImport.update({
+    id: '/$phoneNumberId',
+    path: '/$phoneNumberId',
+    getParentRoute: () => PlatformOrganizationIdWabaHealthRoute,
   } as any)
 const AuthTemplatesTemplateIdEditRoute =
   AuthTemplatesTemplateIdEditRouteImport.update({
@@ -548,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
+  '/platform/$organizationId/waba-health': typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
@@ -572,12 +594,14 @@ export interface FileRoutesByFullPath {
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/templates/$templateId/edit': typeof AuthTemplatesTemplateIdEditRoute
+  '/platform/$organizationId/waba-health/$phoneNumberId': typeof PlatformOrganizationIdWabaHealthPhoneNumberIdRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
   '/integrations/whatsapp': typeof AuthIntegrationsWhatsappIndexRoute
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
   '/settings/members': typeof AuthSettingsMembersIndexRoute
   '/settings/organization': typeof AuthSettingsOrganizationIndexRoute
   '/settings/webhooks': typeof AuthSettingsWebhooksIndexRoute
+  '/platform/$organizationId/waba-health/': typeof PlatformOrganizationIdWabaHealthIndexRoute
   '/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
   '/integrations/whatsapp/$orgAddressId/profile': typeof AuthIntegrationsWhatsappOrgAddressIdProfileRoute
@@ -647,12 +671,14 @@ export interface FileRoutesByTo {
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/templates/$templateId/edit': typeof AuthTemplatesTemplateIdEditRoute
+  '/platform/$organizationId/waba-health/$phoneNumberId': typeof PlatformOrganizationIdWabaHealthPhoneNumberIdRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
   '/integrations/whatsapp': typeof AuthIntegrationsWhatsappIndexRoute
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
   '/settings/members': typeof AuthSettingsMembersIndexRoute
   '/settings/organization': typeof AuthSettingsOrganizationIndexRoute
   '/settings/webhooks': typeof AuthSettingsWebhooksIndexRoute
+  '/platform/$organizationId/waba-health': typeof PlatformOrganizationIdWabaHealthIndexRoute
   '/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
   '/integrations/whatsapp/$orgAddressId/profile': typeof AuthIntegrationsWhatsappOrgAddressIdProfileRoute
@@ -704,6 +730,7 @@ export interface FileRoutesById {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
+  '/platform/$organizationId/waba-health': typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
   '/_auth/campaigns/': typeof AuthCampaignsIndexRoute
@@ -728,12 +755,14 @@ export interface FileRoutesById {
   '/_auth/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/_auth/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/_auth/templates/$templateId_/edit': typeof AuthTemplatesTemplateIdEditRoute
+  '/platform/$organizationId/waba-health/$phoneNumberId': typeof PlatformOrganizationIdWabaHealthPhoneNumberIdRoute
   '/_auth/integrations/instagram/': typeof AuthIntegrationsInstagramIndexRoute
   '/_auth/integrations/whatsapp/': typeof AuthIntegrationsWhatsappIndexRoute
   '/_auth/settings/api-keys/': typeof AuthSettingsApiKeysIndexRoute
   '/_auth/settings/members/': typeof AuthSettingsMembersIndexRoute
   '/_auth/settings/organization/': typeof AuthSettingsOrganizationIndexRoute
   '/_auth/settings/webhooks/': typeof AuthSettingsWebhooksIndexRoute
+  '/platform/$organizationId/waba-health/': typeof PlatformOrganizationIdWabaHealthIndexRoute
   '/_auth/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/_auth/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
   '/_auth/integrations/whatsapp/$orgAddressId/profile': typeof AuthIntegrationsWhatsappOrgAddressIdProfileRoute
@@ -785,6 +814,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/queues'
+    | '/platform/$organizationId/waba-health'
     | '/platform/reports/$organizationId'
     | '/agents'
     | '/campaigns'
@@ -809,12 +839,14 @@ export interface FileRouteTypes {
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
     | '/templates/$templateId/edit'
+    | '/platform/$organizationId/waba-health/$phoneNumberId'
     | '/integrations/instagram'
     | '/integrations/whatsapp'
     | '/settings/api-keys'
     | '/settings/members'
     | '/settings/organization'
     | '/settings/webhooks'
+    | '/platform/$organizationId/waba-health/'
     | '/integrations/instagram/onboarding/$tokenId'
     | '/integrations/instagram/onboarding/new'
     | '/integrations/whatsapp/$orgAddressId/profile'
@@ -884,12 +916,14 @@ export interface FileRouteTypes {
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
     | '/templates/$templateId/edit'
+    | '/platform/$organizationId/waba-health/$phoneNumberId'
     | '/integrations/instagram'
     | '/integrations/whatsapp'
     | '/settings/api-keys'
     | '/settings/members'
     | '/settings/organization'
     | '/settings/webhooks'
+    | '/platform/$organizationId/waba-health'
     | '/integrations/instagram/onboarding/$tokenId'
     | '/integrations/instagram/onboarding/new'
     | '/integrations/whatsapp/$orgAddressId/profile'
@@ -940,6 +974,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/queues'
+    | '/platform/$organizationId/waba-health'
     | '/platform/reports/$organizationId'
     | '/_auth/agents/'
     | '/_auth/campaigns/'
@@ -964,12 +999,14 @@ export interface FileRouteTypes {
     | '/_auth/settings/webhooks/$webhookId'
     | '/_auth/settings/webhooks/new'
     | '/_auth/templates/$templateId_/edit'
+    | '/platform/$organizationId/waba-health/$phoneNumberId'
     | '/_auth/integrations/instagram/'
     | '/_auth/integrations/whatsapp/'
     | '/_auth/settings/api-keys/'
     | '/_auth/settings/members/'
     | '/_auth/settings/organization/'
     | '/_auth/settings/webhooks/'
+    | '/platform/$organizationId/waba-health/'
     | '/_auth/integrations/instagram/onboarding/$tokenId'
     | '/_auth/integrations/instagram/onboarding/new'
     | '/_auth/integrations/whatsapp/$orgAddressId/profile'
@@ -1205,6 +1242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformReportsOrganizationIdRouteImport
       parentRoute: typeof PlatformRoute
     }
+    '/platform/$organizationId/waba-health': {
+      id: '/platform/$organizationId/waba-health'
+      path: '/waba-health'
+      fullPath: '/platform/$organizationId/waba-health'
+      preLoaderRoute: typeof PlatformOrganizationIdWabaHealthRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
+    }
     '/platform/$organizationId/queues': {
       id: '/platform/$organizationId/queues'
       path: '/queues'
@@ -1338,6 +1382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAgentsAgentIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/platform/$organizationId/waba-health/': {
+      id: '/platform/$organizationId/waba-health/'
+      path: '/'
+      fullPath: '/platform/$organizationId/waba-health/'
+      preLoaderRoute: typeof PlatformOrganizationIdWabaHealthIndexRouteImport
+      parentRoute: typeof PlatformOrganizationIdWabaHealthRoute
+    }
     '/_auth/settings/webhooks/': {
       id: '/_auth/settings/webhooks/'
       path: '/webhooks'
@@ -1379,6 +1430,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/integrations/instagram'
       preLoaderRoute: typeof AuthIntegrationsInstagramIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/platform/$organizationId/waba-health/$phoneNumberId': {
+      id: '/platform/$organizationId/waba-health/$phoneNumberId'
+      path: '/$phoneNumberId'
+      fullPath: '/platform/$organizationId/waba-health/$phoneNumberId'
+      preLoaderRoute: typeof PlatformOrganizationIdWabaHealthPhoneNumberIdRouteImport
+      parentRoute: typeof PlatformOrganizationIdWabaHealthRoute
     }
     '/_auth/templates/$templateId_/edit': {
       id: '/_auth/templates/$templateId_/edit'
@@ -1710,9 +1768,28 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PlatformOrganizationIdWabaHealthRouteChildren {
+  PlatformOrganizationIdWabaHealthPhoneNumberIdRoute: typeof PlatformOrganizationIdWabaHealthPhoneNumberIdRoute
+  PlatformOrganizationIdWabaHealthIndexRoute: typeof PlatformOrganizationIdWabaHealthIndexRoute
+}
+
+const PlatformOrganizationIdWabaHealthRouteChildren: PlatformOrganizationIdWabaHealthRouteChildren =
+  {
+    PlatformOrganizationIdWabaHealthPhoneNumberIdRoute:
+      PlatformOrganizationIdWabaHealthPhoneNumberIdRoute,
+    PlatformOrganizationIdWabaHealthIndexRoute:
+      PlatformOrganizationIdWabaHealthIndexRoute,
+  }
+
+const PlatformOrganizationIdWabaHealthRouteWithChildren =
+  PlatformOrganizationIdWabaHealthRoute._addFileChildren(
+    PlatformOrganizationIdWabaHealthRouteChildren,
+  )
+
 interface PlatformOrganizationIdRouteChildren {
   PlatformOrganizationIdAgentsRoute: typeof PlatformOrganizationIdAgentsRoute
   PlatformOrganizationIdQueuesRoute: typeof PlatformOrganizationIdQueuesRoute
+  PlatformOrganizationIdWabaHealthRoute: typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   PlatformOrganizationIdIndexRoute: typeof PlatformOrganizationIdIndexRoute
 }
 
@@ -1720,6 +1797,8 @@ const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
   {
     PlatformOrganizationIdAgentsRoute: PlatformOrganizationIdAgentsRoute,
     PlatformOrganizationIdQueuesRoute: PlatformOrganizationIdQueuesRoute,
+    PlatformOrganizationIdWabaHealthRoute:
+      PlatformOrganizationIdWabaHealthRouteWithChildren,
     PlatformOrganizationIdIndexRoute: PlatformOrganizationIdIndexRoute,
   }
 

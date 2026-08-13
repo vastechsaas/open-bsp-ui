@@ -61,6 +61,11 @@ export default function PlatformOrganizationDetailLayout({
       to: "/platform/$organizationId/agents" as const,
       active: location.pathname.endsWith("/agents"),
     },
+    {
+      label: t("Salud de WABA"),
+      to: "/platform/$organizationId/waba-health" as const,
+      active: location.pathname.includes("/waba-health"),
+    },
   ];
   const wabaConnected = summary.connected_whatsapp_account_count > 0;
 
