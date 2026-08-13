@@ -27,9 +27,18 @@ void test("selected organizations expose one reusable detail shell", () => {
   assert.match(shell, /\/platform\/\$organizationId\/agents/);
   assert.doesNotMatch(shell, /Reportes/);
   assert.doesNotMatch(shell, /xl:grid-cols-\[280px/);
-  assert.match(shell, /max-w-\[1760px\]/);
-  assert.match(shell, /accepted_agent_count/);
-  assert.match(shell, /connected_whatsapp_account_count/);
+  assert.doesNotMatch(shell, /max-w-\[1760px\]/);
+  assert.doesNotMatch(shell, /accepted_agent_count/);
+  assert.match(shell, /border-b border-border pb-5/);
+  assert.match(shell, /<Outlet \/>/);
+});
+
+void test("organization overview uses a dense responsive metric grid", () => {
+  const summary = read("../src/components/platform/PlatformTenantSummary.tsx");
+
+  assert.match(summary, /xl:grid-cols-5/);
+  assert.doesNotMatch(summary, /2xl:grid-cols-5/);
+  assert.doesNotMatch(summary, /text-xl font-semibold/);
 });
 
 void test("platform queue management uses protected platform RPCs and request ids", () => {

@@ -37,15 +37,13 @@ export default function PlatformTenantSummary({
   const summary = tenant.data;
 
   return (
-    <div className="space-y-5 p-5 sm:p-6">
-      <header>
-        <h2 className="text-xl font-semibold">{t("Vista general")}</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {t("Resumen operativo de la organización seleccionada.")}
-        </p>
-      </header>
-
-      <section className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
+    <div className="space-y-4">
+      <section
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
+        aria-label={t(
+          "Resumen operativo de la organizaci\u00f3n seleccionada.",
+        )}
+      >
         <PlatformMetricCard
           icon={<UsersRound />}
           label={t("Agentes")}
@@ -77,8 +75,8 @@ export default function PlatformTenantSummary({
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-xl border border-border bg-background p-5">
-          <h3 className="text-[15px] font-semibold">{t("Suscripción")}</h3>
+        <article className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-[15px] font-semibold">{t("Suscripci\u00f3n")}</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <Detail
               label={t("Nivel")}
@@ -90,10 +88,10 @@ export default function PlatformTenantSummary({
             />
           </dl>
         </article>
-        <article className="rounded-xl border border-border bg-background p-5">
-          <h3 className="text-[15px] font-semibold">
-            {t("Información de la organización")}
-          </h3>
+        <article className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-[15px] font-semibold">
+            {t("Informaci\u00f3n de la organizaci\u00f3n")}
+          </h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <Detail
               label={t("Creado")}

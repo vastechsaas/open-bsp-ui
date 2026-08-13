@@ -15,7 +15,7 @@ export default function PlatformMetricCard({
   caption,
 }: PlatformMetricCardProps) {
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <article className="min-h-[124px] rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
           {label}
