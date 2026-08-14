@@ -1238,5 +1238,20 @@
   "Codigo": "Codigo",
   "Explicacion": "Explicacao",
   "Ultimo error": "Ultimo erro",
-  "No hay errores operativos recientes": "Nenhum erro operacional recente"
+  "No hay errores operativos recientes": "Nenhum erro operacional recente",
+  "Transferir a cola": "Transferir para fila",
+  "Transferir conversación a otra cola": "Transferir conversa para outra fila",
+  "Seleccioná el equipo que continuará la conversación.": "Selecione a equipe que continuará a conversa.",
+  "Cola de destino": "Fila de destino",
+  "Seleccioná una cola": "Selecione uma fila",
+  "No se pudieron cargar las colas disponibles.": "Não foi possível carregar as filas disponíveis.",
+  "No hay otras colas activas disponibles.": "Não há outras filas ativas disponíveis.",
+  "Explicación": "Explicação",
+  "Explicá por qué se transfiere esta conversación.": "Explique por que esta conversa está sendo transferida.",
+  "La conversación quedará sin asignar en la cola de destino.": "A conversa ficará sem atribuição na fila de destino.",
+  "Transfiriendo…": "Transferindo…",
+  "Conversación transferida a la cola": "Conversa transferida para a fila",
+  "transfirió esta conversación de": "transferiu esta conversa de",
+  "a la cola": "para a fila",
+  "Sin cola": "Sem fila"
 }

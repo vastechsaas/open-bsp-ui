@@ -2,7 +2,14 @@ import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import Avatar from "./Avatar";
 import useBoundStore from "@/stores/useBoundStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ArrowLeft, Check, ChevronDown, ContactRound } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  Check,
+  ChevronDown,
+  ContactRound,
+} from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
@@ -15,6 +22,8 @@ import {
 import AssignConversationButton from "./AssignConversationButton";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import ItemActions from "./ItemActions";
+import QueueTransferDialog from "./QueueTransferDialog";
+import { canTransferConversationToQueue } from "@/utils/QueueTransferUtils";
 
 export default function Header({
   customerDetailsOpen = false,
@@ -23,6 +32,7 @@ export default function Header({
   customerDetailsOpen?: boolean;
   onToggleCustomerDetails?: () => void;
 }) {
+  const [queueTransferOpen, setQueueTransferOpen] = useState(false);
   const navigate = useNavigate();
 
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
@@ -85,6 +95,12 @@ export default function Header({
     isAssignmentManager &&
     (!conversation?.assigned_agent_id ||
       (!currentAssignee?.ai && currentAssignee?.extra?.role === "agent"));
+  const canTransferQueue = canTransferConversationToQueue({
+    role: currentAgent?.extra?.role,
+    currentAgentId: currentAgent?.id,
+    assignedAgentId: conversation?.assigned_agent_id,
+    conversationStatus: conversation?.status,
+  });
 
   const subtitleParts = [
     service === "local" && t("Contacto de prueba"),
@@ -129,6 +145,17 @@ export default function Header({
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        {canTransferQueue && (
+          <button
+            type="button"
+            onClick={() => setQueueTransferOpen(true)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted/70 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            title={t("Transferir a cola")}
+          >
+            <ArrowRightLeft className="h-3.5 w-3.5 text-primary" aria-hidden />
+            <span className="hidden lg:inline">{t("Transferir a cola")}</span>
+          </button>
+        )}
         {onToggleCustomerDetails && (
           <button
             type="button"
@@ -188,6 +215,13 @@ export default function Header({
             />
           ))}
       </div>
+
+      {queueTransferOpen && (
+        <QueueTransferDialog
+          conversationId={activeConvId}
+          onClose={() => setQueueTransferOpen(false)}
+        />
+      )}
 
       {/* Options button - Hidden, does nothing yet. */}
       <div className="options flex justify-end w-full hidden">

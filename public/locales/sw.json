@@ -1238,5 +1238,20 @@
   "Codigo": "Msimbo",
   "Explicacion": "Maelezo",
   "Ultimo error": "Hitilafu ya mwisho",
-  "No hay errores operativos recientes": "Hakuna hitilafu za uendeshaji za hivi karibuni"
+  "No hay errores operativos recientes": "Hakuna hitilafu za uendeshaji za hivi karibuni",
+  "Transferir a cola": "Hamishia kwenye foleni",
+  "Transferir conversación a otra cola": "Hamisha mazungumzo kwenda foleni nyingine",
+  "Seleccioná el equipo que continuará la conversación.": "Chagua timu itakayoendelea na mazungumzo.",
+  "Cola de destino": "Foleni lengwa",
+  "Seleccioná una cola": "Chagua foleni",
+  "No se pudieron cargar las colas disponibles.": "Foleni zinazopatikana hazikuweza kupakiwa.",
+  "No hay otras colas activas disponibles.": "Hakuna foleni nyingine zinazotumika.",
+  "Explicación": "Maelezo",
+  "Explicá por qué se transfiere esta conversación.": "Eleza kwa nini mazungumzo haya yanahamishwa.",
+  "La conversación quedará sin asignar en la cola de destino.": "Mazungumzo yatabaki bila wakala katika foleni lengwa.",
+  "Transfiriendo…": "Inahamisha…",
+  "Conversación transferida a la cola": "Mazungumzo yamehamishwa kwenye foleni",
+  "transfirió esta conversación de": "alihamisha mazungumzo haya kutoka",
+  "a la cola": "kwenda foleni",
+  "Sin cola": "Hakuna foleni"
 }

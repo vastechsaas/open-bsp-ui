@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Database, supabase } from "@/supabase/client";
+import {
+  type ConversationRow,
+  type Database,
+  type MessageRow,
+  supabase,
+} from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import type { DataTablePageParams } from "@/utils/DataTableUtils";
 import { queryKeys } from "./queryKeys";
@@ -10,6 +15,16 @@ export type RoutingQueueListRow =
   Database["public"]["Functions"]["list_routing_queues_page"]["Returns"][number];
 export type RoutingQueueOption =
   Database["public"]["Functions"]["list_routing_queue_options"]["Returns"][number];
+export type TransferableRoutingQueueOption =
+  Database["public"]["Functions"]["list_transferable_routing_queue_options"]["Returns"][number];
+export type ConversationRoutingEvent =
+  Database["public"]["Tables"]["conversation_routing_events"]["Row"];
+
+export type QueueTransferResult = {
+  conversation: ConversationRow;
+  note: MessageRow;
+  routing_event: ConversationRoutingEvent;
+};
 
 export function useRoutingQueuesPage(params: DataTablePageParams) {
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
@@ -46,6 +61,53 @@ export function useRoutingQueueOptions() {
       return result.data as RoutingQueueOption[];
     },
     enabled: !!organizationId,
+  });
+}
+
+export function useTransferableRoutingQueueOptions(
+  conversationId: string | null | undefined,
+  enabled = true,
+) {
+  const organizationId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery({
+    queryKey: queryKeys.routingQueues.transferableOptions(
+      organizationId,
+      conversationId,
+    ),
+    queryFn: async () => {
+      const result = await supabase
+        .rpc("list_transferable_routing_queue_options", {
+          p_conversation_id: conversationId!,
+        })
+        .throwOnError();
+      return result.data as TransferableRoutingQueueOption[];
+    },
+    enabled: enabled && !!organizationId && !!conversationId,
+  });
+}
+
+export function useTransferConversationToQueue() {
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      targetRoutingQueueId,
+      text,
+    }: {
+      conversationId: string;
+      targetRoutingQueueId: string;
+      text: string;
+    }) => {
+      const result = await supabase
+        .rpc("transfer_conversation_to_queue_with_private_note", {
+          p_conversation_id: conversationId,
+          p_target_routing_queue_id: targetRoutingQueueId,
+          p_text: text,
+        })
+        .throwOnError();
+
+      return result.data as unknown as QueueTransferResult;
+    },
   });
 }
 
