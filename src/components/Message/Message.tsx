@@ -433,6 +433,7 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
     ? (props.message.content as PrivateNotePart)
     : undefined;
   const transfer = privateNoteContent?.transfer;
+  const routingTransfer = privateNoteContent?.routing_transfer;
 
   const structuredDisplay =
     props.message.content.type === "data"
@@ -465,7 +466,14 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       <>
         {privateNote && (
           <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-amber-800 dark:text-amber-200">
-            {transfer ? (
+            {routingTransfer ? (
+              <>
+                {props.authorName || t("Agente")}{" "}
+                {t("transfirió esta conversación de")}{" "}
+                {routingTransfer.from_queue_name || t("Sin cola")}{" "}
+                {t("a la cola")} {routingTransfer.to_queue_name}
+              </>
+            ) : transfer ? (
               <>
                 {props.authorName || t("Agente")}{" "}
                 {t("transfiri\u00f3 esta conversaci\u00f3n a")}{" "}

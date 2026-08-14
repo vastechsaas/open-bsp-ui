@@ -1277,5 +1277,20 @@
   "Codigo": "Code",
   "Explicacion": "Explanation",
   "Ultimo error": "Last error",
-  "No hay errores operativos recientes": "No recent operational errors"
+  "No hay errores operativos recientes": "No recent operational errors",
+  "Transferir a cola": "Transfer to queue",
+  "Transferir conversación a otra cola": "Transfer conversation to another queue",
+  "Seleccioná el equipo que continuará la conversación.": "Select the team that will continue the conversation.",
+  "Cola de destino": "Destination queue",
+  "Seleccioná una cola": "Select a queue",
+  "No se pudieron cargar las colas disponibles.": "Available queues could not be loaded.",
+  "No hay otras colas activas disponibles.": "No other active queues are available.",
+  "Explicación": "Explanation",
+  "Explicá por qué se transfiere esta conversación.": "Explain why this conversation is being transferred.",
+  "La conversación quedará sin asignar en la cola de destino.": "The conversation will be unassigned in the destination queue.",
+  "Transfiriendo…": "Transferring…",
+  "Conversación transferida a la cola": "Conversation transferred to the queue",
+  "transfirió esta conversación de": "transferred this conversation from",
+  "a la cola": "to",
+  "Sin cola": "No queue"
 }

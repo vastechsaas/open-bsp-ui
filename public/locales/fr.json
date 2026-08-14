@@ -1238,5 +1238,20 @@
   "Codigo": "Code",
   "Explicacion": "Explication",
   "Ultimo error": "Derniere erreur",
-  "No hay errores operativos recientes": "Aucune erreur operationnelle recente"
+  "No hay errores operativos recientes": "Aucune erreur operationnelle recente",
+  "Transferir a cola": "Transférer vers une file",
+  "Transferir conversación a otra cola": "Transférer la conversation vers une autre file",
+  "Seleccioná el equipo que continuará la conversación.": "Sélectionnez l’équipe qui poursuivra la conversation.",
+  "Cola de destino": "File de destination",
+  "Seleccioná una cola": "Sélectionnez une file",
+  "No se pudieron cargar las colas disponibles.": "Impossible de charger les files disponibles.",
+  "No hay otras colas activas disponibles.": "Aucune autre file active n’est disponible.",
+  "Explicación": "Explication",
+  "Explicá por qué se transfiere esta conversación.": "Expliquez pourquoi cette conversation est transférée.",
+  "La conversación quedará sin asignar en la cola de destino.": "La conversation sera non attribuée dans la file de destination.",
+  "Transfiriendo…": "Transfert…",
+  "Conversación transferida a la cola": "Conversation transférée vers la file",
+  "transfirió esta conversación de": "a transféré cette conversation de",
+  "a la cola": "vers la file",
+  "Sin cola": "Aucune file"
 }

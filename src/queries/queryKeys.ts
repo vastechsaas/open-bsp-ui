@@ -61,6 +61,13 @@ export const queryKeys = {
     all: (orgId: NullableId) => [orgId, "routing_queues"] as const,
     options: (orgId: NullableId) =>
       [orgId, "routing_queues", "options"] as const,
+    transferableOptions: (orgId: NullableId, conversationId: NullableId) =>
+      [
+        orgId,
+        "routing_queues",
+        "transferable_options",
+        conversationId,
+      ] as const,
     page: (orgId: NullableId, params: object) =>
       [orgId, "routing_queues", "page", params] as const,
   },
