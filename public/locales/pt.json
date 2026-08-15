@@ -1253,5 +1253,14 @@
   "Conversación transferida a la cola": "Conversa transferida para a fila",
   "transfirió esta conversación de": "transferiu esta conversa de",
   "a la cola": "para a fila",
-  "Sin cola": "Sem fila"
+  "Sin cola": "Sem fila",
+  "Automatización": "Automação",
+  "Controlá los comportamientos automáticos de tu organización.": "Controle os comportamentos automáticos da sua organização.",
+  "Controlá los comportamientos automáticos de esta organización.": "Controle os comportamentos automáticos desta organização.",
+  "Guardar automáticamente nuevos contactos de WhatsApp": "Salvar automaticamente novos contatos do WhatsApp",
+  "Al desactivarlo, solo los nuevos clientes de WhatsApp dejarán de guardarse como contactos. Los contactos existentes nunca se eliminan y volver a activarlo no completa clientes anteriores.": "Quando desativado, apenas novos clientes do WhatsApp deixam de ser salvos como contatos. Contatos existentes nunca são removidos e reativar não preenche clientes anteriores.",
+  "No se pudo cargar la configuración de automatización.": "Não foi possível carregar as configurações de automação.",
+  "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Apenas Proprietários, Administradores e Supervisores podem gerenciar automações.",
+  "Automatización actualizada": "Automação atualizada",
+  "No se pudo actualizar la automatización": "Não foi possível atualizar a automação"
 }

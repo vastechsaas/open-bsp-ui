@@ -34,6 +34,10 @@ export const queryKeys = {
     addressDetail: (orgId: NullableId, address: NullableId) =>
       [orgId, "organizations_addresses", address] as const,
   },
+  organizationAutomation: {
+    detail: (orgId: NullableId) =>
+      [orgId, "organization_automation_settings"] as const,
+  },
   webhooks: {
     all: (orgId: NullableId) => [orgId, "webhooks"] as const,
     detail: (orgId: NullableId, id: NullableId) =>
@@ -138,6 +142,13 @@ export const queryKeys = {
       ["platform", "tenant", organizationId, "agents"] as const,
     organizationAgentsPage: (organizationId: NullableId, params: object) =>
       ["platform", "tenant", organizationId, "agents", params] as const,
+    organizationAutomation: (organizationId: NullableId) =>
+      [
+        "platform",
+        "tenant",
+        organizationId,
+        "organization-automation",
+      ] as const,
     whatsappHealth: (organizationId: NullableId) =>
       ["platform", "tenant", organizationId, "waba-health"] as const,
     whatsappHealthPage: (organizationId: NullableId, params: object) =>

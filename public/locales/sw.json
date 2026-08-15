@@ -1253,5 +1253,14 @@
   "Conversación transferida a la cola": "Mazungumzo yamehamishwa kwenye foleni",
   "transfirió esta conversación de": "alihamisha mazungumzo haya kutoka",
   "a la cola": "kwenda foleni",
-  "Sin cola": "Hakuna foleni"
+  "Sin cola": "Hakuna foleni",
+  "Automatización": "Uendeshaji otomatiki",
+  "Controlá los comportamientos automáticos de tu organización.": "Dhibiti tabia za kiotomatiki za shirika lako.",
+  "Controlá los comportamientos automáticos de esta organización.": "Dhibiti tabia za kiotomatiki za shirika hili.",
+  "Guardar automáticamente nuevos contactos de WhatsApp": "Hifadhi kiotomatiki waasiliani wapya wa WhatsApp",
+  "Al desactivarlo, solo los nuevos clientes de WhatsApp dejarán de guardarse como contactos. Los contactos existentes nunca se eliminan y volver a activarlo no completa clientes anteriores.": "Ikizimwa, ni wateja wapya wa WhatsApp pekee ambao hawatahifadhiwa kama waasiliani. Waasiliani waliopo hawatafutwa na kuiwasha tena hakutajaza wateja wa awali.",
+  "No se pudo cargar la configuración de automatización.": "Mipangilio ya uendeshaji otomatiki haikuweza kupakiwa.",
+  "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Wamiliki, Wasimamizi na Wasimamizi wa timu pekee wanaweza kudhibiti uendeshaji otomatiki.",
+  "Automatización actualizada": "Uendeshaji otomatiki umesasishwa",
+  "No se pudo actualizar la automatización": "Uendeshaji otomatiki haukuweza kusasishwa"
 }

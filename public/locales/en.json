@@ -1292,5 +1292,14 @@
   "Conversación transferida a la cola": "Conversation transferred to the queue",
   "transfirió esta conversación de": "transferred this conversation from",
   "a la cola": "to",
-  "Sin cola": "No queue"
+  "Sin cola": "No queue",
+  "Automatización": "Automation",
+  "Controlá los comportamientos automáticos de tu organización.": "Control your organization's automatic behaviors.",
+  "Controlá los comportamientos automáticos de esta organización.": "Control this organization's automatic behaviors.",
+  "Guardar automáticamente nuevos contactos de WhatsApp": "Automatically save new WhatsApp contacts",
+  "Al desactivarlo, solo los nuevos clientes de WhatsApp dejarán de guardarse como contactos. Los contactos existentes nunca se eliminan y volver a activarlo no completa clientes anteriores.": "When disabled, only new WhatsApp customers stop being saved as contacts. Existing contacts are never removed, and enabling it again does not backfill earlier customers.",
+  "No se pudo cargar la configuración de automatización.": "Automation settings could not be loaded.",
+  "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Only Owners, Admins, and Supervisors can manage automations.",
+  "Automatización actualizada": "Automation updated",
+  "No se pudo actualizar la automatización": "Automation could not be updated"
 }

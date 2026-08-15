@@ -53,6 +53,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
     location.pathname.startsWith(`/platform/${organizationId}`);
   const reportsActive = location.pathname.startsWith("/platform/reports/");
   const wabaHealthActive = location.pathname.includes("/waba-health");
+  const automationActive = location.pathname.endsWith("/automation");
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -121,10 +122,15 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
                 to: "/platform/$organizationId/waba-health",
                 params: { organizationId: value },
               }
-            : {
-                to: "/platform/$organizationId",
-                params: { organizationId: value },
-              },
+            : automationActive
+              ? {
+                  to: "/platform/$organizationId/automation",
+                  params: { organizationId: value },
+                }
+              : {
+                  to: "/platform/$organizationId",
+                  params: { organizationId: value },
+                },
       );
     } catch (error) {
       setPendingScope(null);

@@ -1,4 +1,4 @@
-import { Building2, KeyRound, Route, Webhook } from "lucide-react";
+import { Building2, KeyRound, Route, Webhook, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -14,6 +14,12 @@ const settingsNavigation = [
     title: "Colas de enrutamiento",
     description: "Destinos de entrega humana y sus agentes.",
     icon: Route,
+  },
+  {
+    to: "/settings/automation",
+    title: "Automatización",
+    description: "Controlá los comportamientos automáticos de tu organización.",
+    icon: Zap,
   },
   {
     to: "/settings/organization",
@@ -44,7 +50,9 @@ export default function SettingsWorkspaceLayout({
   const navigation =
     currentAgent?.extra?.role === "supervisor"
       ? settingsNavigation.filter(
-          (item) => item.to === "/settings/routing-queues",
+          (item) =>
+            item.to === "/settings/routing-queues" ||
+            item.to === "/settings/automation",
         )
       : settingsNavigation;
 
