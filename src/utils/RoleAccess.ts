@@ -77,6 +77,7 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!role) return false;
+  // Supervisors only manage routing queues and organization automations in Settings.
   if (role === "supervisor" && pathname.startsWith("/settings")) {
     return (
       pathname === "/settings" ||
