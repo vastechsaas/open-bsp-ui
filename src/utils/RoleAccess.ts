@@ -80,7 +80,8 @@ export function canAccessPath(
   if (role === "supervisor" && pathname.startsWith("/settings")) {
     return (
       pathname === "/settings" ||
-      pathname.startsWith("/settings/routing-queues")
+      pathname.startsWith("/settings/routing-queues") ||
+      pathname.startsWith("/settings/automation")
     );
   }
   const route = pathAccess.find(

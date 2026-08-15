@@ -15,7 +15,7 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(
       <div className={`relative inline-flex items-center ${className || ""}`}>
         <input
           type="checkbox"
-          className="peer sr-only"
+          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
           checked={checked}
           onChange={(e) => {
             onChange?.(e);

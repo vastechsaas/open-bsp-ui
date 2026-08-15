@@ -8,11 +8,15 @@ const read = (relativePath: string) =>
 void test("tenant Automation is available to Owner, Admin and Supervisor", () => {
   const layout = read("../src/components/settings/SettingsWorkspaceLayout.tsx");
   const route = read("../src/routes/_auth/settings/automation.tsx");
+  const roleAccess = read("../src/utils/RoleAccess.ts");
+  const switchControl = read("../src/components/Switch.tsx");
 
   assert.match(layout, /\/settings\/automation/);
   assert.match(layout, /item\.to === "\/settings\/automation"/);
   assert.match(route, /\["owner", "admin", "supervisor"\]/);
   assert.match(route, /Solo propietarios, administradores y supervisores/);
+  assert.match(roleAccess, /pathname\.startsWith\("\/settings\/automation"\)/);
+  assert.match(switchControl, /absolute inset-0 z-10 h-full w-full/);
 });
 
 void test("tenant setting is immediately saved with optimistic rollback", () => {
