@@ -59,6 +59,23 @@ void test("sidebar keeps the approved grouping and bottom navigation order", () 
   assert.ok(settingsIndex > whatsappIndex);
 });
 
+void test("sidebar keeps account controls visible while long navigation scrolls", () => {
+  const menu = readFileSync(
+    new URL("../src/components/Menu.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    menu,
+    /<aside className="[^"]*min-h-0[^"]*overflow-hidden[^"]*">/,
+  );
+  assert.match(
+    menu,
+    /<nav[\s\S]*?className=\{`[^`]*min-h-0 flex-1 overflow-y-auto \[scrollbar-gutter:stable\][^`]*`\}/,
+  );
+  assert.doesNotMatch(menu, /scrollbar-hide flex-1 overflow-y-auto/);
+});
+
 void test("sidebar accessibility labels exist in every supported locale", () => {
   const keys = [
     "Espacio de trabajo",

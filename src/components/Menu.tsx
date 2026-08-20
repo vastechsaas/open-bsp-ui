@@ -62,7 +62,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const navigationPadding = expanded ? "px-[12px]" : "px-[7px]";
 
   return (
-    <aside className="z-10 flex h-full w-full min-w-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className="z-10 flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div
         className={`flex h-[64px] shrink-0 items-center border-b border-sidebar-border ${
           expanded
@@ -103,7 +103,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
       <nav
         aria-label={t("Navegación principal")}
-        className={`scrollbar-hide flex-1 overflow-y-auto py-[10px] ${navigationPadding}`}
+        className={`min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] py-[10px] ${navigationPadding}`}
       >
         <MenuGroupLabel expanded={expanded} label={t("Espacio de trabajo")} />
         <div className="space-y-[3px]">
