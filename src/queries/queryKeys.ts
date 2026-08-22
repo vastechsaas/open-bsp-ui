@@ -83,6 +83,13 @@ export const queryKeys = {
     mentionedConversations: (orgId: NullableId, search: string) =>
       [orgId, "private_notes", "mentioned_conversations", search] as const,
   },
+  notifications: {
+    root: (orgId: NullableId) => [orgId, "user_notifications"] as const,
+    page: (orgId: NullableId, page: number, unreadOnly: boolean) =>
+      [orgId, "user_notifications", "page", page, unreadOnly] as const,
+    unreadCount: (orgId: NullableId) =>
+      [orgId, "user_notifications", "unread_count"] as const,
+  },
   quickReplies: {
     all: (orgId: NullableId) => [orgId, "quick_replies"] as const,
     library: (orgId: NullableId) =>

@@ -1301,5 +1301,21 @@
   "No se pudo cargar la configuración de automatización.": "Automation settings could not be loaded.",
   "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Only Owners, Admins, and Supervisors can manage automations.",
   "Automatización actualizada": "Automation updated",
-  "No se pudo actualizar la automatización": "Automation could not be updated"
+  "No se pudo actualizar la automatización": "Automation could not be updated",
+  "Notificaciones": "Notifications",
+  "sin leer": "unread",
+  "Marcar todo como leído": "Mark all as read",
+  "Sin leer": "Unread",
+  "Todas": "All",
+  "Cargando notificaciones...": "Loading notifications...",
+  "No se pudieron cargar las notificaciones": "Notifications could not be loaded",
+  "No tienes notificaciones": "You have no notifications",
+  "Se te asignó una conversación": "A conversation was assigned to you",
+  "te transfirió una conversación": "transferred a conversation to you",
+  "transfirió una conversación a": "transferred a conversation to",
+  "tu cola": "your queue",
+  "te mencionó en una nota privada": "mentioned you in a private note",
+  "Nueva actividad en una conversación": "New conversation activity",
+  "Un compañero": "A teammate",
+  "Sistema": "System"
 }

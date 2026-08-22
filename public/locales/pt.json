@@ -1262,5 +1262,21 @@
   "No se pudo cargar la configuración de automatización.": "Não foi possível carregar as configurações de automação.",
   "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Apenas Proprietários, Administradores e Supervisores podem gerenciar automações.",
   "Automatización actualizada": "Automação atualizada",
-  "No se pudo actualizar la automatización": "Não foi possível atualizar a automação"
+  "No se pudo actualizar la automatización": "Não foi possível atualizar a automação",
+  "Notificaciones": "Notificações",
+  "sin leer": "não lidas",
+  "Marcar todo como leído": "Marcar tudo como lido",
+  "Sin leer": "Não lidas",
+  "Todas": "Todas",
+  "Cargando notificaciones...": "Carregando notificações...",
+  "No se pudieron cargar las notificaciones": "Não foi possível carregar as notificações",
+  "No tienes notificaciones": "Você não tem notificações",
+  "Se te asignó una conversación": "Uma conversa foi atribuída a você",
+  "te transfirió una conversación": "transferiu uma conversa para você",
+  "transfirió una conversación a": "transferiu uma conversa para",
+  "tu cola": "sua fila",
+  "te mencionó en una nota privada": "mencionou você em uma nota privada",
+  "Nueva actividad en una conversación": "Nova atividade em uma conversa",
+  "Un compañero": "Um colega",
+  "Sistema": "Sistema"
 }

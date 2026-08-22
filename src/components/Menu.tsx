@@ -29,6 +29,7 @@ import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import { canAccessNavigation } from "@/utils/RoleAccess";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
+import NotificationCenter from "./NotificationCenter";
 
 type MenuProps = {
   expanded: boolean;
@@ -244,6 +245,8 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
       <div
         className={`shrink-0 space-y-[3px] border-t border-sidebar-border py-[8px] ${navigationPadding}`}
       >
+        <NotificationCenter expanded={expanded} />
+
         <LinkButton
           to="/whatsapp-manager"
           access="whatsappManager"

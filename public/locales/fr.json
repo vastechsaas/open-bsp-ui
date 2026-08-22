@@ -1262,5 +1262,21 @@
   "No se pudo cargar la configuración de automatización.": "Impossible de charger les paramètres d'automatisation.",
   "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Seuls les propriétaires, administrateurs et superviseurs peuvent gérer les automatisations.",
   "Automatización actualizada": "Automatisation mise à jour",
-  "No se pudo actualizar la automatización": "Impossible de mettre à jour l'automatisation"
+  "No se pudo actualizar la automatización": "Impossible de mettre à jour l'automatisation",
+  "Notificaciones": "Notifications",
+  "sin leer": "non lues",
+  "Marcar todo como leído": "Tout marquer comme lu",
+  "Sin leer": "Non lues",
+  "Todas": "Toutes",
+  "Cargando notificaciones...": "Chargement des notifications...",
+  "No se pudieron cargar las notificaciones": "Impossible de charger les notifications",
+  "No tienes notificaciones": "Vous n’avez aucune notification",
+  "Se te asignó una conversación": "Une conversation vous a été attribuée",
+  "te transfirió una conversación": "vous a transféré une conversation",
+  "transfirió una conversación a": "a transféré une conversation vers",
+  "tu cola": "votre file",
+  "te mencionó en una nota privada": "vous a mentionné dans une note privée",
+  "Nueva actividad en una conversación": "Nouvelle activité dans une conversation",
+  "Un compañero": "Un collègue",
+  "Sistema": "Système"
 }
