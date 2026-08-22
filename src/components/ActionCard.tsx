@@ -5,21 +5,34 @@ export default function ActionCard({
   icon,
   title,
   to,
+  disabled = false,
+  disabledReason,
 }: {
   icon: ReactNode;
   title: string;
   to: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
-  return (
-    <Link to={to}>
-      <div className="flex flex-col items-center gap-[16px]">
-        <div className="text-foreground bg-background hover:bg-background/60 transition-colors rounded-2xl flex items-center justify-center h-[96px] w-[96px]">
-          {icon}
-        </div>
-        <div className="text-foreground text-[14px] word-break text-center w-[96px] leading-[16px] min-h-[32px] flex items-start justify-center">
-          {title}
-        </div>
+  const content = (
+    <div
+      className={`flex flex-col items-center gap-[16px] ${disabled ? "cursor-not-allowed opacity-45" : ""}`}
+      title={disabled ? disabledReason : undefined}
+    >
+      <div
+        className={`flex h-[96px] w-[96px] items-center justify-center rounded-2xl bg-background text-foreground transition-colors ${disabled ? "" : "hover:bg-background/60"}`}
+      >
+        {icon}
       </div>
-    </Link>
+      <div className="word-break flex min-h-[32px] w-[96px] items-start justify-center text-center text-[14px] leading-[16px] text-foreground">
+        {title}
+      </div>
+    </div>
   );
+
+  if (disabled) {
+    return <div aria-disabled="true">{content}</div>;
+  }
+
+  return <Link to={to}>{content}</Link>;
 }
