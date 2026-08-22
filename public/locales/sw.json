@@ -1262,5 +1262,21 @@
   "No se pudo cargar la configuración de automatización.": "Mipangilio ya uendeshaji otomatiki haikuweza kupakiwa.",
   "Solo propietarios, administradores y supervisores pueden administrar automatizaciones.": "Wamiliki, Wasimamizi na Wasimamizi wa timu pekee wanaweza kudhibiti uendeshaji otomatiki.",
   "Automatización actualizada": "Uendeshaji otomatiki umesasishwa",
-  "No se pudo actualizar la automatización": "Uendeshaji otomatiki haukuweza kusasishwa"
+  "No se pudo actualizar la automatización": "Uendeshaji otomatiki haukuweza kusasishwa",
+  "Notificaciones": "Arifa",
+  "sin leer": "hazijasomwa",
+  "Marcar todo como leído": "Weka zote kuwa zimesomwa",
+  "Sin leer": "Hazijasomwa",
+  "Todas": "Zote",
+  "Cargando notificaciones...": "Inapakia arifa...",
+  "No se pudieron cargar las notificaciones": "Arifa hazikuweza kupakiwa",
+  "No tienes notificaciones": "Huna arifa",
+  "Se te asignó una conversación": "Mazungumzo yamekabidhiwa kwako",
+  "te transfirió una conversación": "amehamishia mazungumzo kwako",
+  "transfirió una conversación a": "amehamisha mazungumzo kwenda",
+  "tu cola": "foleni yako",
+  "te mencionó en una nota privada": "amekutaja kwenye dokezo la faragha",
+  "Nueva actividad en una conversación": "Shughuli mpya kwenye mazungumzo",
+  "Un compañero": "Mwanatimu",
+  "Sistema": "Mfumo"
 }
