@@ -64,6 +64,10 @@ void test("sidebar keeps account controls visible while long navigation scrolls"
     new URL("../src/components/Menu.tsx", import.meta.url),
     "utf8",
   );
+  const globalStyles = readFileSync(
+    new URL("../src/global.css", import.meta.url),
+    "utf8",
+  );
 
   assert.match(
     menu,
@@ -74,6 +78,10 @@ void test("sidebar keeps account controls visible while long navigation scrolls"
     /<nav[\s\S]*?className=\{`[^`]*min-h-0 flex-1 overflow-y-auto \[scrollbar-gutter:stable\][^`]*`\}/,
   );
   assert.doesNotMatch(menu, /scrollbar-hide flex-1 overflow-y-auto/);
+  assert.match(
+    globalStyles,
+    /\.app-grid\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\)/,
+  );
 });
 
 void test("sidebar accessibility labels exist in every supported locale", () => {

@@ -243,6 +243,7 @@ button:disabled {
     display: grid;
     /* Default (lg+): Menu | Left Panel | Chat */
     grid-template-columns: 48px minmax(300px, 1fr) 2fr;
+    grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
     width: 100vw;
     overflow: hidden;
