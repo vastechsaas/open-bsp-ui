@@ -18,12 +18,15 @@ void test("notification queries use the protected paginated and read RPCs", () =
   assert.match(query, /mark_all_user_notifications_read/);
 });
 
-void test("the sidebar notification center supports unread state and deep links", () => {
+void test("the header notification drawer supports unread state and deep links", () => {
   const menu = readSource("../src/components/Menu.tsx");
+  const header = readSource("../src/components/Header.tsx");
   const center = readSource("../src/components/NotificationCenter.tsx");
 
-  assert.match(menu, /NotificationCenter expanded=\{expanded\}/);
+  assert.doesNotMatch(menu, /NotificationCenter/);
+  assert.match(header, /<NotificationCenter \/>/);
   assert.match(center, /unreadCount > 0/);
+  assert.match(center, /fixed inset-y-0 right-0/);
   assert.match(center, /Marcar todo como leído/);
   assert.match(center, /setUnreadOnly\(onlyUnread\)/);
   assert.match(center, /markRead\.mutateAsync\(notification\.id\)/);
@@ -60,6 +63,8 @@ void test("every supported locale contains notification copy", () => {
     "te transfirió una conversación",
     "transfirió una conversación a",
     "te mencionó en una nota privada",
+    "Actividad reciente",
+    "Ayer",
   ];
 
   for (const locale of ["en", "pt", "fr", "sw"]) {

@@ -1317,5 +1317,9 @@
   "te mencionó en una nota privada": "mentioned you in a private note",
   "Nueva actividad en una conversación": "New conversation activity",
   "Un compañero": "A teammate",
-  "Sistema": "System"
+  "Sistema": "System",
+  "Actividad reciente": "Recent activity",
+  "min": "min",
+  "h": "h",
+  "Ayer": "Yesterday"
 }
