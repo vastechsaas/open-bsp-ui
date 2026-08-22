@@ -37,6 +37,7 @@ import { isContactManagerWorkspacePath } from "@/utils/ContactManagerUtils";
 import { isSettingsWorkspacePath } from "@/utils/SettingsUtils";
 import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import {
   canAccessNavigation,
   canAccessPath,
@@ -70,6 +71,11 @@ function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: currentAgent } = useCurrentAgent();
+  const { data: organizationAddresses } = useOrganizationsAddresses();
+  const hasConnectedWhatsApp = organizationAddresses?.some(
+    (address) =>
+      address.service === "whatsapp" && address.status === "connected",
+  );
   const pathname = location.pathname;
   const currentRole = currentAgent?.extra?.role;
   const canAccessCurrentPath =
@@ -266,6 +272,10 @@ function AppLayout() {
                     icon={<Settings className="w-[24px] h-[24px]" />}
                     title={t("Configurar WhatsApp")}
                     to="/integrations/whatsapp/new"
+                    disabled={hasConnectedWhatsApp}
+                    disabledReason={t(
+                      "Solo se puede conectar un número de WhatsApp por organización.",
+                    )}
                   />
                 )}
               </>
