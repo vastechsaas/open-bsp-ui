@@ -82,15 +82,23 @@ void test("tenant and Platform Admin queues share the same editor presentation",
   assert.match(platform, /RoutingQueueEditorDialog/);
 });
 
-void test("Agents remains a read-only organization view", () => {
+void test("Agents supports protected management and capacity", () => {
   const agents = read(
     "../src/components/platform/PlatformOrganizationAgents.tsx",
   );
+  const query = read("../src/queries/usePlatformOrganizationManagement.ts");
 
-  assert.match(agents, /Solo lectura/);
+  assert.match(agents, /Configurar límite/);
+  assert.match(agents, /Invitar agente/);
+  assert.match(agents, /invitation_status/);
   assert.match(agents, /queue_names/);
-  assert.doesNotMatch(agents, /useCreatePlatformRoutingQueue/);
-  assert.doesNotMatch(agents, /invite/i);
+  assert.match(agents, /capacity\.data\?\.over_limit/);
+  assert.match(query, /get_platform_organization_agent_capacity/);
+  assert.match(query, /update_platform_organization_agent_capacity/);
+  assert.match(query, /create_platform_organization_agent_invitation/);
+  assert.match(query, /update_platform_organization_agent/);
+  assert.match(query, /remove_platform_organization_agent/);
+  assert.doesNotMatch(agents, /password|role editing|impersonat/i);
 });
 
 void test("new organization-management labels exist in every locale", () => {
@@ -107,6 +115,10 @@ void test("new organization-management labels exist in every locale", () => {
       "Colas de negocio",
       "Estrategia de asignación",
       "Agentes aceptados y sus colas de negocio.",
+      "Capacidad de agentes",
+      "Configurar límite",
+      "Invitar agente",
+      "Cancelar invitación",
     ]) {
       assert.ok(translations[key], `${locale} is missing ${key}`);
     }

@@ -46,10 +46,9 @@ export default function PlatformOrganizationQueues({
 
   const rows = queues.data?.rows ?? [];
   const total = queues.data?.total ?? 0;
-  const agentOptions = (agents.data?.rows ?? []).map((agent) => ({
-    id: agent.id,
-    name: agent.name,
-  }));
+  const agentOptions = (agents.data?.rows ?? [])
+    .filter((agent) => agent.invitation_status === "accepted")
+    .map((agent) => ({ id: agent.id, name: agent.name }));
 
   const changeStatus = async (
     queue: PlatformRoutingQueueRow,

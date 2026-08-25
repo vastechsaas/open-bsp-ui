@@ -7,6 +7,8 @@ export type PlatformRoutingQueueRow =
   Database["public"]["Functions"]["list_platform_routing_queues_page"]["Returns"][number];
 export type PlatformOrganizationAgentRow =
   Database["public"]["Functions"]["list_platform_organization_agents_page"]["Returns"][number];
+export type PlatformOrganizationAgentCapacity =
+  Database["public"]["Functions"]["get_platform_organization_agent_capacity"]["Returns"][number];
 export type RoutingQueue =
   Database["public"]["Tables"]["routing_queues"]["Row"];
 
@@ -55,6 +57,22 @@ export function usePlatformOrganizationAgentsPage(
   });
 }
 
+export function usePlatformOrganizationAgentCapacity(organizationId: string) {
+  return useQuery({
+    queryKey: queryKeys.platform.organizationAgentCapacity(organizationId),
+    queryFn: async () => {
+      const result = await supabase
+        .rpc("get_platform_organization_agent_capacity", {
+          p_organization_id: organizationId,
+        })
+        .single()
+        .throwOnError();
+      return result.data as PlatformOrganizationAgentCapacity;
+    },
+    enabled: !!organizationId,
+  });
+}
+
 function useInvalidatePlatformOrganization(organizationId: string) {
   const queryClient = useQueryClient();
   return async () => {
@@ -65,8 +83,94 @@ function useInvalidatePlatformOrganization(organizationId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.platform.organizationAgents(organizationId),
       }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.platform.organizationAgentCapacity(organizationId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.platform.tenant(organizationId),
+      }),
     ]);
   };
+}
+
+export function useUpdatePlatformOrganizationAgentCapacity(
+  organizationId: string,
+) {
+  const invalidate = useInvalidatePlatformOrganization(organizationId);
+  return useMutation({
+    mutationFn: async (maxAgentSeats: number | null) => {
+      const result = await supabase
+        .rpc("update_platform_organization_agent_capacity", {
+          p_organization_id: organizationId,
+          p_max_agent_seats: maxAgentSeats,
+          p_request_id: crypto.randomUUID(),
+        })
+        .single()
+        .throwOnError();
+      return result.data as PlatformOrganizationAgentCapacity;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useInvitePlatformOrganizationAgent(organizationId: string) {
+  const invalidate = useInvalidatePlatformOrganization(organizationId);
+  return useMutation({
+    mutationFn: async ({ name, email }: { name: string; email: string }) => {
+      const result = await supabase
+        .rpc("create_platform_organization_agent_invitation", {
+          p_organization_id: organizationId,
+          p_name: name,
+          p_email: email,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdatePlatformOrganizationAgent(organizationId: string) {
+  const invalidate = useInvalidatePlatformOrganization(organizationId);
+  return useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      routingQueueIds,
+    }: {
+      id: string;
+      name: string;
+      routingQueueIds: string[];
+    }) => {
+      const result = await supabase
+        .rpc("update_platform_organization_agent", {
+          p_agent_id: id,
+          p_name: name,
+          p_routing_queue_ids: routingQueueIds,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useRemovePlatformOrganizationAgent(organizationId: string) {
+  const invalidate = useInvalidatePlatformOrganization(organizationId);
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await supabase
+        .rpc("remove_platform_organization_agent", {
+          p_agent_id: id,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data;
+    },
+    onSuccess: invalidate,
+  });
 }
 
 export function useCreatePlatformRoutingQueue(organizationId: string) {
