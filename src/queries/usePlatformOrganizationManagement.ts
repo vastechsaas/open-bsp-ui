@@ -102,7 +102,9 @@ export function useUpdatePlatformOrganizationAgentCapacity(
       const result = await supabase
         .rpc("update_platform_organization_agent_capacity", {
           p_organization_id: organizationId,
-          p_max_agent_seats: maxAgentSeats,
+          // PostgreSQL accepts NULL here to restore unlimited capacity, while
+          // the generated RPC type does not represent nullable arguments.
+          p_max_agent_seats: maxAgentSeats as number,
           p_request_id: crypto.randomUUID(),
         })
         .single()
