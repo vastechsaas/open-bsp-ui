@@ -1,4 +1,4 @@
-import { ContactRound } from "lucide-react";
+import { ContactRound, Route } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import Switch from "@/components/Switch";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -9,6 +9,9 @@ type OrganizationAutomationPanelProps = {
   error: boolean;
   saving: boolean;
   onChange: (enabled: boolean) => void;
+  autoAssignmentEnabled?: boolean;
+  autoAssignmentSaving: boolean;
+  onAutoAssignmentChange: (enabled: boolean) => void;
   platform?: boolean;
 };
 
@@ -18,6 +21,9 @@ export default function OrganizationAutomationPanel({
   error,
   saving,
   onChange,
+  autoAssignmentEnabled,
+  autoAssignmentSaving,
+  onAutoAssignmentChange,
   platform = false,
 }: OrganizationAutomationPanelProps) {
   const { translate: t } = useTranslation();
@@ -89,6 +95,46 @@ export default function OrganizationAutomationPanel({
               onCheckedChange={onChange}
               className="mt-1 shrink-0"
             />
+          </div>
+        )}
+
+        {!loading && !error && autoAssignmentEnabled !== undefined && (
+          <div className="mt-7">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+              <Route className="h-4 w-4 text-primary" />
+              <h3 className="text-[15px] font-semibold">
+                {t("Asignación de conversaciones")}
+              </h3>
+            </div>
+            <div className="flex flex-col gap-4 border-b border-border py-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="max-w-2xl">
+                <label
+                  htmlFor={
+                    platform ? "platform-auto-assignment" : "auto-assignment"
+                  }
+                  className="text-[14px] font-medium"
+                >
+                  {t("Asignar automáticamente conversaciones en cola")}
+                </label>
+                <p className="mt-1.5 text-[12px] leading-5 text-muted-foreground">
+                  {t(
+                    "Solo se asignan conversaciones activas en colas configuradas con Round Robin y a agentes disponibles.",
+                  )}
+                </p>
+                {autoAssignmentSaving && (
+                  <p className="mt-2 text-[11px] text-primary">
+                    {t("Guardando…")}
+                  </p>
+                )}
+              </div>
+              <Switch
+                id={platform ? "platform-auto-assignment" : "auto-assignment"}
+                checked={autoAssignmentEnabled}
+                disabled={autoAssignmentSaving}
+                onCheckedChange={onAutoAssignmentChange}
+                className="mt-1 shrink-0"
+              />
+            </div>
           </div>
         )}
       </section>

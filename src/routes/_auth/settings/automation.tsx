@@ -5,6 +5,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
   useOrganizationAutomationSettings,
+  useUpdateOrganizationAutoAssignment,
   useUpdateOrganizationContactAutoSave,
 } from "@/queries/useOrganizationAutomation";
 
@@ -17,6 +18,7 @@ function OrganizationAutomationSettings() {
   const { data: currentAgent, isPending: agentPending } = useCurrentAgent();
   const settings = useOrganizationAutomationSettings();
   const updateSetting = useUpdateOrganizationContactAutoSave();
+  const updateAutoAssignment = useUpdateOrganizationAutoAssignment();
   const canManage = ["owner", "admin", "supervisor"].includes(
     currentAgent?.extra?.role ?? "",
   );
@@ -39,6 +41,15 @@ function OrganizationAutomationSettings() {
       saving={updateSetting.isPending}
       onChange={(enabled) => {
         updateSetting.mutate(enabled, {
+          onSuccess: () => void toast.success(t("Automatización actualizada")),
+          onError: () =>
+            void toast.error(t("No se pudo actualizar la automatización")),
+        });
+      }}
+      autoAssignmentEnabled={settings.data?.auto_assign_conversations}
+      autoAssignmentSaving={updateAutoAssignment.isPending}
+      onAutoAssignmentChange={(enabled) => {
+        updateAutoAssignment.mutate(enabled, {
           onSuccess: () => void toast.success(t("Automatización actualizada")),
           onError: () =>
             void toast.error(t("No se pudo actualizar la automatización")),

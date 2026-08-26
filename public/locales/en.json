@@ -1357,5 +1357,13 @@
   "No se pudo eliminar el agente": "The Agent could not be removed",
   "La invitación pendiente se eliminará y liberará un puesto.": "The pending invitation will be removed and free a seat.",
   "Se eliminará la membresía del agente. Su historial de conversaciones y mensajes se conservará.": "The Agent membership will be removed. Conversation and message history will be preserved.",
-  "Aceptado": "Accepted"
+  "Aceptado": "Accepted",
+  "Asignación de conversaciones": "Conversation assignment",
+  "Asignar automáticamente conversaciones en cola": "Automatically assign queued conversations",
+  "Solo se asignan conversaciones activas en colas configuradas con Round Robin y a agentes disponibles.": "Only active conversations in Round Robin queues are assigned to available Agents.",
+  "Estrategia de asignación": "Assignment strategy",
+  "Asignación manual": "Manual assignment",
+  "Round Robin también requiere que la automatización de la organización esté activada.": "Round Robin also requires organization automation to be enabled.",
+  "agentes disponibles": "available Agents",
+  "Asignación automática": "Automatic assignment"
 }

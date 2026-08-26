@@ -13,6 +13,7 @@ import {
   useCreateRoutingQueue,
   useRoutingQueuesPage,
   useUpdateRoutingQueue,
+  useUpdateRoutingQueueAssignmentStrategy,
 } from "@/queries/useRoutingQueues";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import type { AgentRow } from "@/supabase/client";
@@ -45,6 +46,7 @@ function RoutingQueuesSettings() {
   const { data: agents = [] } = useCurrentAgents();
   const createQueue = useCreateRoutingQueue();
   const updateQueue = useUpdateRoutingQueue();
+  const updateStrategy = useUpdateRoutingQueueAssignmentStrategy();
   const canManage = ["owner", "admin", "supervisor"].includes(
     currentAgent?.extra?.role ?? "",
   );
@@ -149,6 +151,7 @@ function RoutingQueuesSettings() {
                   <th className="px-4 py-3">{t("Nombre")}</th>
                   <th className="px-4 py-3">{t("Estado")}</th>
                   <th className="px-4 py-3">{t("Agentes")}</th>
+                  <th className="px-4 py-3">{t("Estrategia de asignación")}</th>
                   <th className="px-4 py-3 text-right">{t("Acciones")}</th>
                 </tr>
               </thead>
@@ -169,6 +172,16 @@ function RoutingQueuesSettings() {
                       {(queue.member_ids ?? [])
                         .map((id) => namesById.get(id) ?? id)
                         .join(", ") || t("Sin agentes")}
+                    </td>
+                    <td className="px-4 py-4 text-sm">
+                      <div>
+                        {queue.assignment_strategy === "round_robin"
+                          ? "Round Robin"
+                          : t("Asignación manual")}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {queue.eligible_member_count} {t("agentes disponibles")}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
@@ -233,12 +246,22 @@ function RoutingQueuesSettings() {
           initialAgentIds={
             editing === "create" ? undefined : (editing.member_ids ?? [])
           }
+          initialAssignmentStrategy={
+            editing === "create"
+              ? "manual"
+              : (editing.assignment_strategy as "manual" | "round_robin")
+          }
           agents={eligibleAgents.map(({ id, name }) => ({ id, name }))}
           saving={createQueue.isPending || updateQueue.isPending}
-          onSave={async ({ name, agentIds }) => {
+          onSave={async ({ name, agentIds, assignmentStrategy }) => {
             try {
               if (editing === "create") {
-                await createQueue.mutateAsync({ name, agentIds });
+                const queue = await createQueue.mutateAsync({ name, agentIds });
+                if (assignmentStrategy !== "manual")
+                  await updateStrategy.mutateAsync({
+                    id: queue.id,
+                    strategy: assignmentStrategy,
+                  });
               } else {
                 await updateQueue.mutateAsync({
                   id: editing.id,
@@ -246,6 +269,11 @@ function RoutingQueuesSettings() {
                   status: editing.status as "active" | "archived",
                   agentIds,
                 });
+                if (editing.assignment_strategy !== assignmentStrategy)
+                  await updateStrategy.mutateAsync({
+                    id: editing.id,
+                    strategy: assignmentStrategy,
+                  });
               }
               void toast.success(
                 editing === "create" ? t("Cola creada") : t("Cola actualizada"),

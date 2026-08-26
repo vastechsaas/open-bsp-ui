@@ -60,6 +60,40 @@ export function useUpdateOrganizationContactAutoSave() {
   });
 }
 
+export function useUpdateOrganizationAutoAssignment() {
+  const organizationId = useBoundStore((state) => state.ui.activeOrgId);
+  const queryClient = useQueryClient();
+  const queryKey = queryKeys.organizationAutomation.detail(organizationId);
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (!organizationId) throw new Error("No active organization");
+      const result = await supabase
+        .rpc("update_organization_auto_assignment", {
+          p_organization_id: organizationId,
+          p_enabled: enabled,
+        })
+        .throwOnError();
+      return result.data as OrganizationAutomationSettings;
+    },
+    onMutate: async (enabled) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous =
+        queryClient.getQueryData<OrganizationAutomationSettings>(queryKey);
+      if (previous)
+        queryClient.setQueryData(queryKey, {
+          ...previous,
+          auto_assign_conversations: enabled,
+        });
+      return { previous };
+    },
+    onError: (_error, _enabled, context) => {
+      if (context?.previous)
+        queryClient.setQueryData(queryKey, context.previous);
+    },
+    onSuccess: (settings) => queryClient.setQueryData(queryKey, settings),
+  });
+}
+
 export function usePlatformOrganizationAutomationSettings(
   organizationId: string,
 ) {
@@ -105,6 +139,41 @@ export function useUpdatePlatformOrganizationContactAutoSave(
           auto_save_whatsapp_contacts: enabled,
         });
       }
+      return { previous };
+    },
+    onError: (_error, _enabled, context) => {
+      if (context?.previous)
+        queryClient.setQueryData(queryKey, context.previous);
+    },
+    onSuccess: (settings) => queryClient.setQueryData(queryKey, settings),
+  });
+}
+
+export function useUpdatePlatformOrganizationAutoAssignment(
+  organizationId: string,
+) {
+  const queryClient = useQueryClient();
+  const queryKey = queryKeys.platform.organizationAutomation(organizationId);
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const result = await supabase
+        .rpc("update_platform_organization_auto_assignment", {
+          p_organization_id: organizationId,
+          p_enabled: enabled,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data as OrganizationAutomationSettings;
+    },
+    onMutate: async (enabled) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous =
+        queryClient.getQueryData<OrganizationAutomationSettings>(queryKey);
+      if (previous)
+        queryClient.setQueryData(queryKey, {
+          ...previous,
+          auto_assign_conversations: enabled,
+        });
       return { previous };
     },
     onError: (_error, _enabled, context) => {

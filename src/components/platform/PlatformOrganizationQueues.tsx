@@ -12,6 +12,7 @@ import {
   usePlatformOrganizationAgentsPage,
   usePlatformRoutingQueuesPage,
   useUpdatePlatformRoutingQueue,
+  useUpdatePlatformRoutingQueueAssignmentStrategy,
 } from "@/queries/usePlatformOrganizationManagement";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 
@@ -41,6 +42,8 @@ export default function PlatformOrganizationQueues({
   });
   const createQueue = useCreatePlatformRoutingQueue(organizationId);
   const updateQueue = useUpdatePlatformRoutingQueue(organizationId);
+  const updateStrategy =
+    useUpdatePlatformRoutingQueueAssignmentStrategy(organizationId);
 
   useEffect(() => setPage(1), [debouncedSearch, status]);
 
@@ -155,7 +158,14 @@ export default function PlatformOrganizationQueues({
                       </div>
                     </td>
                     <td className="px-4 py-4 text-muted-foreground">
-                      {t("Manual")}
+                      <div>
+                        {queue.assignment_strategy === "round_robin"
+                          ? "Round Robin"
+                          : t("Manual")}
+                      </div>
+                      <div className="mt-1 text-xs">
+                        {queue.eligible_member_count} {t("agentes disponibles")}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -229,12 +239,22 @@ export default function PlatformOrganizationQueues({
           initialAgentIds={
             editing === "create" ? undefined : (editing.member_ids ?? [])
           }
+          initialAssignmentStrategy={
+            editing === "create"
+              ? "manual"
+              : (editing.assignment_strategy as "manual" | "round_robin")
+          }
           agents={agentOptions}
           saving={createQueue.isPending || updateQueue.isPending}
-          onSave={async ({ name, agentIds }) => {
+          onSave={async ({ name, agentIds, assignmentStrategy }) => {
             try {
               if (editing === "create") {
-                await createQueue.mutateAsync({ name, agentIds });
+                const queue = await createQueue.mutateAsync({ name, agentIds });
+                if (assignmentStrategy !== "manual")
+                  await updateStrategy.mutateAsync({
+                    id: queue.id,
+                    strategy: assignmentStrategy,
+                  });
               } else {
                 await updateQueue.mutateAsync({
                   id: editing.id,
@@ -242,6 +262,11 @@ export default function PlatformOrganizationQueues({
                   status: editing.status as "active" | "archived",
                   agentIds,
                 });
+                if (editing.assignment_strategy !== assignmentStrategy)
+                  await updateStrategy.mutateAsync({
+                    id: editing.id,
+                    strategy: assignmentStrategy,
+                  });
               }
               void toast.success(
                 editing === "create" ? t("Cola creada") : t("Cola actualizada"),

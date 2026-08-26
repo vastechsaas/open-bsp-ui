@@ -434,6 +434,9 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
     : undefined;
   const transfer = privateNoteContent?.transfer;
   const routingTransfer = privateNoteContent?.routing_transfer;
+  const assignmentEvent =
+    props.message.content.type === "text" &&
+    props.message.content.kind === "assignment_event";
 
   const structuredDisplay =
     props.message.content.type === "data"
@@ -464,6 +467,11 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
   if (props.message.content.type === "text") {
     content = (
       <>
+        {assignmentEvent && (
+          <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-primary">
+            {t("Asignación automática")}
+          </div>
+        )}
         {privateNote && (
           <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-amber-800 dark:text-amber-200">
             {routingTransfer ? (

@@ -174,3 +174,25 @@ export function useUpdateRoutingQueue() {
     onSuccess: invalidate,
   });
 }
+
+export function useUpdateRoutingQueueAssignmentStrategy() {
+  const invalidate = useInvalidateRoutingQueues();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      strategy,
+    }: {
+      id: string;
+      strategy: "manual" | "round_robin";
+    }) => {
+      const result = await supabase
+        .rpc("update_routing_queue_assignment_strategy", {
+          p_routing_queue_id: id,
+          p_strategy: strategy,
+        })
+        .throwOnError();
+      return result.data as RoutingQueue;
+    },
+    onSuccess: invalidate,
+  });
+}

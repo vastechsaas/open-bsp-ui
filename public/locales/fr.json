@@ -1318,5 +1318,13 @@
   "No se pudo eliminar el agente": "Impossible de supprimer l’agent",
   "La invitación pendiente se eliminará y liberará un puesto.": "L’invitation en attente sera supprimée et libérera une place.",
   "Se eliminará la membresía del agente. Su historial de conversaciones y mensajes se conservará.": "L’appartenance de l’agent sera supprimée. L’historique des conversations et messages sera conservé.",
-  "Aceptado": "Accepté"
+  "Aceptado": "Accepté",
+  "Asignación de conversaciones": "Attribution des conversations",
+  "Asignar automáticamente conversaciones en cola": "Attribuer automatiquement les conversations en file",
+  "Solo se asignan conversaciones activas en colas configuradas con Round Robin y a agentes disponibles.": "Seules les conversations actives des files Round Robin sont attribuées aux agents disponibles.",
+  "Estrategia de asignación": "Stratégie d’attribution",
+  "Asignación manual": "Attribution manuelle",
+  "Round Robin también requiere que la automatización de la organización esté activada.": "Round Robin exige également l’activation de l’automatisation de l’organisation.",
+  "agentes disponibles": "agents disponibles",
+  "Asignación automática": "Attribution automatique"
 }
