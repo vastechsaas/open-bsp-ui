@@ -6,6 +6,7 @@ export default function RoutingQueueEditorDialog({
   title,
   initialName,
   initialAgentIds,
+  initialAssignmentStrategy,
   agents,
   saving,
   onSave,
@@ -14,19 +15,27 @@ export default function RoutingQueueEditorDialog({
   title: string;
   initialName?: string;
   initialAgentIds?: string[];
+  initialAssignmentStrategy?: "manual" | "round_robin";
   agents: Array<{ id: string; name: string }>;
   saving: boolean;
-  onSave: (values: { name: string; agentIds: string[] }) => Promise<void>;
+  onSave: (values: {
+    name: string;
+    agentIds: string[];
+    assignmentStrategy: "manual" | "round_robin";
+  }) => Promise<void>;
   onClose: () => void;
 }) {
   const { translate: t } = useTranslation();
   const [name, setName] = useState(initialName ?? "");
   const [agentIds, setAgentIds] = useState<string[]>(initialAgentIds ?? []);
+  const [assignmentStrategy, setAssignmentStrategy] = useState<
+    "manual" | "round_robin"
+  >(initialAssignmentStrategy ?? "manual");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || saving) return;
-    await onSave({ name, agentIds });
+    await onSave({ name, agentIds, assignmentStrategy });
   };
 
   return (
@@ -57,6 +66,27 @@ export default function RoutingQueueEditorDialog({
             placeholder="VIP Support"
             className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
           />
+        </label>
+
+        <label className="mt-5 block text-sm font-medium">
+          {t("Estrategia de asignación")}
+          <select
+            value={assignmentStrategy}
+            onChange={(event) =>
+              setAssignmentStrategy(
+                event.target.value as "manual" | "round_robin",
+              )
+            }
+            className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3"
+          >
+            <option value="manual">{t("Asignación manual")}</option>
+            <option value="round_robin">Round Robin</option>
+          </select>
+          <span className="mt-2 block text-xs font-normal text-muted-foreground">
+            {t(
+              "Round Robin también requiere que la automatización de la organización esté activada.",
+            )}
+          </span>
         </label>
 
         <fieldset className="mt-5">

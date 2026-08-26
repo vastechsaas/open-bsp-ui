@@ -38,6 +38,10 @@ export const queryKeys = {
     detail: (orgId: NullableId) =>
       [orgId, "organization_automation_settings"] as const,
   },
+  assignmentPresence: {
+    current: (orgId: NullableId) =>
+      [orgId, "assignment-presence", "current"] as const,
+  },
   webhooks: {
     all: (orgId: NullableId) => [orgId, "webhooks"] as const,
     detail: (orgId: NullableId, id: NullableId) =>

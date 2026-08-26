@@ -227,3 +227,29 @@ export function useUpdatePlatformRoutingQueue(organizationId: string) {
     onSuccess: invalidate,
   });
 }
+
+export function useUpdatePlatformRoutingQueueAssignmentStrategy(
+  organizationId: string,
+) {
+  const invalidate = useInvalidatePlatformOrganization(organizationId);
+  return useMutation({
+    mutationFn: async ({
+      id,
+      strategy,
+    }: {
+      id: string;
+      strategy: "manual" | "round_robin";
+    }) => {
+      const result = await supabase
+        .rpc("update_platform_routing_queue_assignment_strategy", {
+          p_organization_id: organizationId,
+          p_routing_queue_id: id,
+          p_strategy: strategy,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data as RoutingQueue;
+    },
+    onSuccess: invalidate,
+  });
+}

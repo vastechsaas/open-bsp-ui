@@ -3,6 +3,7 @@ import { LinkButton } from "@/components/LinkButton";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { MessageSquarePlus } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
+import AssignmentAvailabilityControl from "@/components/AssignmentAvailabilityControl";
 
 export default function Header() {
   const { data: org } = useCurrentOrganization();
@@ -17,6 +18,7 @@ export default function Header() {
         </div>
       </div>
       <div className="flex items-center justify-end gap-[8px]">
+        <AssignmentAvailabilityControl />
         <NotificationCenter />
         <LinkButton
           to="/conversations/new"

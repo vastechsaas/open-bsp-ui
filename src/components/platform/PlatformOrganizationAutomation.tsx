@@ -3,6 +3,7 @@ import OrganizationAutomationPanel from "@/components/settings/OrganizationAutom
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   usePlatformOrganizationAutomationSettings,
+  useUpdatePlatformOrganizationAutoAssignment,
   useUpdatePlatformOrganizationContactAutoSave,
 } from "@/queries/useOrganizationAutomation";
 
@@ -15,6 +16,8 @@ export default function PlatformOrganizationAutomation({
   const settings = usePlatformOrganizationAutomationSettings(organizationId);
   const updateSetting =
     useUpdatePlatformOrganizationContactAutoSave(organizationId);
+  const updateAutoAssignment =
+    useUpdatePlatformOrganizationAutoAssignment(organizationId);
 
   return (
     <OrganizationAutomationPanel
@@ -25,6 +28,15 @@ export default function PlatformOrganizationAutomation({
       saving={updateSetting.isPending}
       onChange={(enabled) => {
         updateSetting.mutate(enabled, {
+          onSuccess: () => void toast.success(t("Automatización actualizada")),
+          onError: () =>
+            void toast.error(t("No se pudo actualizar la automatización")),
+        });
+      }}
+      autoAssignmentEnabled={settings.data?.auto_assign_conversations}
+      autoAssignmentSaving={updateAutoAssignment.isPending}
+      onAutoAssignmentChange={(enabled) => {
+        updateAutoAssignment.mutate(enabled, {
           onSuccess: () => void toast.success(t("Automatización actualizada")),
           onError: () =>
             void toast.error(t("No se pudo actualizar la automatización")),

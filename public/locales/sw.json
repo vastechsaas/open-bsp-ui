@@ -1318,5 +1318,13 @@
   "No se pudo eliminar el agente": "Wakala hakuweza kuondolewa",
   "La invitación pendiente se eliminará y liberará un puesto.": "Mwaliko unaosubiri utaondolewa na kutoa nafasi.",
   "Se eliminará la membresía del agente. Su historial de conversaciones y mensajes se conservará.": "Uanachama wa wakala utaondolewa. Historia ya mazungumzo na ujumbe itahifadhiwa.",
-  "Aceptado": "Imekubaliwa"
+  "Aceptado": "Imekubaliwa",
+  "Asignación de conversaciones": "Ugawaji wa mazungumzo",
+  "Asignar automáticamente conversaciones en cola": "Gawa mazungumzo ya foleni kiotomatiki",
+  "Solo se asignan conversaciones activas en colas configuradas con Round Robin y a agentes disponibles.": "Mazungumzo hai katika foleni za Round Robin pekee hugawiwa mawakala wanaopatikana.",
+  "Estrategia de asignación": "Mkakati wa ugawaji",
+  "Asignación manual": "Ugawaji wa mkono",
+  "Round Robin también requiere que la automatización de la organización esté activada.": "Round Robin pia inahitaji otomatiki ya shirika iwashwe.",
+  "agentes disponibles": "mawakala wanaopatikana",
+  "Asignación automática": "Ugawaji wa kiotomatiki"
 }
