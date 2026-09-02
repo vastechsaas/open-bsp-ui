@@ -38,6 +38,10 @@ export const queryKeys = {
     detail: (orgId: NullableId) =>
       [orgId, "organization_automation_settings"] as const,
   },
+  organizationMediaStorage: {
+    detail: (orgId: NullableId) =>
+      [orgId, "organization-media-storage"] as const,
+  },
   assignmentPresence: {
     current: (orgId: NullableId) =>
       [orgId, "assignment-presence", "current"] as const,
@@ -180,5 +184,10 @@ export const queryKeys = {
       ] as const,
     reports: (organizationId: NullableId, month: string) =>
       ["platform", "reports", organizationId, month] as const,
+    mediaStorage: () => ["platform", "media-storage"] as const,
+    mediaStoragePage: (params: object) =>
+      ["platform", "media-storage", "page", params] as const,
+    organizationMediaStorage: (organizationId: NullableId) =>
+      ["platform", "tenant", organizationId, "media-storage"] as const,
   },
 };

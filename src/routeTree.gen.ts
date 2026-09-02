@@ -17,6 +17,7 @@ import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
+import { Route as PlatformStorageRouteImport } from './routes/platform/storage'
 import { Route as PlatformOrganizationIdRouteImport } from './routes/platform/$organizationId'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
@@ -39,6 +40,7 @@ import { Route as AuthCampaignsIndexRouteImport } from './routes/_auth/campaigns
 import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index'
 import { Route as PlatformReportsOrganizationIdRouteImport } from './routes/platform/reports/$organizationId'
 import { Route as PlatformOrganizationIdWabaHealthRouteImport } from './routes/platform/$organizationId/waba-health'
+import { Route as PlatformOrganizationIdStorageRouteImport } from './routes/platform/$organizationId/storage'
 import { Route as PlatformOrganizationIdQueuesRouteImport } from './routes/platform/$organizationId/queues'
 import { Route as PlatformOrganizationIdAutomationRouteImport } from './routes/platform/$organizationId/automation'
 import { Route as PlatformOrganizationIdAgentsRouteImport } from './routes/platform/$organizationId/agents'
@@ -50,6 +52,7 @@ import { Route as AuthTemplatesTemplateIdRouteImport } from './routes/_auth/temp
 import { Route as AuthStatsUsageRouteImport } from './routes/_auth/stats/usage'
 import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas'
 import { Route as AuthSettingsRoutingQueuesRouteImport } from './routes/_auth/settings/routing-queues'
+import { Route as AuthSettingsMediaManagementRouteImport } from './routes/_auth/settings/media-management'
 import { Route as AuthSettingsAutomationRouteImport } from './routes/_auth/settings/automation'
 import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes/_auth/integrations/media-preprocessing'
 import { Route as AuthConversationsNewRouteImport } from './routes/_auth/conversations/new'
@@ -130,6 +133,11 @@ const IndexRoute = IndexRouteImport.update({
 const PlatformIndexRoute = PlatformIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformStorageRoute = PlatformStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
   getParentRoute: () => PlatformRoute,
 } as any)
 const PlatformOrganizationIdRoute = PlatformOrganizationIdRouteImport.update({
@@ -245,6 +253,12 @@ const PlatformOrganizationIdWabaHealthRoute =
     path: '/waba-health',
     getParentRoute: () => PlatformOrganizationIdRoute,
   } as any)
+const PlatformOrganizationIdStorageRoute =
+  PlatformOrganizationIdStorageRouteImport.update({
+    id: '/storage',
+    path: '/storage',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
 const PlatformOrganizationIdQueuesRoute =
   PlatformOrganizationIdQueuesRouteImport.update({
     id: '/queues',
@@ -303,6 +317,12 @@ const AuthSettingsRoutingQueuesRoute =
   AuthSettingsRoutingQueuesRouteImport.update({
     id: '/routing-queues',
     path: '/routing-queues',
+    getParentRoute: () => AuthSettingsRoute,
+  } as any)
+const AuthSettingsMediaManagementRoute =
+  AuthSettingsMediaManagementRouteImport.update({
+    id: '/media-management',
+    path: '/media-management',
     getParentRoute: () => AuthSettingsRoute,
   } as any)
 const AuthSettingsAutomationRoute = AuthSettingsAutomationRouteImport.update({
@@ -562,6 +582,7 @@ export interface FileRoutesByFullPath {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
@@ -573,6 +594,7 @@ export interface FileRoutesByFullPath {
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
+  '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
@@ -584,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
+  '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
   '/platform/$organizationId/waba-health': typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/agents': typeof AuthAgentsIndexRoute
@@ -642,6 +665,7 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/storage': typeof PlatformStorageRoute
   '/platform': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/agents/new': typeof AuthAgentsNewRoute
@@ -653,6 +677,7 @@ export interface FileRoutesByTo {
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
+  '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
@@ -664,6 +689,7 @@ export interface FileRoutesByTo {
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
+  '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
   '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/agents': typeof AuthAgentsIndexRoute
   '/campaigns': typeof AuthCampaignsIndexRoute
@@ -727,6 +753,7 @@ export interface FileRoutesById {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
   '/_auth/agents/new': typeof AuthAgentsNewRoute
@@ -738,6 +765,7 @@ export interface FileRoutesById {
   '/_auth/conversations/new': typeof AuthConversationsNewRoute
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/_auth/settings/automation': typeof AuthSettingsAutomationRoute
+  '/_auth/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/_auth/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
   '/_auth/stats/usage': typeof AuthStatsUsageRoute
@@ -749,6 +777,7 @@ export interface FileRoutesById {
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
+  '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
   '/platform/$organizationId/waba-health': typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   '/platform/reports/$organizationId': typeof PlatformReportsOrganizationIdRoute
   '/_auth/agents/': typeof AuthAgentsIndexRoute
@@ -813,6 +842,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/storage'
     | '/platform/'
     | '/agents/$agentId'
     | '/agents/new'
@@ -824,6 +854,7 @@ export interface FileRouteTypes {
     | '/conversations/new'
     | '/integrations/media-preprocessing'
     | '/settings/automation'
+    | '/settings/media-management'
     | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
@@ -835,6 +866,7 @@ export interface FileRouteTypes {
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
     | '/platform/$organizationId/queues'
+    | '/platform/$organizationId/storage'
     | '/platform/$organizationId/waba-health'
     | '/platform/reports/$organizationId'
     | '/agents'
@@ -893,6 +925,7 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/storage'
     | '/platform'
     | '/agents/$agentId'
     | '/agents/new'
@@ -904,6 +937,7 @@ export interface FileRouteTypes {
     | '/conversations/new'
     | '/integrations/media-preprocessing'
     | '/settings/automation'
+    | '/settings/media-management'
     | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
@@ -915,6 +949,7 @@ export interface FileRouteTypes {
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
     | '/platform/$organizationId/queues'
+    | '/platform/$organizationId/storage'
     | '/platform/reports/$organizationId'
     | '/agents'
     | '/campaigns'
@@ -977,6 +1012,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/storage'
     | '/platform/'
     | '/_auth/agents/$agentId'
     | '/_auth/agents/new'
@@ -988,6 +1024,7 @@ export interface FileRouteTypes {
     | '/_auth/conversations/new'
     | '/_auth/integrations/media-preprocessing'
     | '/_auth/settings/automation'
+    | '/_auth/settings/media-management'
     | '/_auth/settings/routing-queues'
     | '/_auth/stats/quotas'
     | '/_auth/stats/usage'
@@ -999,6 +1036,7 @@ export interface FileRouteTypes {
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
     | '/platform/$organizationId/queues'
+    | '/platform/$organizationId/storage'
     | '/platform/$organizationId/waba-health'
     | '/platform/reports/$organizationId'
     | '/_auth/agents/'
@@ -1118,6 +1156,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/platform/'
       preLoaderRoute: typeof PlatformIndexRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/storage': {
+      id: '/platform/storage'
+      path: '/storage'
+      fullPath: '/platform/storage'
+      preLoaderRoute: typeof PlatformStorageRouteImport
       parentRoute: typeof PlatformRoute
     }
     '/platform/$organizationId': {
@@ -1274,6 +1319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformOrganizationIdWabaHealthRouteImport
       parentRoute: typeof PlatformOrganizationIdRoute
     }
+    '/platform/$organizationId/storage': {
+      id: '/platform/$organizationId/storage'
+      path: '/storage'
+      fullPath: '/platform/$organizationId/storage'
+      preLoaderRoute: typeof PlatformOrganizationIdStorageRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
+    }
     '/platform/$organizationId/queues': {
       id: '/platform/$organizationId/queues'
       path: '/queues'
@@ -1349,6 +1401,13 @@ declare module '@tanstack/react-router' {
       path: '/routing-queues'
       fullPath: '/settings/routing-queues'
       preLoaderRoute: typeof AuthSettingsRoutingQueuesRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
+    '/_auth/settings/media-management': {
+      id: '/_auth/settings/media-management'
+      path: '/media-management'
+      fullPath: '/settings/media-management'
+      preLoaderRoute: typeof AuthSettingsMediaManagementRouteImport
       parentRoute: typeof AuthSettingsRoute
     }
     '/_auth/settings/automation': {
@@ -1650,6 +1709,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthSettingsRouteChildren {
   AuthSettingsAutomationRoute: typeof AuthSettingsAutomationRoute
+  AuthSettingsMediaManagementRoute: typeof AuthSettingsMediaManagementRoute
   AuthSettingsRoutingQueuesRoute: typeof AuthSettingsRoutingQueuesRoute
   AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
   AuthSettingsApiKeysApiKeyIdRoute: typeof AuthSettingsApiKeysApiKeyIdRoute
@@ -1667,6 +1727,7 @@ interface AuthSettingsRouteChildren {
 
 const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
   AuthSettingsAutomationRoute: AuthSettingsAutomationRoute,
+  AuthSettingsMediaManagementRoute: AuthSettingsMediaManagementRoute,
   AuthSettingsRoutingQueuesRoute: AuthSettingsRoutingQueuesRoute,
   AuthSettingsIndexRoute: AuthSettingsIndexRoute,
   AuthSettingsApiKeysApiKeyIdRoute: AuthSettingsApiKeysApiKeyIdRoute,
@@ -1831,6 +1892,7 @@ interface PlatformOrganizationIdRouteChildren {
   PlatformOrganizationIdAgentsRoute: typeof PlatformOrganizationIdAgentsRoute
   PlatformOrganizationIdAutomationRoute: typeof PlatformOrganizationIdAutomationRoute
   PlatformOrganizationIdQueuesRoute: typeof PlatformOrganizationIdQueuesRoute
+  PlatformOrganizationIdStorageRoute: typeof PlatformOrganizationIdStorageRoute
   PlatformOrganizationIdWabaHealthRoute: typeof PlatformOrganizationIdWabaHealthRouteWithChildren
   PlatformOrganizationIdIndexRoute: typeof PlatformOrganizationIdIndexRoute
 }
@@ -1841,6 +1903,7 @@ const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
     PlatformOrganizationIdAutomationRoute:
       PlatformOrganizationIdAutomationRoute,
     PlatformOrganizationIdQueuesRoute: PlatformOrganizationIdQueuesRoute,
+    PlatformOrganizationIdStorageRoute: PlatformOrganizationIdStorageRoute,
     PlatformOrganizationIdWabaHealthRoute:
       PlatformOrganizationIdWabaHealthRouteWithChildren,
     PlatformOrganizationIdIndexRoute: PlatformOrganizationIdIndexRoute,
@@ -1853,12 +1916,14 @@ const PlatformOrganizationIdRouteWithChildren =
 
 interface PlatformRouteChildren {
   PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRouteWithChildren
+  PlatformStorageRoute: typeof PlatformStorageRoute
   PlatformIndexRoute: typeof PlatformIndexRoute
   PlatformReportsOrganizationIdRoute: typeof PlatformReportsOrganizationIdRoute
 }
 
 const PlatformRouteChildren: PlatformRouteChildren = {
   PlatformOrganizationIdRoute: PlatformOrganizationIdRouteWithChildren,
+  PlatformStorageRoute: PlatformStorageRoute,
   PlatformIndexRoute: PlatformIndexRoute,
   PlatformReportsOrganizationIdRoute: PlatformReportsOrganizationIdRoute,
 }

@@ -46,7 +46,7 @@ export const roleAccess: Record<OrganizationRole, readonly NavigationAccess[]> =
       "teamMembers",
       "settings",
     ],
-    agent: ["conversations", "contacts"],
+    agent: ["conversations", "contacts", "settings"],
   };
 
 const pathAccess: readonly [string, NavigationAccess][] = [
@@ -77,12 +77,19 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!role) return false;
+  if (role === "agent" && pathname.startsWith("/settings")) {
+    return (
+      pathname === "/settings" ||
+      pathname.startsWith("/settings/media-management")
+    );
+  }
   // Supervisors only manage routing queues and organization automations in Settings.
   if (role === "supervisor" && pathname.startsWith("/settings")) {
     return (
       pathname === "/settings" ||
       pathname.startsWith("/settings/routing-queues") ||
-      pathname.startsWith("/settings/automation")
+      pathname.startsWith("/settings/automation") ||
+      pathname.startsWith("/settings/media-management")
     );
   }
   const route = pathAccess.find(
