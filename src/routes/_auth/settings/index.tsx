@@ -15,9 +15,11 @@ function SettingsIndex() {
     if (isLoading) return;
     void navigate({
       to:
-        currentAgent?.extra?.role === "supervisor"
-          ? "/settings/routing-queues"
-          : "/settings/organization",
+        currentAgent?.extra?.role === "agent"
+          ? "/settings/media-management"
+          : currentAgent?.extra?.role === "supervisor"
+            ? "/settings/routing-queues"
+            : "/settings/organization",
       replace: true,
     });
   }, [currentAgent?.extra?.role, isLoading, navigate]);

@@ -62,9 +62,15 @@ void test("Supervisor route guard permits inbox oversight and denies management 
   }
 });
 
-void test("Agent navigation and route guard expose only Conversations and Contacts", () => {
-  assert.deepEqual(roleAccess.agent, ["conversations", "contacts"]);
-  for (const path of ["/conversations", "/conversations/new", "/contacts"]) {
+void test("Agent navigation adds only read-only media settings", () => {
+  assert.deepEqual(roleAccess.agent, ["conversations", "contacts", "settings"]);
+  for (const path of [
+    "/conversations",
+    "/conversations/new",
+    "/contacts",
+    "/settings",
+    "/settings/media-management",
+  ]) {
     assert.equal(canAccessPath("agent", path), true, path);
   }
   for (const path of [
@@ -77,7 +83,8 @@ void test("Agent navigation and route guard expose only Conversations and Contac
     "/integrations",
     "/stats",
     "/whatsapp-manager",
-    "/settings",
+    "/settings/organization",
+    "/settings/api-keys",
   ]) {
     assert.equal(canAccessPath("agent", path), false, path);
   }

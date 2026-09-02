@@ -9,7 +9,7 @@ import {
 const readSource = (path: string) =>
   readFileSync(new URL(path, import.meta.url), "utf8");
 
-void test("Agent defaults to Conversations and has no management navigation", () => {
+void test("Agent defaults to Conversations and only gains read-only media settings", () => {
   assert.equal(getDefaultPathForRole("agent"), "/conversations");
   assert.equal(canAccessNavigation("agent", "conversations"), true);
   assert.equal(canAccessNavigation("agent", "contacts"), true);
@@ -22,10 +22,10 @@ void test("Agent defaults to Conversations and has no management navigation", ()
     "integrations",
     "stats",
     "whatsappManager",
-    "settings",
   ] as const) {
     assert.equal(canAccessNavigation("agent", access), false, access);
   }
+  assert.equal(canAccessNavigation("agent", "settings"), true);
 });
 
 void test("Agent customer replies stay assignment-gated while private notes remain available", () => {

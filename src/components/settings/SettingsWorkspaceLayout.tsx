@@ -1,4 +1,11 @@
-import { Building2, KeyRound, Route, Webhook, Zap } from "lucide-react";
+import {
+  Building2,
+  HardDrive,
+  KeyRound,
+  Route,
+  Webhook,
+  Zap,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -9,6 +16,12 @@ type SettingsWorkspaceLayoutProps = {
 };
 
 const settingsNavigation = [
+  {
+    to: "/settings/media-management",
+    title: "Administración de medios",
+    description: "Uso y cuota de archivos de WhatsApp.",
+    icon: HardDrive,
+  },
   {
     to: "/settings/routing-queues",
     title: "Colas de enrutamiento",
@@ -47,14 +60,20 @@ export default function SettingsWorkspaceLayout({
   const { translate: t } = useTranslation();
   const location = useLocation();
   const { data: currentAgent } = useCurrentAgent();
+  const role = currentAgent?.extra?.role;
   const navigation =
-    currentAgent?.extra?.role === "supervisor"
+    role === "agent"
       ? settingsNavigation.filter(
-          (item) =>
-            item.to === "/settings/routing-queues" ||
-            item.to === "/settings/automation",
+          (item) => item.to === "/settings/media-management",
         )
-      : settingsNavigation;
+      : role === "supervisor"
+        ? settingsNavigation.filter(
+            (item) =>
+              item.to === "/settings/routing-queues" ||
+              item.to === "/settings/automation" ||
+              item.to === "/settings/media-management",
+          )
+        : settingsNavigation;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">

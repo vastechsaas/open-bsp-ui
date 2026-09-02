@@ -71,6 +71,11 @@ export default function PlatformOrganizationDetailLayout({
       to: "/platform/$organizationId/automation" as const,
       active: location.pathname.endsWith("/automation"),
     },
+    {
+      label: t("Almacenamiento"),
+      to: "/platform/$organizationId/storage" as const,
+      active: location.pathname.endsWith("/storage"),
+    },
   ];
   const wabaConnected = summary.connected_whatsapp_account_count > 0;
 

@@ -2,6 +2,7 @@ import { Select } from "antd";
 import {
   Building2,
   FileSpreadsheet,
+  HardDrive,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -54,6 +55,9 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const reportsActive = location.pathname.startsWith("/platform/reports/");
   const wabaHealthActive = location.pathname.includes("/waba-health");
   const automationActive = location.pathname.endsWith("/automation");
+  const storageActive =
+    location.pathname === "/platform/storage" ||
+    location.pathname.endsWith("/storage");
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -107,7 +111,9 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
 
     try {
       if (value === ALL_TENANTS_VALUE) {
-        await navigate({ to: "/platform" });
+        await navigate({
+          to: storageActive ? "/platform/storage" : "/platform",
+        });
         return;
       }
 
@@ -127,10 +133,15 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
                   to: "/platform/$organizationId/automation",
                   params: { organizationId: value },
                 }
-              : {
-                  to: "/platform/$organizationId",
-                  params: { organizationId: value },
-                },
+              : storageActive
+                ? {
+                    to: "/platform/$organizationId/storage",
+                    params: { organizationId: value },
+                  }
+                : {
+                    to: "/platform/$organizationId",
+                    params: { organizationId: value },
+                  },
       );
     } catch (error) {
       setPendingScope(null);
@@ -195,6 +206,17 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
               {t("Reportes")}
             </Link>
           )}
+          <Link
+            to="/platform/storage"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+              storageActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            }`}
+          >
+            <HardDrive className="h-5 w-5" />
+            {t("Almacenamiento")}
+          </Link>
           <Link
             to="/dashboard"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
