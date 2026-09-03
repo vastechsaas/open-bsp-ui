@@ -1355,5 +1355,22 @@
   "No se pudo cargar el almacenamiento.": "Imeshindikana kupakia hifadhi.",
   "Archivos": "Faili",
   "Administrar": "Simamia",
-  "Almacenamiento": "Hifadhi"
+  "Almacenamiento": "Hifadhi",
+  "Grabadora de voz": "Kinasa sauti",
+  "Este navegador no admite la grabación de voz": "Kivinjari hiki hakitumii kurekodi sauti",
+  "No se pudo acceder al micrófono": "Maikrofoni haikuweza kufikiwa",
+  "Cancelar grabación": "Ghairi kurekodi",
+  "Solicitando micrófono": "Inaomba ruhusa ya maikrofoni",
+  "Preparando mensaje de voz": "Inaandaa ujumbe wa sauti",
+  "Grabación pausada": "Kurekodi kumesitishwa",
+  "Grabando": "Inarekodi",
+  "Pausar": "Sitisha",
+  "Continuar": "Endelea",
+  "Detener": "Simamisha",
+  "Reproducir": "Cheza",
+  "Enviar mensaje de voz": "Tuma ujumbe wa sauti",
+  "Grabar mensaje de voz": "Rekodi ujumbe wa sauti",
+  "El servicio de voz no está configurado": "Huduma ya sauti haijasanidiwa",
+  "Tu sesión ha caducado": "Kipindi chako kimeisha",
+  "No se pudo preparar el mensaje de voz": "Ujumbe wa sauti haukuweza kuandaliwa"
 }

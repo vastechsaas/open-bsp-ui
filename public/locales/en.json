@@ -1394,5 +1394,22 @@
   "No se pudo cargar el almacenamiento.": "Storage could not be loaded.",
   "Archivos": "Files",
   "Administrar": "Manage",
-  "Almacenamiento": "Storage"
+  "Almacenamiento": "Storage",
+  "Grabadora de voz": "Voice recorder",
+  "Este navegador no admite la grabación de voz": "This browser does not support voice recording",
+  "No se pudo acceder al micrófono": "The microphone could not be accessed",
+  "Cancelar grabación": "Cancel recording",
+  "Solicitando micrófono": "Requesting microphone",
+  "Preparando mensaje de voz": "Preparing voice message",
+  "Grabación pausada": "Recording paused",
+  "Grabando": "Recording",
+  "Pausar": "Pause",
+  "Continuar": "Resume",
+  "Detener": "Stop",
+  "Reproducir": "Play",
+  "Enviar mensaje de voz": "Send voice message",
+  "Grabar mensaje de voz": "Record voice message",
+  "El servicio de voz no está configurado": "The voice service is not configured",
+  "Tu sesión ha caducado": "Your session has expired",
+  "No se pudo preparar el mensaje de voz": "The voice message could not be prepared"
 }

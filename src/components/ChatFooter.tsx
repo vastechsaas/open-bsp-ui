@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquareText, Plus, StickyNote, X } from "lucide-react";
+import { MessageSquareText, Mic, Plus, StickyNote, X } from "lucide-react";
 import {
   newMessage,
   pushMessageToDb,
@@ -33,6 +33,7 @@ import {
   getQuickReplyKeyboardAction,
   getQuickReplySuggestions,
 } from "@/utils/QuickReplyUtils";
+import VoiceRecorder from "./VoiceRecorder";
 
 function TemplateVarInput({
   placeholder,
@@ -140,9 +141,11 @@ export default function ChatFooter() {
   >();
 
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout>>();
+  const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
 
   const editableDiv = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const setMediaLoad = useBoundStore((store) => store.chat.setMediaLoad);
 
   const { translate: t, currentLanguage } = useTranslation();
 
@@ -179,6 +182,8 @@ export default function ChatFooter() {
   useEffect(() => {
     setSelectedQuickReplyIndex(0);
   }, [message, quickReplySuggestions.length]);
+
+  useEffect(() => setVoiceRecorderOpen(false), [activeConvId]);
 
   // WhatsApp customer service window lasts 24 hours since the last contact's message
   const remaining = tick
@@ -318,6 +323,32 @@ export default function ChatFooter() {
     if (editableDiv.current) {
       editableDiv.current.textContent = "";
     }
+  };
+
+  const sendVoiceMessage = async (file: File) => {
+    if (!conv || !activeConvId || !agentId) return;
+    !conv.updated_at && (await pushConversationToDb(conv));
+    const record = newMessage(
+      conv,
+      "outgoing",
+      {
+        version: "1",
+        type: "file",
+        kind: "audio",
+        file: {
+          uri: "",
+          mime_type: file.type,
+          name: file.name,
+          size: file.size,
+        },
+        text: "",
+      },
+      agentId,
+      file,
+    );
+    setMediaLoad(record.id!, { type: "upload", status: "pending", blob: file });
+    pushMessageToStore(record);
+    setVoiceRecorderOpen(false);
   };
 
   const selectQuickReply = (index: number) => {
@@ -616,273 +647,299 @@ export default function ChatFooter() {
                 : " bg-incoming-chat-bubble")
           }
         >
-          <div className="shrink-0">
-            {templateDraft ? (
-              <button
-                className="p-[8px] rounded-full cursor-pointer hover:bg-accent"
-                onClick={() => setTemplateDraft(activeConvId, null)}
-                title={t("Descartar plantilla")}
-              >
-                <X className="w-[24px] h-[24px]" />
-              </button>
-            ) : (
-              <button
-                disabled={!inCSWindow}
-                className={
-                  "p-[8px] rounded-full" +
-                  (!inCSWindow ? "" : " cursor-pointer hover:bg-accent")
-                }
-                onClick={() => fileInput.current?.click()}
-                title={t("Adjuntar")}
-              >
-                <Plus className="w-[24px] h-[24px]" />
-              </button>
-            )}
-          </div>
-
-          <input
-            disabled={!inCSWindow}
-            ref={fileInput}
-            type="file"
-            multiple={true}
-            className="hidden"
-            accept="*/*"
-            onChange={(event) => {
-              if (!event.target.files?.length) {
-                return;
-              }
-
-              const drafts = Array.from(event.target.files).map<FileDraft>(
-                (file) => ({
-                  file,
-                }),
-              );
-
-              drafts[0].caption = message;
-
-              setFileDrafts(drafts);
-            }}
-          />
-
-          {/* Text input or template mode */}
-          <div className="relative grow">
-            {templateDraft ? (
-              renderTemplateBody()
-            ) : (
-              <>
-                {quickReplyPickerOpen && (
-                  <div
-                    role="listbox"
-                    aria-label={t("Respuestas rápidas")}
-                    className="absolute bottom-full left-0 right-0 z-30 mb-2 max-h-64 overflow-y-auto rounded-xl border border-border bg-background p-1 text-foreground shadow-xl"
+          {voiceRecorderOpen ? (
+            <VoiceRecorder
+              organizationId={conv.organization_id}
+              onCancel={() => setVoiceRecorderOpen(false)}
+              onSend={(file) => void sendVoiceMessage(file)}
+            />
+          ) : (
+            <>
+              <div className="shrink-0">
+                {templateDraft ? (
+                  <button
+                    className="p-[8px] rounded-full cursor-pointer hover:bg-accent"
+                    onClick={() => setTemplateDraft(activeConvId, null)}
+                    title={t("Descartar plantilla")}
                   >
-                    {quickReplySuggestions.map((reply, index) => (
-                      <button
-                        key={reply.id}
-                        type="button"
-                        role="option"
-                        aria-selected={index === selectedQuickReplyIndex}
-                        className={`block w-full rounded-lg px-3 py-2 text-left ${
-                          index === selectedQuickReplyIndex
-                            ? "bg-accent"
-                            : "hover:bg-accent/70"
-                        }`}
-                        onMouseEnter={() => setSelectedQuickReplyIndex(index)}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => selectQuickReply(index)}
-                      >
-                        <span className="block text-[13px] font-semibold text-primary">
-                          {reply.shortcut}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
-                          {reply.content}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div
-                  ref={editableDiv}
-                  contentEditable={inCSWindow}
-                  className={`${
-                    !inCSWindow ? "cursor-pointer" : ""
-                  } outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words`}
-                  onInput={(event) => {
-                    if (!(event.target instanceof Element)) {
-                      return;
-                    }
-
-                    // Use secure utility to sanitize and convert HTML to Markdown
-                    const message = htmlToMarkdown(
-                      event.currentTarget.innerHTML,
-                    );
-
-                    setMessage(message);
-
-                    if (conv.created_at !== conv.updated_at) {
-                      // no drafts for new convs, sorry!
-                      debounce(
-                        () => saveDraft(conv, message, sendAsContact),
-                        3000,
-                      ); // milliseconds
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      quickReplyPickerOpen &&
-                      !event.ctrlKey &&
-                      !event.metaKey &&
-                      !event.shiftKey
-                    ) {
-                      const action = getQuickReplyKeyboardAction(
-                        event.key,
-                        selectedQuickReplyIndex,
-                        quickReplySuggestions.length,
-                      );
-
-                      if (action.type === "move") {
-                        event.preventDefault();
-                        setSelectedQuickReplyIndex(action.index);
-                        return;
-                      }
-                      if (action.type === "select") {
-                        event.preventDefault();
-                        selectQuickReply(action.index);
-                        return;
-                      }
-                      if (action.type === "close") {
-                        event.preventDefault();
-                        setDismissedQuickReplyDraft(message);
-                        return;
-                      }
-                    }
-
-                    if (event.key === "Enter" && event.ctrlKey) {
-                      // toggle("sendAsContact") is handled at window level, nonetheless this
-                      // no-op block prevents from sending the message when pressing ctrl+enter
-                    } else if (
-                      event.key === "Enter" &&
-                      !event.shiftKey &&
-                      window.matchMedia("(min-width: 768px)").matches
-                    ) {
-                      event.preventDefault();
-                      sendTextMessage();
-                    }
-                  }}
-                  onClick={() =>
-                    !inCSWindow &&
-                    conv.service === "whatsapp" &&
-                    toggle("templatePicker")
-                  }
-                  title={
-                    inCSWindow
-                      ? undefined
-                      : conv.service === "whatsapp"
-                        ? t(
-                            "WhatsApp cierra la conversación a las 24 horas del último mensaje recibido. Para abrir la conversación debes utilizar una plantilla.",
-                          )
-                        : t(
-                            "La conversación se cerró 24 horas después del último mensaje del contacto. Esperá a que te escriba de nuevo para responder.",
-                          )
-                  }
-                />
-                {!message && (
-                  <div
+                    <X className="w-[24px] h-[24px]" />
+                  </button>
+                ) : (
+                  <button
+                    disabled={!inCSWindow}
                     className={
-                      "absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground" +
-                      (inCSWindow ? "" : " cursor-pointer")
+                      "p-[8px] rounded-full" +
+                      (!inCSWindow ? "" : " cursor-pointer hover:bg-accent")
                     }
-                    onClick={() =>
-                      inCSWindow
-                        ? editableDiv.current?.focus()
-                        : conv.service === "whatsapp"
-                          ? toggle("templatePicker")
-                          : undefined
-                    }
+                    onClick={() => fileInput.current?.click()}
+                    title={t("Adjuntar")}
                   >
-                    {!inCSWindow ? (
-                      conv.service === "whatsapp" ? (
-                        <>
-                          <span className="lg:hidden">
-                            {t("Conversación cerrada")}
-                          </span>
-                          <span className="hidden lg:inline">
-                            {t(
-                              "Conversación cerrada, abre la conversación con una plantilla",
-                            )}
-                          </span>
-                        </>
-                      ) : (
-                        <span>{t("Conversación cerrada")}</span>
-                      )
-                    ) : sendAsContact ? (
-                      <>
-                        <span className="lg:hidden">
-                          {t("Mensaje entrante")}
-                        </span>
-                        <span className="hidden lg:inline">
-                          {t("Simula un mensaje entrante")}
-                        </span>
-                      </>
-                    ) : conv.service === "whatsapp" ||
-                      conv.service === "instagram" ? (
-                      <>
-                        <span className="lg:hidden">{t("Cerrará en")}</span>
-                        <span className="hidden lg:inline">
-                          {t("La conversación cerrará en")}
-                        </span>{" "}
-                        <span>{remaining}</span>
-                      </>
-                    ) : (
-                      <span>{t("Escribe un mensaje")}</span>
-                    )}
-                  </div>
+                    <Plus className="w-[24px] h-[24px]" />
+                  </button>
                 )}
-              </>
-            )}
-          </div>
+              </div>
 
-          {/* Send button */}
-          <button
-            disabled={templateDraft ? !allVarsFilled : !inCSWindow}
-            className={
-              "p-[8px] rounded-full bg-primary disabled:opacity-50" +
-              (templateDraft
-                ? allVarsFilled
-                  ? " cursor-pointer"
-                  : ""
-                : !inCSWindow
-                  ? ""
-                  : " cursor-pointer")
-            }
-            onClick={() => {
-              if (templateDraft) {
-                allVarsFilled && sendTemplateMessage();
-              } else if (message) {
-                sendTextMessage();
-              } else if (conv.service === "local") {
-                // Only the internal service can simulate incoming messages
-                toggle("sendAsContact");
-              }
-            }}
-            title={
-              templateDraft
-                ? t("Enviar plantilla")
-                : sendAsContact
-                  ? t("Recibir mensaje")
-                  : t("Enviar mensaje")
-            }
-          >
-            <svg
-              className={
-                "w-[24px] h-[24px] transition" +
-                (sendAsContact && !templateDraft ? " -scale-x-100" : "") +
-                " text-primary-foreground"
-              }
-            >
-              <use href="/icons.svg#send" />
-            </svg>
-          </button>
+              <input
+                disabled={!inCSWindow}
+                ref={fileInput}
+                type="file"
+                multiple={true}
+                className="hidden"
+                accept="*/*"
+                onChange={(event) => {
+                  if (!event.target.files?.length) {
+                    return;
+                  }
+
+                  const drafts = Array.from(event.target.files).map<FileDraft>(
+                    (file) => ({
+                      file,
+                    }),
+                  );
+
+                  drafts[0].caption = message;
+
+                  setFileDrafts(drafts);
+                }}
+              />
+
+              {/* Text input or template mode */}
+              <div className="relative grow">
+                {templateDraft ? (
+                  renderTemplateBody()
+                ) : (
+                  <>
+                    {quickReplyPickerOpen && (
+                      <div
+                        role="listbox"
+                        aria-label={t("Respuestas rápidas")}
+                        className="absolute bottom-full left-0 right-0 z-30 mb-2 max-h-64 overflow-y-auto rounded-xl border border-border bg-background p-1 text-foreground shadow-xl"
+                      >
+                        {quickReplySuggestions.map((reply, index) => (
+                          <button
+                            key={reply.id}
+                            type="button"
+                            role="option"
+                            aria-selected={index === selectedQuickReplyIndex}
+                            className={`block w-full rounded-lg px-3 py-2 text-left ${
+                              index === selectedQuickReplyIndex
+                                ? "bg-accent"
+                                : "hover:bg-accent/70"
+                            }`}
+                            onMouseEnter={() =>
+                              setSelectedQuickReplyIndex(index)
+                            }
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => selectQuickReply(index)}
+                          >
+                            <span className="block text-[13px] font-semibold text-primary">
+                              {reply.shortcut}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
+                              {reply.content}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div
+                      ref={editableDiv}
+                      contentEditable={inCSWindow}
+                      className={`${
+                        !inCSWindow ? "cursor-pointer" : ""
+                      } outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words`}
+                      onInput={(event) => {
+                        if (!(event.target instanceof Element)) {
+                          return;
+                        }
+
+                        // Use secure utility to sanitize and convert HTML to Markdown
+                        const message = htmlToMarkdown(
+                          event.currentTarget.innerHTML,
+                        );
+
+                        setMessage(message);
+
+                        if (conv.created_at !== conv.updated_at) {
+                          // no drafts for new convs, sorry!
+                          debounce(
+                            () => saveDraft(conv, message, sendAsContact),
+                            3000,
+                          ); // milliseconds
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          quickReplyPickerOpen &&
+                          !event.ctrlKey &&
+                          !event.metaKey &&
+                          !event.shiftKey
+                        ) {
+                          const action = getQuickReplyKeyboardAction(
+                            event.key,
+                            selectedQuickReplyIndex,
+                            quickReplySuggestions.length,
+                          );
+
+                          if (action.type === "move") {
+                            event.preventDefault();
+                            setSelectedQuickReplyIndex(action.index);
+                            return;
+                          }
+                          if (action.type === "select") {
+                            event.preventDefault();
+                            selectQuickReply(action.index);
+                            return;
+                          }
+                          if (action.type === "close") {
+                            event.preventDefault();
+                            setDismissedQuickReplyDraft(message);
+                            return;
+                          }
+                        }
+
+                        if (event.key === "Enter" && event.ctrlKey) {
+                          // toggle("sendAsContact") is handled at window level, nonetheless this
+                          // no-op block prevents from sending the message when pressing ctrl+enter
+                        } else if (
+                          event.key === "Enter" &&
+                          !event.shiftKey &&
+                          window.matchMedia("(min-width: 768px)").matches
+                        ) {
+                          event.preventDefault();
+                          sendTextMessage();
+                        }
+                      }}
+                      onClick={() =>
+                        !inCSWindow &&
+                        conv.service === "whatsapp" &&
+                        toggle("templatePicker")
+                      }
+                      title={
+                        inCSWindow
+                          ? undefined
+                          : conv.service === "whatsapp"
+                            ? t(
+                                "WhatsApp cierra la conversación a las 24 horas del último mensaje recibido. Para abrir la conversación debes utilizar una plantilla.",
+                              )
+                            : t(
+                                "La conversación se cerró 24 horas después del último mensaje del contacto. Esperá a que te escriba de nuevo para responder.",
+                              )
+                      }
+                    />
+                    {!message && (
+                      <div
+                        className={
+                          "absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground" +
+                          (inCSWindow ? "" : " cursor-pointer")
+                        }
+                        onClick={() =>
+                          inCSWindow
+                            ? editableDiv.current?.focus()
+                            : conv.service === "whatsapp"
+                              ? toggle("templatePicker")
+                              : undefined
+                        }
+                      >
+                        {!inCSWindow ? (
+                          conv.service === "whatsapp" ? (
+                            <>
+                              <span className="lg:hidden">
+                                {t("Conversación cerrada")}
+                              </span>
+                              <span className="hidden lg:inline">
+                                {t(
+                                  "Conversación cerrada, abre la conversación con una plantilla",
+                                )}
+                              </span>
+                            </>
+                          ) : (
+                            <span>{t("Conversación cerrada")}</span>
+                          )
+                        ) : sendAsContact ? (
+                          <>
+                            <span className="lg:hidden">
+                              {t("Mensaje entrante")}
+                            </span>
+                            <span className="hidden lg:inline">
+                              {t("Simula un mensaje entrante")}
+                            </span>
+                          </>
+                        ) : conv.service === "whatsapp" ||
+                          conv.service === "instagram" ? (
+                          <>
+                            <span className="lg:hidden">{t("Cerrará en")}</span>
+                            <span className="hidden lg:inline">
+                              {t("La conversación cerrará en")}
+                            </span>{" "}
+                            <span>{remaining}</span>
+                          </>
+                        ) : (
+                          <span>{t("Escribe un mensaje")}</span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Send button */}
+              {!templateDraft &&
+                !message &&
+                conv.service === "whatsapp" &&
+                !sendAsContact && (
+                  <button
+                    type="button"
+                    disabled={!inCSWindow}
+                    className="rounded-full p-[8px] hover:bg-accent disabled:opacity-50"
+                    onClick={() => setVoiceRecorderOpen(true)}
+                    title={t("Grabar mensaje de voz")}
+                  >
+                    <Mic className="h-6 w-6" />
+                  </button>
+                )}
+              <button
+                disabled={templateDraft ? !allVarsFilled : !inCSWindow}
+                className={
+                  "p-[8px] rounded-full bg-primary disabled:opacity-50" +
+                  (templateDraft
+                    ? allVarsFilled
+                      ? " cursor-pointer"
+                      : ""
+                    : !inCSWindow
+                      ? ""
+                      : " cursor-pointer")
+                }
+                onClick={() => {
+                  if (templateDraft) {
+                    allVarsFilled && sendTemplateMessage();
+                  } else if (message) {
+                    sendTextMessage();
+                  } else if (conv.service === "local") {
+                    // Only the internal service can simulate incoming messages
+                    toggle("sendAsContact");
+                  }
+                }}
+                title={
+                  templateDraft
+                    ? t("Enviar plantilla")
+                    : sendAsContact
+                      ? t("Recibir mensaje")
+                      : t("Enviar mensaje")
+                }
+              >
+                <svg
+                  className={
+                    "w-[24px] h-[24px] transition" +
+                    (sendAsContact && !templateDraft ? " -scale-x-100" : "") +
+                    " text-primary-foreground"
+                  }
+                >
+                  <use href="/icons.svg#send" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </div>
     )
