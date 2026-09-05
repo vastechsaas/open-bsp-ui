@@ -1355,5 +1355,22 @@
   "No se pudo cargar el almacenamiento.": "Impossible de charger le stockage.",
   "Archivos": "Fichiers",
   "Administrar": "Gérer",
-  "Almacenamiento": "Stockage"
+  "Almacenamiento": "Stockage",
+  "Apariencia": "Apparence",
+  "Colores y presentación del centro de chat.": "Couleurs et présentation du centre de chat.",
+  "Solo propietarios, administradores y supervisores pueden administrar la apariencia.": "Seuls les propriétaires, administrateurs et superviseurs peuvent gérer l’apparence.",
+  "No se pudo cargar la configuración de apariencia.": "Impossible de charger les paramètres d’apparence.",
+  "Personaliza cómo se ven las conversaciones de tu organización.": "Personnalisez l’apparence des conversations de votre organisation.",
+  "Color de la burbuja de respuesta": "Couleur de la bulle de réponse",
+  "El color seleccionado se aplica a las respuestas de tu equipo.": "La couleur sélectionnée s’applique aux réponses de votre équipe.",
+  "Naranja": "Orange",
+  "Verde": "Vert",
+  "Azul": "Bleu",
+  "Morado": "Violet",
+  "Turquesa": "Turquoise",
+  "Apariencia actualizada": "Apparence mise à jour",
+  "No se pudo actualizar la apariencia": "Impossible de mettre à jour l’apparence",
+  "Vista previa": "Aperçu",
+  "Mensaje del cliente": "Message du client",
+  "Respuesta de tu equipo": "Réponse de votre équipe"
 }

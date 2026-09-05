@@ -38,6 +38,9 @@ export const queryKeys = {
     detail: (orgId: NullableId) =>
       [orgId, "organization_automation_settings"] as const,
   },
+  organizationAppearance: {
+    detail: (orgId: NullableId) => [orgId, "organization_ui_settings"] as const,
+  },
   organizationMediaStorage: {
     detail: (orgId: NullableId) =>
       [orgId, "organization-media-storage"] as const,

@@ -38,6 +38,7 @@ import { isSettingsWorkspacePath } from "@/utils/SettingsUtils";
 import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
+import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
 import {
   canAccessNavigation,
   canAccessPath,
@@ -72,6 +73,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const { data: currentAgent } = useCurrentAgent();
   const { data: organizationAddresses } = useOrganizationsAddresses();
+  const { data: appearanceSettings } = useOrganizationAppearanceSettings();
   const hasConnectedWhatsApp = organizationAddresses?.some(
     (address) =>
       address.service === "whatsapp" && address.status === "connected",
@@ -125,6 +127,11 @@ function AppLayout() {
     window.addEventListener("resize", updateViewportWidth);
     return () => window.removeEventListener("resize", updateViewportWidth);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.chatBubbleTheme =
+      appearanceSettings?.chat_bubble_theme ?? "orange";
+  }, [activeOrgId, appearanceSettings?.chat_bubble_theme]);
 
   // Sync fragment identifier with activeConvId
   // i.e. /conversations#1234

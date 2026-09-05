@@ -77,18 +77,22 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!role) return false;
+  if (pathname.startsWith("/settings/appearance")) {
+    return role === "owner" || role === "admin" || role === "supervisor";
+  }
   if (role === "agent" && pathname.startsWith("/settings")) {
     return (
       pathname === "/settings" ||
       pathname.startsWith("/settings/media-management")
     );
   }
-  // Supervisors only manage routing queues and organization automations in Settings.
+  // Supervisors manage operational organization settings.
   if (role === "supervisor" && pathname.startsWith("/settings")) {
     return (
       pathname === "/settings" ||
       pathname.startsWith("/settings/routing-queues") ||
       pathname.startsWith("/settings/automation") ||
+      pathname.startsWith("/settings/appearance") ||
       pathname.startsWith("/settings/media-management")
     );
   }
