@@ -64,6 +64,38 @@
   --chat-in: oklch(0.31 0 106.6);
 }
 
+:root[data-chat-bubble-theme="green"] {
+  --chat-out: #d9fdd3;
+}
+
+:root[data-chat-bubble-theme="blue"] {
+  --chat-out: #dbeafe;
+}
+
+:root[data-chat-bubble-theme="purple"] {
+  --chat-out: #ede9fe;
+}
+
+:root[data-chat-bubble-theme="teal"] {
+  --chat-out: #ccfbf1;
+}
+
+:root.dark[data-chat-bubble-theme="green"] {
+  --chat-out: #1f4d3a;
+}
+
+:root.dark[data-chat-bubble-theme="blue"] {
+  --chat-out: #1e3a5f;
+}
+
+:root.dark[data-chat-bubble-theme="purple"] {
+  --chat-out: #3b2f63;
+}
+
+:root.dark[data-chat-bubble-theme="teal"] {
+  --chat-out: #164e4a;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

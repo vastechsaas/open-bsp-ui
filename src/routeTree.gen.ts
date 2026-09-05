@@ -54,6 +54,7 @@ import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas
 import { Route as AuthSettingsRoutingQueuesRouteImport } from './routes/_auth/settings/routing-queues'
 import { Route as AuthSettingsMediaManagementRouteImport } from './routes/_auth/settings/media-management'
 import { Route as AuthSettingsAutomationRouteImport } from './routes/_auth/settings/automation'
+import { Route as AuthSettingsAppearanceRouteImport } from './routes/_auth/settings/appearance'
 import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes/_auth/integrations/media-preprocessing'
 import { Route as AuthConversationsNewRouteImport } from './routes/_auth/conversations/new'
 import { Route as AuthContactsNewRouteImport } from './routes/_auth/contacts/new'
@@ -330,6 +331,11 @@ const AuthSettingsAutomationRoute = AuthSettingsAutomationRouteImport.update({
   path: '/automation',
   getParentRoute: () => AuthSettingsRoute,
 } as any)
+const AuthSettingsAppearanceRoute = AuthSettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
 const AuthIntegrationsMediaPreprocessingRoute =
   AuthIntegrationsMediaPreprocessingRouteImport.update({
     id: '/integrations/media-preprocessing',
@@ -593,6 +599,7 @@ export interface FileRoutesByFullPath {
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
@@ -676,6 +683,7 @@ export interface FileRoutesByTo {
   '/contacts/new': typeof AuthContactsNewRoute
   '/conversations/new': typeof AuthConversationsNewRoute
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
@@ -764,6 +772,7 @@ export interface FileRoutesById {
   '/_auth/contacts/new': typeof AuthContactsNewRoute
   '/_auth/conversations/new': typeof AuthConversationsNewRoute
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
+  '/_auth/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/_auth/settings/automation': typeof AuthSettingsAutomationRoute
   '/_auth/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/_auth/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
@@ -853,6 +862,7 @@ export interface FileRouteTypes {
     | '/contacts/new'
     | '/conversations/new'
     | '/integrations/media-preprocessing'
+    | '/settings/appearance'
     | '/settings/automation'
     | '/settings/media-management'
     | '/settings/routing-queues'
@@ -936,6 +946,7 @@ export interface FileRouteTypes {
     | '/contacts/new'
     | '/conversations/new'
     | '/integrations/media-preprocessing'
+    | '/settings/appearance'
     | '/settings/automation'
     | '/settings/media-management'
     | '/settings/routing-queues'
@@ -1023,6 +1034,7 @@ export interface FileRouteTypes {
     | '/_auth/contacts/new'
     | '/_auth/conversations/new'
     | '/_auth/integrations/media-preprocessing'
+    | '/_auth/settings/appearance'
     | '/_auth/settings/automation'
     | '/_auth/settings/media-management'
     | '/_auth/settings/routing-queues'
@@ -1417,6 +1429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsAutomationRouteImport
       parentRoute: typeof AuthSettingsRoute
     }
+    '/_auth/settings/appearance': {
+      id: '/_auth/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof AuthSettingsAppearanceRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/integrations/media-preprocessing': {
       id: '/_auth/integrations/media-preprocessing'
       path: '/integrations/media-preprocessing'
@@ -1708,6 +1727,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthSettingsRouteChildren {
+  AuthSettingsAppearanceRoute: typeof AuthSettingsAppearanceRoute
   AuthSettingsAutomationRoute: typeof AuthSettingsAutomationRoute
   AuthSettingsMediaManagementRoute: typeof AuthSettingsMediaManagementRoute
   AuthSettingsRoutingQueuesRoute: typeof AuthSettingsRoutingQueuesRoute
@@ -1726,6 +1746,7 @@ interface AuthSettingsRouteChildren {
 }
 
 const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
+  AuthSettingsAppearanceRoute: AuthSettingsAppearanceRoute,
   AuthSettingsAutomationRoute: AuthSettingsAutomationRoute,
   AuthSettingsMediaManagementRoute: AuthSettingsMediaManagementRoute,
   AuthSettingsRoutingQueuesRoute: AuthSettingsRoutingQueuesRoute,

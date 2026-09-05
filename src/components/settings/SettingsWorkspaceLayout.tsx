@@ -2,6 +2,7 @@ import {
   Building2,
   HardDrive,
   KeyRound,
+  Palette,
   Route,
   Webhook,
   Zap,
@@ -21,6 +22,12 @@ const settingsNavigation = [
     title: "Administración de medios",
     description: "Uso y cuota de archivos de WhatsApp.",
     icon: HardDrive,
+  },
+  {
+    to: "/settings/appearance",
+    title: "Apariencia",
+    description: "Colores y presentación del centro de chat.",
+    icon: Palette,
   },
   {
     to: "/settings/routing-queues",
@@ -71,9 +78,14 @@ export default function SettingsWorkspaceLayout({
             (item) =>
               item.to === "/settings/routing-queues" ||
               item.to === "/settings/automation" ||
+              item.to === "/settings/appearance" ||
               item.to === "/settings/media-management",
           )
-        : settingsNavigation;
+        : role === "member"
+          ? settingsNavigation.filter(
+              (item) => item.to !== "/settings/appearance",
+            )
+          : settingsNavigation;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">

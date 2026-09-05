@@ -1355,5 +1355,22 @@
   "No se pudo cargar el almacenamiento.": "Imeshindikana kupakia hifadhi.",
   "Archivos": "Faili",
   "Administrar": "Simamia",
-  "Almacenamiento": "Hifadhi"
+  "Almacenamiento": "Hifadhi",
+  "Apariencia": "Mwonekano",
+  "Colores y presentación del centro de chat.": "Rangi na mwonekano wa kituo cha mazungumzo.",
+  "Solo propietarios, administradores y supervisores pueden administrar la apariencia.": "Wamiliki, wasimamizi na wasimamizi wakuu pekee wanaweza kudhibiti mwonekano.",
+  "No se pudo cargar la configuración de apariencia.": "Mipangilio ya mwonekano haikuweza kupakiwa.",
+  "Personaliza cómo se ven las conversaciones de tu organización.": "Badilisha mwonekano wa mazungumzo ya shirika lako.",
+  "Color de la burbuja de respuesta": "Rangi ya kiputo cha jibu",
+  "El color seleccionado se aplica a las respuestas de tu equipo.": "Rangi iliyochaguliwa inatumika kwa majibu ya timu yako.",
+  "Naranja": "Machungwa",
+  "Verde": "Kijani",
+  "Azul": "Bluu",
+  "Morado": "Zambarau",
+  "Turquesa": "Samawati-kijani",
+  "Apariencia actualizada": "Mwonekano umesasishwa",
+  "No se pudo actualizar la apariencia": "Mwonekano haukuweza kusasishwa",
+  "Vista previa": "Onyesho la awali",
+  "Mensaje del cliente": "Ujumbe wa mteja",
+  "Respuesta de tu equipo": "Jibu la timu yako"
 }

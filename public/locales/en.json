@@ -1394,5 +1394,22 @@
   "No se pudo cargar el almacenamiento.": "Storage could not be loaded.",
   "Archivos": "Files",
   "Administrar": "Manage",
-  "Almacenamiento": "Storage"
+  "Almacenamiento": "Storage",
+  "Apariencia": "Appearance",
+  "Colores y presentación del centro de chat.": "Chat Center colors and presentation.",
+  "Solo propietarios, administradores y supervisores pueden administrar la apariencia.": "Only Owners, Admins, and Supervisors can manage appearance.",
+  "No se pudo cargar la configuración de apariencia.": "Appearance settings could not be loaded.",
+  "Personaliza cómo se ven las conversaciones de tu organización.": "Customize how your organization's conversations look.",
+  "Color de la burbuja de respuesta": "Reply bubble color",
+  "El color seleccionado se aplica a las respuestas de tu equipo.": "The selected color applies to your team's replies.",
+  "Naranja": "Orange",
+  "Verde": "Green",
+  "Azul": "Blue",
+  "Morado": "Purple",
+  "Turquesa": "Teal",
+  "Apariencia actualizada": "Appearance updated",
+  "No se pudo actualizar la apariencia": "Appearance could not be updated",
+  "Vista previa": "Preview",
+  "Mensaje del cliente": "Customer message",
+  "Respuesta de tu equipo": "Your team's reply"
 }
