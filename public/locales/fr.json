@@ -1372,5 +1372,22 @@
   "No se pudo actualizar la apariencia": "Impossible de mettre à jour l’apparence",
   "Vista previa": "Aperçu",
   "Mensaje del cliente": "Message du client",
-  "Respuesta de tu equipo": "Réponse de votre équipe"
+  "Respuesta de tu equipo": "Réponse de votre équipe",
+  "Grabadora de voz": "Enregistreur vocal",
+  "Este navegador no admite la grabación de voz": "Ce navigateur ne prend pas en charge l’enregistrement vocal",
+  "No se pudo acceder al micrófono": "Impossible d’accéder au microphone",
+  "Cancelar grabación": "Annuler l’enregistrement",
+  "Solicitando micrófono": "Demande d’accès au microphone",
+  "Preparando mensaje de voz": "Préparation du message vocal",
+  "Grabación pausada": "Enregistrement en pause",
+  "Grabando": "Enregistrement",
+  "Pausar": "Pause",
+  "Continuar": "Reprendre",
+  "Detener": "Arrêter",
+  "Reproducir": "Lire",
+  "Enviar mensaje de voz": "Envoyer le message vocal",
+  "Grabar mensaje de voz": "Enregistrer un message vocal",
+  "El servicio de voz no está configurado": "Le service vocal n’est pas configuré",
+  "Tu sesión ha caducado": "Votre session a expiré",
+  "No se pudo preparar el mensaje de voz": "Impossible de préparer le message vocal"
 }

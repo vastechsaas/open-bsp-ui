@@ -1372,5 +1372,22 @@
   "No se pudo actualizar la apariencia": "Não foi possível atualizar a aparência",
   "Vista previa": "Prévia",
   "Mensaje del cliente": "Mensagem do cliente",
-  "Respuesta de tu equipo": "Resposta da sua equipe"
+  "Respuesta de tu equipo": "Resposta da sua equipe",
+  "Grabadora de voz": "Gravador de voz",
+  "Este navegador no admite la grabación de voz": "Este navegador não suporta gravação de voz",
+  "No se pudo acceder al micrófono": "Não foi possível acessar o microfone",
+  "Cancelar grabación": "Cancelar gravação",
+  "Solicitando micrófono": "Solicitando microfone",
+  "Preparando mensaje de voz": "Preparando mensagem de voz",
+  "Grabación pausada": "Gravação pausada",
+  "Grabando": "Gravando",
+  "Pausar": "Pausar",
+  "Continuar": "Continuar",
+  "Detener": "Parar",
+  "Reproducir": "Reproduzir",
+  "Enviar mensaje de voz": "Enviar mensagem de voz",
+  "Grabar mensaje de voz": "Gravar mensagem de voz",
+  "El servicio de voz no está configurado": "O serviço de voz não está configurado",
+  "Tu sesión ha caducado": "Sua sessão expirou",
+  "No se pudo preparar el mensaje de voz": "Não foi possível preparar a mensagem de voz"
 }

@@ -153,7 +153,11 @@ const FilePreviewer = () => {
     !conv.updated_at && (await pushConversationToDb(conv));
 
     for (const draft of drafts) {
-      const fileKind = isImage(draft.file.type) ? "image" : "document";
+      const fileKind = draft.file.type.startsWith("audio/")
+        ? "audio"
+        : isImage(draft.file.type)
+          ? "image"
+          : "document";
 
       const record = newMessage(
         conv,

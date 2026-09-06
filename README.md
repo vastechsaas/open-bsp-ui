@@ -98,6 +98,7 @@ Create a `.env` file:
 
 ```env
 VITE_SUPABASE_URL=http://localhost:54321     # or your Supabase project URL
+VITE_VOICE_TRANSCODER_URL=http://localhost:8090
 VITE_SUPABASE_ANON_KEY=your-anon-key
 # VITE_META_APP_ID=                          # optional, for WhatsApp Embedded Signup
 # VITE_FB_LOGIN_CONFIG_ID=                   # optional, for Tech Provider flow
