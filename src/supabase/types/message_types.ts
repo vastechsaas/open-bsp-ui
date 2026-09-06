@@ -162,6 +162,7 @@ export type FilePart = {
     uri: string; // --> internal://media/organizations/${organization_id}/attachments/${file_hash}
     name?: string;
     size: number;
+    voice?: boolean; // WhatsApp push-to-talk voice note rather than a generic audio attachment
   };
   text?: string; // caption
   artifacts?: Part[];

@@ -10,6 +10,12 @@ import { nameInitials } from "@/utils/FormatUtils";
 import { type MessageRow, type OutgoingStatus } from "@/supabase/client";
 dayjs.extend(duration);
 
+const VOICE_WAVEFORM = [
+  10, 16, 22, 14, 26, 34, 20, 12, 28, 38, 24, 16, 32, 42, 30, 18, 26, 36, 22,
+  12, 20, 30, 40, 26, 16, 24, 34, 44, 28, 18, 32, 38, 24, 14, 22, 30, 18, 12,
+  26, 36, 22, 16,
+];
+
 export default function AudioMessage({
   message,
   orgName,
@@ -57,6 +63,130 @@ export default function AudioMessage({
       setAudio(audio);
     }
   }, [load.blob]);
+
+  const handleAudioControl = () => {
+    if (load.status === "done") {
+      if (audio && paused) void audio.play();
+      if (audio && !paused) audio.pause();
+    } else if (load.status === "loading") {
+      cancelLoad();
+    } else {
+      startLoad();
+    }
+  };
+
+  const seekAudio = (value: number) => {
+    if (!audio) return;
+    audio.currentTime = value;
+    setTime(value);
+    setSeekTime(0);
+  };
+
+  if (content.file.voice === true) {
+    const progress = duration > 0 ? (seekTime || time) / duration : 0;
+    const displayedDuration = time > 0 ? time : duration;
+
+    return (
+      <div className="w-[300px] px-2 py-1.5">
+        <div className="flex min-h-[56px] items-center gap-2.5">
+          <button
+            type="button"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 transition hover:bg-primary/25"
+            onClick={handleAudioControl}
+            aria-label={paused ? "Play voice note" : "Pause voice note"}
+          >
+            {(load.status === "pending" || load.status === "error") && (
+              <svg
+                className={
+                  "h-7 w-7 text-primary" +
+                  (load.type === "upload" ? " -scale-y-100" : "")
+                }
+              >
+                <use href="/icons.svg#download" />
+              </svg>
+            )}
+            {load.status === "loading" && (
+              <svg className="h-7 w-7">
+                <use className="text-primary" href="/icons.svg#cancel" />
+                <use className="text-primary spin" href="/icons.svg#spin" />
+              </svg>
+            )}
+            {load.status === "done" && (
+              <svg className="h-7 w-7">
+                <use
+                  className="text-primary"
+                  href={paused ? "/icons.svg#play" : "/icons.svg#pause"}
+                />
+              </svg>
+            )}
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <div className="relative flex h-8 items-center gap-[2px]">
+              {VOICE_WAVEFORM.map((height, index) => (
+                <span
+                  key={index}
+                  className={
+                    "w-[2px] rounded-full " +
+                    (index / VOICE_WAVEFORM.length <= progress
+                      ? "bg-primary"
+                      : "bg-muted-foreground/45")
+                  }
+                  style={{ height }}
+                />
+              ))}
+              <input
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                type="range"
+                min={0}
+                max={duration || 1}
+                step={0.01}
+                value={seekTime || time}
+                disabled={!audio}
+                aria-label="Seek voice note"
+                onInput={(event) =>
+                  setSeekTime(Number(event.currentTarget.value))
+                }
+                onPointerUp={(event) =>
+                  seekAudio(Number(event.currentTarget.value))
+                }
+              />
+            </div>
+
+            <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <svg className="h-3.5 w-3.5 text-primary">
+                  <use href="/icons.svg#mic" />
+                </svg>
+                {dayjs.duration(displayedDuration, "seconds").format("m:ss")}
+              </span>
+              <span className="flex items-center">
+                {dayjs(message.timestamp).format("HH:mm")}
+                {message.direction === "outgoing" && (
+                  <StatusIcon {...(message.status as OutgoingStatus)} />
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {content.artifacts?.some(
+          (artifact) =>
+            artifact.type === "text" && artifact.kind === "transcription",
+        ) && (
+          <div className="border-t border-border/40 px-1 pt-1.5 text-[13px] italic text-muted-foreground">
+            {(() => {
+              const transcription = content.artifacts?.find(
+                (artifact) =>
+                  artifact.type === "text" && artifact.kind === "transcription",
+              );
+              return transcription?.type === "text" ? transcription.text : "";
+            })()}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={"w-[320px]"}>

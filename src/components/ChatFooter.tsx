@@ -340,6 +340,7 @@ export default function ChatFooter() {
           mime_type: file.type,
           name: file.name,
           size: file.size,
+          voice: true,
         },
         text: "",
       },
