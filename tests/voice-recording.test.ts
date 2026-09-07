@@ -41,6 +41,8 @@ test("voice notes use a dedicated waveform while uploaded audio remains generic"
   assert.match(audioMessage, /load\.type === "download"/);
   assert.match(audioMessage, /audio\.onloadedmetadata = updateDuration/);
   assert.match(audioMessage, /<Mic2/);
+  assert.match(audioMessage, /w-\[260px\]/);
+  assert.match(audioMessage, /min-h-\[50px\]/);
   assert.match(previewer, /kind: fileKind/);
   assert.doesNotMatch(previewer, /voice: true/);
 });

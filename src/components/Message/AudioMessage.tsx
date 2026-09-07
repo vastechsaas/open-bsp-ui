@@ -112,34 +112,40 @@ export default function AudioMessage({
     const displayedDuration = time > 0 ? time : duration;
 
     return (
-      <div className="w-[min(320px,calc(100vw-96px))] min-w-[240px] px-2.5 py-2">
-        <div className="flex min-h-[58px] items-center gap-3">
+      <div className="w-[260px] max-w-[calc(100vw-72px)] px-2 py-1.5">
+        <div className="flex min-h-[50px] items-center gap-2.5">
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
             onClick={handleAudioControl}
             aria-label={paused ? "Play voice note" : "Pause voice note"}
             disabled={load.status === "loading"}
           >
             {(load.status === "pending" || load.status === "error") && (
-              <Download className="h-5 w-5" aria-hidden="true" />
+              <Download className="h-[18px] w-[18px]" aria-hidden="true" />
             )}
             {load.status === "loading" && (
               <LoaderCircle
-                className="h-5 w-5 animate-spin"
+                className="h-[18px] w-[18px] animate-spin"
                 aria-hidden="true"
               />
             )}
             {load.status === "done" && paused && (
-              <Play className="ml-0.5 h-5 w-5 fill-current" aria-hidden="true" />
+              <Play
+                className="ml-0.5 h-[18px] w-[18px] fill-current"
+                aria-hidden="true"
+              />
             )}
             {load.status === "done" && !paused && (
-              <Pause className="h-5 w-5 fill-current" aria-hidden="true" />
+              <Pause
+                className="h-[18px] w-[18px] fill-current"
+                aria-hidden="true"
+              />
             )}
           </button>
 
           <div className="min-w-0 flex-1">
-            <div className="relative flex h-8 items-center justify-between gap-px overflow-hidden">
+            <div className="relative flex h-7 items-center justify-between gap-px overflow-hidden">
               {VOICE_WAVEFORM.map((height, index) => (
                 <span
                   key={index}
@@ -149,7 +155,7 @@ export default function AudioMessage({
                       ? "bg-primary"
                       : "bg-muted-foreground/45")
                   }
-                  style={{ height }}
+                  style={{ height: Math.max(4, Math.round(height * 0.65)) }}
                 />
               ))}
               <input
