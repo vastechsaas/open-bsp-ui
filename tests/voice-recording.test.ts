@@ -38,6 +38,9 @@ test("voice recording is tenant authenticated and stored as an audio message", (
 test("voice notes use a dedicated waveform while uploaded audio remains generic", () => {
   assert.match(audioMessage, /content\.file\.voice === true/);
   assert.match(audioMessage, /VOICE_WAVEFORM/);
+  assert.match(audioMessage, /load\.type === "download"/);
+  assert.match(audioMessage, /audio\.onloadedmetadata = updateDuration/);
+  assert.match(audioMessage, /<Mic2/);
   assert.match(previewer, /kind: fileKind/);
   assert.doesNotMatch(previewer, /voice: true/);
 });

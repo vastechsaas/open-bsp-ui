@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { nameInitials } from "@/utils/FormatUtils";
 import { type MessageRow, type OutgoingStatus } from "@/supabase/client";
+import { Download, LoaderCircle, Mic2, Pause, Play } from "lucide-react";
 dayjs.extend(duration);
 
 const VOICE_WAVEFORM = [
@@ -42,16 +43,35 @@ export default function AudioMessage({
   const [seekTime, setSeekTime] = useState(0);
 
   useEffect(() => {
-    // Start the upload right away.
+    // Upload new recordings immediately and fetch stored voice notes so the
+    // player can show a duration and play control instead of a download state.
     if (load.type === "upload" && load.status === "pending") {
       startLoad();
     }
 
-    if (load.blob) {
-      // TODO: initialize a zeroed audio blob as a placeholder - cabra 05/06/2024
-      const audio = new Audio(URL.createObjectURL(load.blob));
+    if (
+      content.file.voice === true &&
+      load.type === "download" &&
+      load.status === "pending"
+    ) {
+      startLoad();
+    }
+  }, [content.file.voice, load.status, load.type]);
 
-      audio.ondurationchange = () => setDuration(audio.duration);
+  useEffect(() => {
+    if (load.blob) {
+      const objectUrl = URL.createObjectURL(load.blob);
+      const audio = new Audio(objectUrl);
+
+      const updateDuration = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      };
+
+      audio.preload = "metadata";
+      audio.onloadedmetadata = updateDuration;
+      audio.ondurationchange = updateDuration;
       audio.ontimeupdate = () => setTime(audio.currentTime);
       audio.onpause = () => setPaused(true);
       audio.onplay = () => setPaused(false);
@@ -61,6 +81,11 @@ export default function AudioMessage({
       };
 
       setAudio(audio);
+
+      return () => {
+        audio.pause();
+        URL.revokeObjectURL(objectUrl);
+      };
     }
   }, [load.blob]);
 
@@ -87,47 +112,39 @@ export default function AudioMessage({
     const displayedDuration = time > 0 ? time : duration;
 
     return (
-      <div className="w-[300px] px-2 py-1.5">
-        <div className="flex min-h-[56px] items-center gap-2.5">
+      <div className="w-[min(320px,calc(100vw-96px))] min-w-[240px] px-2.5 py-2">
+        <div className="flex min-h-[58px] items-center gap-3">
           <button
             type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 transition hover:bg-primary/25"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
             onClick={handleAudioControl}
             aria-label={paused ? "Play voice note" : "Pause voice note"}
+            disabled={load.status === "loading"}
           >
             {(load.status === "pending" || load.status === "error") && (
-              <svg
-                className={
-                  "h-7 w-7 text-primary" +
-                  (load.type === "upload" ? " -scale-y-100" : "")
-                }
-              >
-                <use href="/icons.svg#download" />
-              </svg>
+              <Download className="h-5 w-5" aria-hidden="true" />
             )}
             {load.status === "loading" && (
-              <svg className="h-7 w-7">
-                <use className="text-primary" href="/icons.svg#cancel" />
-                <use className="text-primary spin" href="/icons.svg#spin" />
-              </svg>
+              <LoaderCircle
+                className="h-5 w-5 animate-spin"
+                aria-hidden="true"
+              />
             )}
-            {load.status === "done" && (
-              <svg className="h-7 w-7">
-                <use
-                  className="text-primary"
-                  href={paused ? "/icons.svg#play" : "/icons.svg#pause"}
-                />
-              </svg>
+            {load.status === "done" && paused && (
+              <Play className="ml-0.5 h-5 w-5 fill-current" aria-hidden="true" />
+            )}
+            {load.status === "done" && !paused && (
+              <Pause className="h-5 w-5 fill-current" aria-hidden="true" />
             )}
           </button>
 
           <div className="min-w-0 flex-1">
-            <div className="relative flex h-8 items-center gap-[2px]">
+            <div className="relative flex h-8 items-center justify-between gap-px overflow-hidden">
               {VOICE_WAVEFORM.map((height, index) => (
                 <span
                   key={index}
                   className={
-                    "w-[2px] rounded-full " +
+                    "min-w-px flex-1 rounded-full " +
                     (index / VOICE_WAVEFORM.length <= progress
                       ? "bg-primary"
                       : "bg-muted-foreground/45")
@@ -153,11 +170,9 @@ export default function AudioMessage({
               />
             </div>
 
-            <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="mt-1 flex items-center justify-between gap-3 text-[11px] leading-none text-muted-foreground">
               <span className="flex items-center gap-1">
-                <svg className="h-3.5 w-3.5 text-primary">
-                  <use href="/icons.svg#mic" />
-                </svg>
+                <Mic2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                 {dayjs.duration(displayedDuration, "seconds").format("m:ss")}
               </span>
               <span className="flex items-center">
