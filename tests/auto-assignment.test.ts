@@ -16,6 +16,8 @@ test("Agent availability lives beside notifications and heartbeats every 30 seco
   assert.match(control, /extra\?\.role === "agent"/);
   assert.match(header, /grid-cols-\[minmax\(0,1fr\)_auto\]/);
   assert.match(header, /truncate whitespace-nowrap/);
+  assert.match(header, /!w-\[38px\]/);
+  assert.match(header, /min-w-max shrink-0/);
   assert.match(control, /assignment-availability-label/);
   assert.match(query, /30_000/);
   assert.match(query, /visibilitychange/);

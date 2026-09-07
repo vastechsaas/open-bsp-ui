@@ -21,12 +21,12 @@ export default function Header() {
           {organizationName}
         </div>
       </div>
-      <div className="flex shrink-0 items-center justify-end gap-1.5">
+      <div className="flex min-w-max shrink-0 items-center justify-end gap-1.5">
         <AssignmentAvailabilityControl />
         <NotificationCenter />
         <LinkButton
           to="/conversations/new"
-          className="h-[38px] w-[38px] shrink-0 p-0"
+          className="!h-[38px] !w-[38px] !shrink-0 !p-0"
           title={t("Nueva conversación")}
         >
           <MessageSquarePlus className="w-[24px] h-[24px] text-foreground" />

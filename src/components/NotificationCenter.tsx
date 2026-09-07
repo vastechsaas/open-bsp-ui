@@ -119,7 +119,7 @@ export default function NotificationCenter() {
         aria-label={t("Notificaciones")}
         title={t("Notificaciones")}
         onClick={() => setOpen(true)}
-        className="relative flex h-[38px] w-[38px] items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        className="relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
         <Bell className="h-[21px] w-[21px]" />
         {unreadCount > 0 && (
