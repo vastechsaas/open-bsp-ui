@@ -237,6 +237,23 @@ button:disabled {
     @apply h-[60px] py-[10px] px-[20px] flex shrink-0;
   }
 
+  .conversation-header {
+    display: grid;
+    container-type: inline-size;
+  }
+
+  @container (max-width: 430px) {
+    .assignment-availability-control {
+      width: 36px;
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    .assignment-availability-label {
+      display: none;
+    }
+  }
+
   .spin {
     @apply animate-spin [transform-box:fill-box] [transform-origin:center] stroke-current fill-none;
   }

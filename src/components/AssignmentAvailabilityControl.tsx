@@ -20,12 +20,12 @@ export default function AssignmentAvailabilityControl() {
       disabled={presence.isPending || update.isPending}
       onClick={() => update.mutate(!available)}
       title={available ? t("Disponible") : t("No disponible")}
-      className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
+      className="assignment-availability-control flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
     >
       <Circle
         className={`h-2.5 w-2.5 fill-current ${available ? "text-emerald-500" : "text-muted-foreground"}`}
       />
-      <span className="hidden sm:inline">
+      <span className="assignment-availability-label">
         {available ? t("Disponible") : t("No disponible")}
       </span>
     </button>
