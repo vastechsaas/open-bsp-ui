@@ -1448,5 +1448,8 @@
   "Organizaciones archivadas": "Archived organizations",
   "Escribí el nombre exacto de la organización y el motivo.": "Enter the exact organization name and a reason.",
   "Organización archivada": "Organization archived",
-  "Ver organizaciones archivadas": "View archived organizations"
+  "Ver organizaciones archivadas": "View archived organizations",
+  "Suspende el acceso y el procesamiento sin borrar mensajes, archivos ni la conexión de Meta. Podrás restaurarla durante 30 días.": "Suspend access and processing without deleting messages, files, or the Meta connection. You can restore it for 30 days.",
+  "Los propietarios pueden restaurar sus organizaciones durante los primeros 30 días.": "Owners can restore their organizations during the first 30 days.",
+  "Archivá, restaurá o eliminá definitivamente tenants con protección de 30 días.": "Archive, restore, or permanently purge tenants with 30-day protection."
 }

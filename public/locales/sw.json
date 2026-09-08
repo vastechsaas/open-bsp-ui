@@ -1410,5 +1410,8 @@
   "Organizaciones archivadas": "Mashirika yaliyohifadhiwa",
   "Escribí el nombre exacto de la organización y el motivo.": "Ingiza jina kamili la shirika na sababu.",
   "Organización archivada": "Shirika limehifadhiwa",
-  "Ver organizaciones archivadas": "Tazama mashirika yaliyohifadhiwa"
+  "Ver organizaciones archivadas": "Tazama mashirika yaliyohifadhiwa",
+  "Suspende el acceso y el procesamiento sin borrar mensajes, archivos ni la conexión de Meta. Podrás restaurarla durante 30 días.": "Sitisha ufikiaji na uchakataji bila kufuta ujumbe, faili, au muunganisho wa Meta. Unaweza kulirejesha ndani ya siku 30.",
+  "Los propietarios pueden restaurar sus organizaciones durante los primeros 30 días.": "Wamiliki wanaweza kurejesha mashirika yao ndani ya siku 30 za kwanza.",
+  "Archivá, restaurá o eliminá definitivamente tenants con protección de 30 días.": "Hifadhi, rejesha, au futa kabisa tenants kwa ulinzi wa siku 30."
 }

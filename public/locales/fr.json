@@ -1410,5 +1410,8 @@
   "Organizaciones archivadas": "Organisations archivées",
   "Escribí el nombre exacto de la organización y el motivo.": "Saisissez le nom exact de l’organisation et un motif.",
   "Organización archivada": "Organisation archivée",
-  "Ver organizaciones archivadas": "Voir les organisations archivées"
+  "Ver organizaciones archivadas": "Voir les organisations archivées",
+  "Suspende el acceso y el procesamiento sin borrar mensajes, archivos ni la conexión de Meta. Podrás restaurarla durante 30 días.": "Suspendez l’accès et le traitement sans supprimer les messages, les fichiers ni la connexion Meta. Vous pourrez la restaurer pendant 30 jours.",
+  "Los propietarios pueden restaurar sus organizaciones durante los primeros 30 días.": "Les propriétaires peuvent restaurer leurs organisations pendant les 30 premiers jours.",
+  "Archivá, restaurá o eliminá definitivamente tenants con protección de 30 días.": "Archivez, restaurez ou supprimez définitivement des tenants avec une protection de 30 jours."
 }
