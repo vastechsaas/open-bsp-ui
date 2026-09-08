@@ -1,6 +1,7 @@
 import {
   type MessageRow,
   type OutgoingStatus,
+  type PrivateNotePart,
   type ToolInfo,
 } from "@/supabase/client";
 import AudioMessage from "./AudioMessage";
@@ -18,6 +19,15 @@ import AvatarComponent from "@/components/Avatar";
 import { useAgent } from "@/queries/useAgents";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
+import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
+import { normalizeStructuredMessage } from "@/utils/MessageDisplayUtils";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { StructuredMessageRenderer } from "./interactive/StructuredMessageRenderer";
+
+export type MessageActionButton = {
+  text: string;
+  type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+};
 
 const md = new Remarkable({
   breaks: true,
@@ -109,7 +119,7 @@ export function TextMessage({
   header?: string;
   body: string | Json;
   footer?: string;
-  buttons?: string[];
+  buttons?: Array<string | MessageActionButton>;
   timestamp?: string;
   status?: OutgoingStatus;
   onInput?: FormEventHandler<HTMLDivElement>;
@@ -225,14 +235,27 @@ export function TextMessage({
       </div>
 
       {/* Actions */}
-      {buttons?.map((text, idx) => (
-        <div
-          key={idx}
-          className="py-3 border-t border-border text-center text-primary"
-        >
-          {text}
-        </div>
-      ))}
+      {buttons?.map((button, idx) => {
+        const action =
+          typeof button === "string"
+            ? { text: button, type: "QUICK_REPLY" as const }
+            : button;
+        return (
+          <div
+            key={idx}
+            className="flex items-center justify-center gap-[7px] border-t border-border py-3 text-center text-primary"
+          >
+            {action.type === "URL" ? (
+              <ExternalLink className="h-[14px] w-[14px]" />
+            ) : action.type === "PHONE_NUMBER" ? (
+              <Phone className="h-[14px] w-[14px]" />
+            ) : (
+              <MessageCircleReply className="h-[14px] w-[14px]" />
+            )}
+            {action.text}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -338,6 +361,7 @@ export function OutMessage({
   children,
   avatar,
   internal,
+  privateNote,
 }: PropsWithChildren<UIMessage>) {
   return (
     <div
@@ -354,23 +378,29 @@ export function OutMessage({
           " text-foreground" +
           (first ? " rounded-tr-none" : "") +
           (text ? textMsgMaxWidth : "") +
-          (internal ? " bg-incoming-chat-bubble" : " bg-outgoing-chat-bubble")
+          (privateNote
+            ? " border border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-50"
+            : internal
+              ? " bg-incoming-chat-bubble"
+              : " bg-outgoing-chat-bubble")
         }
       >
         {first && (
           <>
             {!!avatar && <Avatar {...avatar} display="picture-right" />}
-            <svg
-              className={
-                msgTailClasses +
-                " -right-[8px]" +
-                (internal
-                  ? " text-incoming-chat-bubble"
-                  : " text-outgoing-chat-bubble")
-              }
-            >
-              <use href="/icons.svg#tail-out" />
-            </svg>
+            {!privateNote && (
+              <svg
+                className={
+                  msgTailClasses +
+                  " -right-[8px]" +
+                  (internal
+                    ? " text-incoming-chat-bubble"
+                    : " text-outgoing-chat-bubble")
+                }
+              >
+                <use href="/icons.svg#tail-out" />
+              </svg>
+            )}
           </>
         )}
         {!!avatar && first && <Avatar {...avatar} display="name" />}
@@ -388,6 +418,9 @@ type UIMessage = {
   convName?: string;
   avatar?: { agentId: string; color: string };
   internal?: boolean;
+  privateNote?: boolean;
+  authorName?: string;
+  transferTargetName?: string;
 };
 
 export default function Message(props: UIMessage & { message: MessageRow }) {
@@ -395,6 +428,20 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
   let content;
   let text = false;
   let fixedWidth = false;
+  const privateNote = isPrivateNote(props.message);
+  const privateNoteContent = privateNote
+    ? (props.message.content as PrivateNotePart)
+    : undefined;
+  const transfer = privateNoteContent?.transfer;
+  const routingTransfer = privateNoteContent?.routing_transfer;
+  const assignmentEvent =
+    props.message.content.type === "text" &&
+    props.message.content.kind === "assignment_event";
+
+  const structuredDisplay =
+    props.message.content.type === "data"
+      ? normalizeStructuredMessage(props.message.content)
+      : null;
 
   let headerText: string | undefined = undefined;
 
@@ -419,67 +466,55 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
 
   if (props.message.content.type === "text") {
     content = (
-      <TextMessage
-        header={headerText}
-        body={props.message.content.text}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
+      <>
+        {assignmentEvent && (
+          <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-primary">
+            {t("Asignación automática")}
+          </div>
+        )}
+        {privateNote && (
+          <div className="px-[6px] pt-[5px] text-[12px] font-semibold text-amber-800 dark:text-amber-200">
+            {routingTransfer ? (
+              <>
+                {props.authorName || t("Agente")}{" "}
+                {t("transfirió esta conversación de")}{" "}
+                {routingTransfer.from_queue_name || t("Sin cola")}{" "}
+                {t("a la cola")} {routingTransfer.to_queue_name}
+              </>
+            ) : transfer ? (
+              <>
+                {props.authorName || t("Agente")}{" "}
+                {t("transfiri\u00f3 esta conversaci\u00f3n a")}{" "}
+                {props.transferTargetName || t("Agente")}
+              </>
+            ) : (
+              <>
+                {props.authorName || t("Agente")} · {t("Nota privada")}
+              </>
+            )}
+          </div>
+        )}
+        <TextMessage
+          header={headerText}
+          body={props.message.content.text}
+          type="markdown"
+          direction={props.message.direction}
+          timestamp={props.message.timestamp}
+          status={
+            props.message.direction === "outgoing"
+              ? props.message.status
+              : undefined
+          }
+          fixedWidth={fixedWidth}
+        />
+      </>
     );
     text = true;
-  } else if (
-    props.message.content.type === "data" &&
-    props.message.content.text
-  ) {
+  } else if (structuredDisplay) {
     content = (
-      <TextMessage
-        header={headerText}
-        body={props.message.content.text}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (
-    props.message.content.type === "data" &&
-    props.message.content.kind === "media_placeholder"
-  ) {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={`_${t("Contenido multimedia no disponible")}_`}
-        type="markdown"
-        direction={props.message.direction}
-        timestamp={props.message.timestamp}
-        status={
-          props.message.direction === "outgoing"
-            ? props.message.status
-            : undefined
-        }
-        fixedWidth={fixedWidth}
-      />
-    );
-    text = true;
-  } else if (props.message.content.type === "data") {
-    content = (
-      <TextMessage
-        header={headerText}
-        body={props.message.content.data}
-        type="json"
+      <StructuredMessageRenderer
+        display={structuredDisplay}
+        agentHeader={headerText}
         direction={props.message.direction}
         timestamp={props.message.timestamp}
         status={
@@ -532,6 +567,7 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
             ...props,
             text,
             internal: props.message.direction === "internal",
+            privateNote,
             fixedWidth,
           }}
         >

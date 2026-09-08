@@ -17,7 +17,21 @@ export default function TemplatePicker() {
 
   const orgAddress = conv?.organization_address;
   const { data: templates, isLoading } = useTemplates(orgAddress);
-  const approved = templates?.filter((t) => t.status === "APPROVED");
+  const approved = templates?.filter(
+    (template) =>
+      template.status === "APPROVED" &&
+      !template.components.some(
+        (component) =>
+          component.type === "HEADER" && component.format !== "TEXT",
+      ) &&
+      !template.components.some(
+        (component) =>
+          component.type === "BUTTONS" &&
+          component.buttons.some(
+            (button) => button.type === "URL" && button.url.endsWith("{{1}}"),
+          ),
+      ),
+  );
 
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -53,9 +67,11 @@ export default function TemplatePicker() {
     const bodyExamples =
       template.components.find((c) => c.type === "BODY")?.example
         ?.body_text[0] || [];
+    const header = template.components.find((c) => c.type === "HEADER");
     const headExamples =
-      template.components.find((c) => c.type === "HEADER")?.example
-        ?.header_text || [];
+      header?.type === "HEADER" && header.format === "TEXT"
+        ? header.example?.header_text || []
+        : [];
 
     setTemplateDraft(activeConvId, {
       template,
@@ -116,9 +132,9 @@ export default function TemplatePicker() {
               className="w-full text-left px-[10px] py-[8px] rounded-xl hover:bg-accent cursor-pointer"
               onClick={() => {
                 toggle("templatePicker", false);
-                navigate({
-                  to: "/integrations/whatsapp/$orgAddressId/templates/new",
-                  params: { orgAddressId: orgAddress },
+                void navigate({
+                  to: "/templates/new",
+                  search: { account: orgAddress },
                   hash: (prevHash) => prevHash!,
                 });
               }}

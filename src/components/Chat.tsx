@@ -11,6 +11,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { AVATAR_COLORS } from "@/utils/colors";
+import { useMentionableHumans } from "@/queries/usePrivateNotes";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
 type SeparatorType = { text: string; first: true; last: true };
@@ -58,6 +60,11 @@ export default function Chat() {
   const { data: agent } = useCurrentAgent();
   const activeAgentId = agent?.id;
   const isAdmin = ["admin", "owner"].includes(agent?.extra?.role || "");
+  const { data: mentionableHumans = [] } = useMentionableHumans();
+  const authorNames = new Map([
+    ...mentionableHumans.map((human) => [human.id, human.name] as const),
+    ...(agent ? [[agent.id, agent.name] as const] : []),
+  ]);
 
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -137,13 +144,15 @@ export default function Chat() {
         env.last = true;
       } else if (
         prevMsg.message.agent_id === env.message.agent_id &&
-        prevMsg.message.direction === env.message.direction
+        prevMsg.message.direction === env.message.direction &&
+        prevMsg.message.content.kind === env.message.content.kind
       ) {
         prevMsg.last = false;
         env.last = true;
       } else if (
         prevMsg.message.agent_id !== env.message.agent_id ||
-        prevMsg.message.direction !== env.message.direction
+        prevMsg.message.direction !== env.message.direction ||
+        prevMsg.message.content.kind !== env.message.content.kind
       ) {
         prevMsg.last = true;
         env.first = true;
@@ -244,6 +253,8 @@ export default function Chat() {
   const envelopesAndSeparators = insertDateSeparators(
     messages
       .filter((m, idx) => {
+        if (isPrivateNote(m)) return true;
+
         if (isAdmin) return true;
 
         // Hide internal messages for non-admin users
@@ -283,7 +294,24 @@ export default function Chat() {
                 last={envOrSep.last}
                 orgName={orgName}
                 convName={convName}
-                avatar={getAgentAvatar(envOrSep.message.agent_id)}
+                avatar={
+                  isPrivateNote(envOrSep.message)
+                    ? undefined
+                    : getAgentAvatar(envOrSep.message.agent_id)
+                }
+                authorName={
+                  envOrSep.message.agent_id
+                    ? authorNames.get(envOrSep.message.agent_id)
+                    : undefined
+                }
+                transferTargetName={
+                  isPrivateNote(envOrSep.message) &&
+                  envOrSep.message.content.transfer
+                    ? authorNames.get(
+                        envOrSep.message.content.transfer.to_agent_id,
+                      )
+                    : undefined
+                }
               />
             ) : (
               <Separator key={index} text={envOrSep.text} />

@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-// import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
-// import { GoogleOutlined } from "@ant-design/icons";
 import { loadTranslations } from "@/i18n/translations";
 import LegalLinks from "@/components/LegalLinks";
+// import { supabase } from "@/supabase/client";
+// import { GoogleOutlined } from "@ant-design/icons";
+// import { supabase } from "@/supabase/client";
+// import { GoogleOutlined } from "@ant-design/icons";
 // import { GithubOutlined } from "@ant-design/icons";
 
 // type OAuthProvider = "google" | "github";
@@ -21,6 +23,7 @@ function Login() {
   const { translate: t } = useTranslation("en");
   const navigate = useNavigate();
 
+  // OAuth login is intentionally hidden for the staging deployment.
   // async function handleLogInWithOauth(provider: OAuthProvider) {
   //   await supabase.auth.signInWithOAuth({
   //     provider,
@@ -45,7 +48,7 @@ function Login() {
       </a>
 
       <div className="flex flex-col gap-3 w-[250px]">
-        {/* Google OAuth is temporarily disabled for this deployment.
+        {/* Google OAuth is intentionally hidden for the staging deployment.
         <button
           type="button"
           className="primary bg-blue-500 hover:bg-blue-400 text-white w-full border-none"

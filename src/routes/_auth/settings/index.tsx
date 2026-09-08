@@ -1,82 +1,32 @@
-import SectionBody from "@/components/SectionBody";
-import SectionHeader from "@/components/SectionHeader";
-import SectionItem from "@/components/SectionItem";
-import { useTranslation } from "@/hooks/useTranslation";
+import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2, Users, Webhook, Key } from "lucide-react";
+import Spinner from "@/components/Spinner";
+import { useCurrentAgent } from "@/queries/useAgents";
 
 export const Route = createFileRoute("/_auth/settings/")({
   component: SettingsIndex,
 });
 
 function SettingsIndex() {
-  const { translate: t } = useTranslation();
   const navigate = useNavigate();
+  const { data: currentAgent, isLoading } = useCurrentAgent();
+
+  useEffect(() => {
+    if (isLoading) return;
+    void navigate({
+      to:
+        currentAgent?.extra?.role === "agent"
+          ? "/settings/media-management"
+          : currentAgent?.extra?.role === "supervisor"
+            ? "/settings/routing-queues"
+            : "/settings/organization",
+      replace: true,
+    });
+  }, [currentAgent?.extra?.role, isLoading, navigate]);
 
   return (
-    <>
-      <SectionHeader title={t("Preferencias")} />
-
-      <SectionBody className="gap-4">
-        <div className="flex flex-col">
-          <SectionItem
-            title={t("Organización")}
-            aside={
-              <div className="p-[8px]">
-                <Building2 className="w-[24px] h-[24px] text-muted-foreground" />
-              </div>
-            }
-            onClick={() =>
-              navigate({
-                to: "/settings/organization",
-                hash: (prevHash) => prevHash!,
-              })
-            }
-          />
-          <SectionItem
-            title={t("Miembros")}
-            aside={
-              <div className="p-[8px]">
-                <Users className="w-[24px] h-[24px] text-muted-foreground" />
-              </div>
-            }
-            onClick={() =>
-              navigate({
-                to: "/settings/members",
-                hash: (prevHash) => prevHash!,
-              })
-            }
-          />
-          <SectionItem
-            title={t("Webhooks")}
-            aside={
-              <div className="p-[8px]">
-                <Webhook className="w-[24px] h-[24px] text-muted-foreground" />
-              </div>
-            }
-            onClick={() =>
-              navigate({
-                to: "/settings/webhooks",
-                hash: (prevHash) => prevHash!,
-              })
-            }
-          />
-          <SectionItem
-            title={t("Claves API")}
-            aside={
-              <div className="p-[8px]">
-                <Key className="w-[24px] h-[24px] text-muted-foreground" />
-              </div>
-            }
-            onClick={() =>
-              navigate({
-                to: "/settings/api-keys",
-                hash: (prevHash) => prevHash!,
-              })
-            }
-          />
-        </div>
-      </SectionBody>
-    </>
+    <div className="flex h-full items-center justify-center">
+      <Spinner />
+    </div>
   );
 }

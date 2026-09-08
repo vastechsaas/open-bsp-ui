@@ -25,6 +25,11 @@ import { useContactByAddress } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import { useNavigate } from "@tanstack/react-router";
+import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
+import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
+import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { fetchMentionedConversationMessages } from "@/queries/usePrivateNotes";
+import { canManageConversationAssignments } from "@/utils/AssignmentUtils";
 
 function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
   let mediaIcon = null;
@@ -155,7 +160,15 @@ function severityClass(hours: number) {
   }
 }
 
-export default function ChatListItem({ itemId }: { itemId: string }) {
+export default function ChatListItem({
+  itemId,
+  isMentionedQueue = false,
+  latestMentionAt,
+}: {
+  itemId: string;
+  isMentionedQueue?: boolean;
+  latestMentionAt?: string;
+}) {
   const navigate = useNavigate();
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
 
@@ -173,6 +186,9 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   const { data: agent } = useCurrentAgent();
   const { data: agents } = useCurrentAgents();
   const isAdmin = ["admin", "owner"].includes(agent?.extra?.role || "");
+  const isAssignmentManager = canManageConversationAssignments(
+    agent?.extra?.role,
+  );
 
   const messages: MessageRow[] | undefined = Array.from(
     useBoundStore((state) => state.chat.messages.get(itemId || ""))?.values() ||
@@ -181,7 +197,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
 
   // If the role is not admin, then do not show internal messages.
   const mostRecent = messages?.find(
-    (m) => isAdmin || m.direction !== "internal",
+    (m) => !isPrivateNote(m) && (isAdmin || m.direction !== "internal"),
   );
 
   const draft: Draft | null | undefined = conversation?.extra?.draft;
@@ -287,6 +303,9 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   }
 
   const { mediaIcon, mediaPreviewContent } = mediaPreview(t, preview);
+  const previewText = preview
+    ? getMessagePreviewText(preview.content, t)
+    : undefined;
 
   // Note: severity depends on the most recent incoming message timestamp.
   // `mostRecent` does not distinguish between incoming/outgoing. Nonetheless
@@ -295,6 +314,18 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   const severity = severityClass(
     tick.diff(mostRecent?.timestamp, "hours", true),
   );
+
+  const openConversation = async () => {
+    try {
+      if (isMentionedQueue && !messages?.some(isPrivateNote)) {
+        const hydratedMessages =
+          await fetchMentionedConversationMessages(itemId);
+        useBoundStore.getState().chat.pushMessages(hydratedMessages);
+      }
+    } finally {
+      await navigate({ to: "/conversations", hash: itemId });
+    }
+  };
 
   return (
     conversation && (
@@ -307,8 +338,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            // setActiveConv(itemId);
-            navigate({ to: "/conversations", hash: itemId });
+            void openConversation();
           }}
         >
           <div className="profile-picture pl-[10px] pr-[15px] flex items-center">
@@ -343,17 +373,18 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
               <div
                 className={
                   "text-[12px] ml-[6px] capitalize" +
-                  (unread.count
+                  (!isMentionedQueue && unread.count
                     ? ` ${severity.text} font-bold`
                     : " text-muted-foreground")
                 }
               >
-                {preview && formatTime(preview.timestamp)}
+                {(latestMentionAt || preview?.timestamp) &&
+                  formatTime(latestMentionAt || preview!.timestamp)}
               </div>
             </div>
             {/* Lower row */}
             <div className="flex justify-between mt-[2px] items-start">
-              <div className="min-w-0 flex items-start text-muted-foreground">
+              <div className="min-w-0 grow flex items-start text-muted-foreground">
                 {preview?.direction === "outgoing" &&
                   statusIcon(preview.status)}
                 {preview?.agent_id && preview.agent_id !== agent?.id && (
@@ -376,10 +407,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                     </div>
                   )}
                 <div className="truncate text-[14px]">
-                  {preview?.content.type === "text" && preview.content.text}
-                  {preview?.content.type === "data" &&
-                    preview.content.kind !== "media_placeholder" &&
-                    JSON.stringify(preview.content.data)}
+                  {previewText}
                   {(preview?.content.type === "file" ||
                     (preview?.content.type === "data" &&
                       preview.content.kind === "media_placeholder")) &&
@@ -388,6 +416,13 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
               </div>
 
               <div className="flex flex-row items-center">
+                {isAssignmentManager && (
+                  <ConversationAssignmentBadge
+                    conversation={conversation}
+                    agents={agents}
+                    className="ml-2 max-w-[118px] shrink-0"
+                  />
+                )}
                 {/* Pause - AI assistant paused */}
                 {isPaused && (
                   <Pause className="h-[19px] w-[19px] ml-[6px] fill-muted-foreground stroke-0" />
@@ -399,13 +434,13 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                   </svg>
                 )}
                 {/* Mention */}
-                {unread.notification && (
+                {!isMentionedQueue && unread.notification && (
                   <AtSign
                     className={`h-[15px] w-[15px] ml-[6px] ${severity.text}`}
                   />
                 )}
                 {/* Pending messages badge */}
-                {unread.count > 0 && (
+                {!isMentionedQueue && unread.count > 0 && (
                   <div className="ml-[6px]">
                     <span
                       className={`font-bold text-[12px] text-white rounded-full py-[2px] px-[6px] ${severity.bg}`}

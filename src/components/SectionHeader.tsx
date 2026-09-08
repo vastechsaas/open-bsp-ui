@@ -7,24 +7,28 @@ import Spinner from "./Spinner";
 export default function SectionHeader({
   title,
   closeButton,
+  backTo,
   onDelete,
   deleteDisabled,
   deleteDisabledReason,
   deleteLoading,
+  hideBackButton = false,
 }: {
   title: string;
   closeButton?: boolean;
+  backTo?: string;
   onDelete?: () => void;
   deleteDisabled?: boolean;
   deleteDisabledReason?: string;
   deleteLoading?: boolean;
+  hideBackButton?: boolean;
 }) {
   const { translate: t } = useTranslation();
   const location = useLocation();
   const router = useRouter();
 
   const showBackButton =
-    location.pathname.split("/").filter(Boolean).length >= 2;
+    !hideBackButton && location.pathname.split("/").filter(Boolean).length >= 2;
 
   return (
     <div className="header items-center truncate">
@@ -40,7 +44,7 @@ export default function SectionHeader({
           </button>
         ) : (
           <LinkButton
-            to=".."
+            to={backTo || ".."}
             className="mr-[8px] ml-[-8px]"
             title={t("Volver")}
           >

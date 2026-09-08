@@ -8,7 +8,14 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { nameInitials } from "@/utils/FormatUtils";
 import { type MessageRow, type OutgoingStatus } from "@/supabase/client";
+import { Download, LoaderCircle, Mic2, Pause, Play } from "lucide-react";
 dayjs.extend(duration);
+
+const VOICE_WAVEFORM = [
+  10, 16, 22, 14, 26, 34, 20, 12, 28, 38, 24, 16, 32, 42, 30, 18, 26, 36, 22,
+  12, 20, 30, 40, 26, 16, 24, 34, 44, 28, 18, 32, 38, 24, 14, 22, 30, 18, 12,
+  26, 36, 22, 16,
+];
 
 export default function AudioMessage({
   message,
@@ -36,16 +43,35 @@ export default function AudioMessage({
   const [seekTime, setSeekTime] = useState(0);
 
   useEffect(() => {
-    // Start the upload right away.
+    // Upload new recordings immediately and fetch stored voice notes so the
+    // player can show a duration and play control instead of a download state.
     if (load.type === "upload" && load.status === "pending") {
       startLoad();
     }
 
-    if (load.blob) {
-      // TODO: initialize a zeroed audio blob as a placeholder - cabra 05/06/2024
-      const audio = new Audio(URL.createObjectURL(load.blob));
+    if (
+      content.file.voice === true &&
+      load.type === "download" &&
+      load.status === "pending"
+    ) {
+      startLoad();
+    }
+  }, [content.file.voice, load.status, load.type]);
 
-      audio.ondurationchange = () => setDuration(audio.duration);
+  useEffect(() => {
+    if (load.blob) {
+      const objectUrl = URL.createObjectURL(load.blob);
+      const audio = new Audio(objectUrl);
+
+      const updateDuration = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      };
+
+      audio.preload = "metadata";
+      audio.onloadedmetadata = updateDuration;
+      audio.ondurationchange = updateDuration;
       audio.ontimeupdate = () => setTime(audio.currentTime);
       audio.onpause = () => setPaused(true);
       audio.onplay = () => setPaused(false);
@@ -55,8 +81,133 @@ export default function AudioMessage({
       };
 
       setAudio(audio);
+
+      return () => {
+        audio.pause();
+        URL.revokeObjectURL(objectUrl);
+      };
     }
   }, [load.blob]);
+
+  const handleAudioControl = () => {
+    if (load.status === "done") {
+      if (audio && paused) void audio.play();
+      if (audio && !paused) audio.pause();
+    } else if (load.status === "loading") {
+      cancelLoad();
+    } else {
+      startLoad();
+    }
+  };
+
+  const seekAudio = (value: number) => {
+    if (!audio) return;
+    audio.currentTime = value;
+    setTime(value);
+    setSeekTime(0);
+  };
+
+  if (content.file.voice === true) {
+    const progress = duration > 0 ? (seekTime || time) / duration : 0;
+    const displayedDuration = time > 0 ? time : duration;
+
+    return (
+      <div className="w-[260px] max-w-[calc(100vw-72px)] px-2 py-1.5">
+        <div className="flex min-h-[50px] items-center gap-2.5">
+          <button
+            type="button"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
+            onClick={handleAudioControl}
+            aria-label={paused ? "Play voice note" : "Pause voice note"}
+            disabled={load.status === "loading"}
+          >
+            {(load.status === "pending" || load.status === "error") && (
+              <Download className="h-[18px] w-[18px]" aria-hidden="true" />
+            )}
+            {load.status === "loading" && (
+              <LoaderCircle
+                className="h-[18px] w-[18px] animate-spin"
+                aria-hidden="true"
+              />
+            )}
+            {load.status === "done" && paused && (
+              <Play
+                className="ml-0.5 h-[18px] w-[18px] fill-current"
+                aria-hidden="true"
+              />
+            )}
+            {load.status === "done" && !paused && (
+              <Pause
+                className="h-[18px] w-[18px] fill-current"
+                aria-hidden="true"
+              />
+            )}
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <div className="relative flex h-7 items-center justify-between gap-px overflow-hidden">
+              {VOICE_WAVEFORM.map((height, index) => (
+                <span
+                  key={index}
+                  className={
+                    "min-w-px flex-1 rounded-full " +
+                    (index / VOICE_WAVEFORM.length <= progress
+                      ? "bg-primary"
+                      : "bg-muted-foreground/45")
+                  }
+                  style={{ height: Math.max(4, Math.round(height * 0.65)) }}
+                />
+              ))}
+              <input
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                type="range"
+                min={0}
+                max={duration || 1}
+                step={0.01}
+                value={seekTime || time}
+                disabled={!audio}
+                aria-label="Seek voice note"
+                onInput={(event) =>
+                  setSeekTime(Number(event.currentTarget.value))
+                }
+                onPointerUp={(event) =>
+                  seekAudio(Number(event.currentTarget.value))
+                }
+              />
+            </div>
+
+            <div className="mt-1 flex items-center justify-between gap-3 text-[11px] leading-none text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Mic2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                {dayjs.duration(displayedDuration, "seconds").format("m:ss")}
+              </span>
+              <span className="flex items-center">
+                {dayjs(message.timestamp).format("HH:mm")}
+                {message.direction === "outgoing" && (
+                  <StatusIcon {...(message.status as OutgoingStatus)} />
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {content.artifacts?.some(
+          (artifact) =>
+            artifact.type === "text" && artifact.kind === "transcription",
+        ) && (
+          <div className="border-t border-border/40 px-1 pt-1.5 text-[13px] italic text-muted-foreground">
+            {(() => {
+              const transcription = content.artifacts?.find(
+                (artifact) =>
+                  artifact.type === "text" && artifact.kind === "transcription",
+              );
+              return transcription?.type === "text" ? transcription.text : "";
+            })()}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={"w-[320px]"}>

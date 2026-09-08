@@ -2,11 +2,14 @@ import { type FormEventHandler, useEffect, useMemo, useState } from "react";
 import useBoundStore from "@/stores/useBoundStore";
 import { type TemplateData, type TemplateMessage } from "@/supabase/client";
 import { InMessage, OutMessage, TextMessage } from "./Message/Message";
+import { FileText, ImageIcon, Video } from "lucide-react";
+import type { MediaHeaderFormat } from "@/supabase/types/whatsapp_template_types";
 
 export default function TemplatePreview({
   template: { name, language, components },
   sendTemplateMessage,
   editMode = false,
+  media,
 }: {
   template: TemplateData;
   sendTemplateMessage?: (
@@ -16,6 +19,11 @@ export default function TemplatePreview({
     footer?: string,
   ) => void;
   editMode?: boolean;
+  media?: {
+    format: MediaHeaderFormat;
+    url?: string;
+    fileName?: string;
+  };
 }) {
   "use no memo";
   const toggle = useBoundStore((store) => store.ui.toggle);
@@ -49,10 +57,12 @@ export default function TemplatePreview({
     ? components.find((c) => c.type === "BUTTONS")
     : buttMemo;
 
-  let headPlaceholders = head?.text;
+  const textHead =
+    head?.type === "HEADER" && head.format === "TEXT" ? head : undefined;
+  let headPlaceholders = textHead?.text;
   let bodyPlaceholders = body.text;
 
-  const headExamples = head?.example?.header_text || [];
+  const headExamples = textHead?.example?.header_text || [];
   const bodyExamplesMemo = useMemo(
     () => body.example?.body_text[0] || [],
     [body.example?.body_text],
@@ -119,7 +129,7 @@ export default function TemplatePreview({
       return;
     }
 
-    let headContent = head?.text;
+    let headContent = textHead?.text;
     let bodyContent = body.text;
     const components = [];
 
@@ -152,17 +162,19 @@ export default function TemplatePreview({
     if (buttons) {
       idx = 0;
       for (const button of buttons) {
-        components.push({
-          type: "button",
-          sub_type: "quick_reply",
-          index: idx.toString(),
-          parameters: [
-            {
-              type: "payload",
-              payload: button.text.toLowerCase().replaceAll(" ", "_"),
-            },
-          ],
-        });
+        if (button.type === "QUICK_REPLY") {
+          components.push({
+            type: "button",
+            sub_type: "quick_reply",
+            index: idx.toString(),
+            parameters: [
+              {
+                type: "payload",
+                payload: button.text.toLowerCase().replaceAll(" ", "_"),
+              },
+            ],
+          });
+        }
         idx++;
       }
     }
@@ -189,11 +201,51 @@ export default function TemplatePreview({
   return (
     <div className="relative mx-[16px]">
       <Message first text>
+        {media && (
+          <div className="min-w-[240px] overflow-hidden rounded-md bg-muted/60">
+            {media.format === "IMAGE" && media.url ? (
+              <img
+                src={media.url}
+                alt={media.fileName || "Template header"}
+                className="max-h-[220px] w-full object-cover"
+              />
+            ) : media.format === "VIDEO" && media.url ? (
+              <video
+                src={media.url}
+                className="max-h-[220px] w-full bg-black object-contain"
+                controls
+                muted
+              />
+            ) : media.format === "DOCUMENT" && media.url ? (
+              <iframe
+                src={media.url}
+                title={media.fileName || "PDF template header"}
+                className="h-[220px] w-full bg-white"
+              />
+            ) : (
+              <div className="flex min-h-[108px] flex-col items-center justify-center gap-[8px] p-[16px] text-muted-foreground">
+                {media.format === "IMAGE" ? (
+                  <ImageIcon className="h-[28px] w-[28px]" />
+                ) : media.format === "VIDEO" ? (
+                  <Video className="h-[28px] w-[28px]" />
+                ) : (
+                  <FileText className="h-[28px] w-[28px]" />
+                )}
+                <span className="max-w-[210px] truncate text-[12px]">
+                  {media.fileName || media.format.toLowerCase()}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
         <TextMessage
           header={headPlaceholders}
           body={bodyPlaceholders}
           footer={foot?.text}
-          buttons={buttons?.map((b) => b.text)}
+          buttons={buttons?.map((button) => ({
+            text: button.text,
+            type: button.type,
+          }))}
           direction="outgoing"
           onInput={onInputHandler}
         />

@@ -44,8 +44,7 @@ https://github.com/user-attachments/assets/1ef30dde-9de1-4f5a-856a-db34ca2e3063
 - **Templates** — WhatsApp message template builder with variable pills,
   formatting preview, and category management
 - **Integrations** — WhatsApp Business account connection via Embedded Signup
-- **Settings** — Organization management, team members with roles
-  (owner/admin/member), API keys, webhooks
+- **Settings** — Organization management, API keys, and webhooks
 - **Stats** — Usage charts and billing quota dashboards
 - **Multi-org** — Switch between organizations; invite and onboard team members
 
@@ -99,6 +98,7 @@ Create a `.env` file:
 
 ```env
 VITE_SUPABASE_URL=http://localhost:54321     # or your Supabase project URL
+VITE_VOICE_TRANSCODER_URL=http://localhost:8090
 VITE_SUPABASE_ANON_KEY=your-anon-key
 # VITE_META_APP_ID=                          # optional, for WhatsApp Embedded Signup
 # VITE_FB_LOGIN_CONFIG_ID=                   # optional, for Tech Provider flow
@@ -132,13 +132,13 @@ the Spanish text is shown.
 ./scripts/sync-translations.sh
 ```
 
-## Acknowledgments
+## Acknowledgment
 
 - [@diegoparma](https://github.com/diegoparma) — for years of feedback, design
   input, and being one of the project's earliest power users.
 - [@rolox05](https://github.com/rolox05) — first UI, PoC and kickstart partner.
 
-## Community Center
+## Community Centers
 
 Questions, ideas, or feedback? Join our
 [WhatsApp Community](https://chat.whatsapp.com/Ch6AwZizSDt5quzHodcYh5) or open

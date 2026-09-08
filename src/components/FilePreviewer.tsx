@@ -40,7 +40,8 @@ const FilePreviewer = () => {
   const setConversationTextDraft = useBoundStore(
     (store) => store.chat.setConversationTextDraft,
   );
-  const sendAsContact = useBoundStore((store) => store.ui.sendAsContact);
+  const storedSendAsContact = useBoundStore((store) => store.ui.sendAsContact);
+  const sendAsContact = agent?.extra?.role !== "agent" && storedSendAsContact;
   const setMediaLoad = useBoundStore((store) => store.chat.setMediaLoad);
 
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -152,7 +153,11 @@ const FilePreviewer = () => {
     !conv.updated_at && (await pushConversationToDb(conv));
 
     for (const draft of drafts) {
-      const fileKind = isImage(draft.file.type) ? "image" : "document";
+      const fileKind = draft.file.type.startsWith("audio/")
+        ? "audio"
+        : isImage(draft.file.type)
+          ? "image"
+          : "document";
 
       const record = newMessage(
         conv,

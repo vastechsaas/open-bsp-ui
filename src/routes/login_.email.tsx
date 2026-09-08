@@ -4,6 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/supabase/client";
 import { loadTranslations } from "@/i18n/translations";
 import LegalLinks from "@/components/LegalLinks";
+import { resolveAuthenticatedHome } from "@/queries/usePlatformAdmin";
 
 export const Route = createFileRoute("/login_/email")({
   beforeLoad: () => loadTranslations("en"),
@@ -38,7 +39,7 @@ function EmailLogin() {
       return;
     }
 
-    void navigate({ to: redirect || "/" });
+    void navigate({ to: redirect || (await resolveAuthenticatedHome()) });
   }
 
   return (

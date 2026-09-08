@@ -29,8 +29,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/profile",
 )({
-  component: WhatsAppBusinessProfile,
+  component: WhatsAppBusinessProfileRoute,
 });
+
+function WhatsAppBusinessProfileRoute() {
+  const { orgAddressId } = Route.useParams();
+  return <WhatsAppBusinessProfile orgAddressId={orgAddressId} />;
+}
 
 const PROFILE_CATEGORY_VALUES = new Set([
   "MATRIMONY_SERVICE",
@@ -63,8 +68,13 @@ function formatMessagingLimit(value?: string) {
   return value.replace("TIER_", "");
 }
 
-function WhatsAppBusinessProfile() {
-  const { orgAddressId } = Route.useParams();
+export function WhatsAppBusinessProfile({
+  orgAddressId,
+  managerMode = false,
+}: {
+  orgAddressId: string;
+  managerMode?: boolean;
+}) {
   const { translate: t } = useTranslation();
   const categories = [
     ["MATRIMONY_SERVICE", t("Servicios matrimoniales")],
@@ -263,7 +273,7 @@ function WhatsAppBusinessProfile() {
   if (isLoading || !integration) {
     return (
       <>
-        <SectionHeader title="Perfil comercial" />
+        <WhatsAppProfileHeader managerMode={managerMode} />
         <SectionBody>
           <div className="flex grow items-center justify-center">
             <Spinner size={32} />
@@ -275,7 +285,7 @@ function WhatsAppBusinessProfile() {
 
   return (
     <>
-      <SectionHeader title="Perfil comercial" />
+      <WhatsAppProfileHeader managerMode={managerMode} />
       <SectionBody className="pb-10">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-2">
           <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:flex-row md:items-center md:justify-between">
@@ -645,6 +655,26 @@ function WhatsAppBusinessProfile() {
                 email={email}
                 websites={websites.filter(Boolean)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function WhatsAppProfileHeader({ managerMode }: { managerMode: boolean }) {
+  const { translate: t } = useTranslation();
+  return (
+    <>
+      <SectionHeader
+        title={managerMode ? "Gestor de WhatsApp" : "Perfil comercial"}
+      />
+      {managerMode && (
+        <div className="border-b border-border px-[18px] md:px-[28px]">
+          <div className="mx-auto max-w-6xl">
+            <div className="inline-flex border-b-2 border-primary px-[2px] py-[11px] text-[13px] font-medium text-primary">
+              {t("Perfil comercial")}
             </div>
           </div>
         </div>

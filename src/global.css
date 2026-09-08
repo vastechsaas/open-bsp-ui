@@ -64,6 +64,38 @@
   --chat-in: oklch(0.31 0 106.6);
 }
 
+:root[data-chat-bubble-theme="green"] {
+  --chat-out: #d9fdd3;
+}
+
+:root[data-chat-bubble-theme="blue"] {
+  --chat-out: #dbeafe;
+}
+
+:root[data-chat-bubble-theme="purple"] {
+  --chat-out: #ede9fe;
+}
+
+:root[data-chat-bubble-theme="teal"] {
+  --chat-out: #ccfbf1;
+}
+
+:root.dark[data-chat-bubble-theme="green"] {
+  --chat-out: #1f4d3a;
+}
+
+:root.dark[data-chat-bubble-theme="blue"] {
+  --chat-out: #1e3a5f;
+}
+
+:root.dark[data-chat-bubble-theme="purple"] {
+  --chat-out: #3b2f63;
+}
+
+:root.dark[data-chat-bubble-theme="teal"] {
+  --chat-out: #164e4a;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -169,6 +201,10 @@ button:disabled {
     @apply w-full focus-visible:outline-none text-[16px] text-foreground placeholder:text-muted-foreground bg-transparent focus-visible:border-primary;
   }
 
+  .template-input {
+    @apply h-[42px] w-full rounded-lg border border-input bg-background px-[12px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-default disabled:opacity-70;
+  }
+
   .instructions {
     @apply text-[14px] flex flex-col gap-[8px] leading-relaxed;
   }
@@ -201,11 +237,30 @@ button:disabled {
     @apply h-[60px] py-[10px] px-[20px] flex shrink-0;
   }
 
+  .conversation-header {
+    display: grid;
+    container-type: inline-size;
+  }
+
+  @container (max-width: 430px) {
+    .assignment-availability-control {
+      width: 36px;
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    .assignment-availability-label {
+      display: none;
+    }
+  }
+
   .spin {
     @apply animate-spin [transform-box:fill-box] [transform-origin:center] stroke-current fill-none;
   }
 
   .bg-chat {
+    position: relative;
+    isolation: isolate;
     background-color: var(--color-muted);
     z-index: 0;
   }
@@ -237,9 +292,23 @@ button:disabled {
     display: grid;
     /* Default (lg+): Menu | Left Panel | Chat */
     grid-template-columns: 48px minmax(300px, 1fr) 2fr;
+    grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
     width: 100vw;
     overflow: hidden;
+  }
+
+  .campaign-review-card {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-background);
+    padding: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .campaign-review-card {
+      padding: 1.25rem;
+    }
   }
 
   @media (min-width: 1024px) {

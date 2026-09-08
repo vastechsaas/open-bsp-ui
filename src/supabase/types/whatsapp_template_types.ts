@@ -13,41 +13,57 @@ import type {
 
 // Template data, used to create or update a template message
 
+export type TemplateCategory = "AUTHENTICATION" | "MARKETING" | "UTILITY";
+
+export type TemplateStatus =
+  | "APPROVED"
+  | "IN_APPEAL"
+  | "PENDING"
+  | "REJECTED"
+  | "PENDING_DELETION"
+  | "DELETED"
+  | "DISABLED"
+  | "PAUSED"
+  | "LIMIT_EXCEEDED";
+
 export type TemplateData = {
   id: string;
   name: string;
-  status:
-    | "APPROVED"
-    | "IN_APPEAL"
-    | "PENDING"
-    | "REJECTED"
-    | "PENDING_DELETION"
-    | "DELETED"
-    | "DISABLED"
-    | "PAUSED"
-    | "LIMIT_EXCEEDED";
-  // @ui-divergence: category includes "UTILITY" (API: only "MARKETING").
-  category: "MARKETING" | "UTILITY"; // TODO: service and auth categories - cabra 2024/09/12
+  status: TemplateStatus;
+  category: TemplateCategory;
   language: string;
-  components: (
-    | BodyComponent
-    | HeaderComponent
-    | FooterComponent
-    | ButtonsComponent
-  )[];
-  sub_category: "CUSTOM";
+  components: TemplateComponent[];
+  sub_category?: "CUSTOM";
+  rejected_reason?: string;
 };
 
-type HeaderComponent = {
+export type TemplateDraftInput = Pick<
+  TemplateData,
+  "name" | "language" | "category" | "components"
+>;
+
+export type TextHeaderComponent = {
   type: "HEADER";
   text: string;
-  format: "TEXT"; // TODO: other formats such as image - cabra 2024/09/12
+  format: "TEXT";
   example?: {
     header_text: [string];
   };
 };
 
-type BodyComponent = {
+export type MediaHeaderFormat = "IMAGE" | "VIDEO" | "DOCUMENT";
+
+export type MediaHeaderComponent = {
+  type: "HEADER";
+  format: MediaHeaderFormat;
+  example?: {
+    header_handle: [string];
+  };
+};
+
+export type HeaderComponent = TextHeaderComponent | MediaHeaderComponent;
+
+export type BodyComponent = {
   type: "BODY";
   text: string;
   example?: {
@@ -55,20 +71,44 @@ type BodyComponent = {
   };
 };
 
-type FooterComponent = {
+export type FooterComponent = {
   type: "FOOTER";
   text: string;
 };
 
-type ButtonsComponent = {
+export type ButtonsComponent = {
   type: "BUTTONS";
-  buttons: QuickReply[]; // TODO: call to action buttons - cabra 2024/09/12
+  buttons: TemplateButtonDefinition[];
 };
 
-type QuickReply = {
+export type QuickReply = {
   type: "QUICK_REPLY";
   text: string;
 };
+
+export type UrlButton = {
+  type: "URL";
+  text: string;
+  url: string;
+  example?: [string];
+};
+
+export type PhoneNumberButton = {
+  type: "PHONE_NUMBER";
+  text: string;
+  phone_number: string;
+};
+
+export type TemplateButtonDefinition =
+  | QuickReply
+  | UrlButton
+  | PhoneNumberButton;
+
+export type TemplateComponent =
+  | BodyComponent
+  | HeaderComponent
+  | FooterComponent
+  | ButtonsComponent;
 
 // Template message, used to send a template message
 
@@ -126,7 +166,7 @@ type TemplateButton = {
   | {
       sub_type: "url";
       parameters: {
-        type: "url";
+        type: "text";
         text: string;
       }[];
     }

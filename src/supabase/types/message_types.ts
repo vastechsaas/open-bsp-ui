@@ -19,6 +19,7 @@ import type {
 } from "./whatsapp_webhook_message_types";
 import type { Template } from "./whatsapp_template_types";
 import type { InstagramReferral } from "./instagram_webhook_payload_types";
+import type { OutgoingInteractive } from "./whatsapp_endpoint_types";
 
 //===================================
 // Agent Protocol Types
@@ -94,6 +95,40 @@ export type TextPart = {
   artifacts?: Part[];
 };
 
+export type PrivateNotePart = {
+  type: "text";
+  kind: "private_note";
+  text: string;
+  mentioned_agent_ids: string[];
+  transfer?: {
+    from_agent_id: string;
+    to_agent_id: string;
+  };
+  routing_transfer?: {
+    from_queue_id: string | null;
+    from_queue_name: string | null;
+    to_queue_id: string;
+    to_queue_name: string;
+  };
+  artifacts?: never;
+};
+
+export type AssignmentEventPart = {
+  type: "text";
+  kind: "assignment_event";
+  text: string;
+  assignment_event: {
+    id: string;
+    agent_id: string;
+    agent_name: string;
+    queue_id: string;
+    queue_name: string;
+    strategy: "round_robin";
+    source: string;
+  };
+  artifacts?: never;
+};
+
 // File based
 
 export const MediaTypes = [
@@ -127,6 +162,7 @@ export type FilePart = {
     uri: string; // --> internal://media/organizations/${organization_id}/attachments/${file_hash}
     name?: string;
     size: number;
+    voice?: boolean; // WhatsApp push-to-talk voice note rather than a generic audio attachment
   };
   text?: string; // caption
   artifacts?: Part[];
@@ -156,6 +192,11 @@ type InteractivePart = DataPart<
 type ButtonPart = DataPart<"button", ButtonMessage["button"]>;
 
 type TemplatePart = DataPart<"template", Template>;
+
+type OutgoingInteractivePart = DataPart<
+  "interactive",
+  OutgoingInteractive["interactive"]
+>;
 
 type MediaPlaceholderPart = DataPart<
   "media_placeholder",
@@ -187,7 +228,12 @@ export type SharePart = DataPart<
 
 // Multi-part messages
 
-export type Part = TextPart | DataPart | FilePart | SharePart;
+export type Part =
+  | TextPart
+  | DataPart
+  | FilePart
+  | SharePart
+  | AssignmentEventPart;
 
 // Parts type is not used yet. It is a proof of concept.
 export type Parts = {
@@ -228,11 +274,18 @@ export type InternalMessage = {
   forwarded?: boolean;
 } & TaskInfo &
   ToolInfo &
-  Part;
+  (Part | PrivateNotePart);
 
 export type OutgoingMessage = {
   version: "1";
   re_message_id?: string; // replied, reacted or forwarded message id
   forwarded?: boolean;
 } & TaskInfo &
-  (TextPart | FilePart | ContactsPart | LocationPart | TemplatePart);
+  (
+    | TextPart
+    | FilePart
+    | ContactsPart
+    | LocationPart
+    | TemplatePart
+    | OutgoingInteractivePart
+  );

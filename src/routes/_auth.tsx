@@ -1,11 +1,15 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import Menu from "@/components/Menu";
 import Chat from "@/components/Chat";
 import ChatHeader from "@/components/ChatHeader";
 import ChatFooter from "@/components/ChatFooter";
-import { useEffect, useState } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import FilePicker from "@/components/FileUploader/FilePicker";
 import FilePreviewer from "@/components/FilePreviewer";
 import ActionCard from "@/components/ActionCard";
@@ -19,6 +23,33 @@ import {
 import { useResizable } from "@/hooks/useResizable";
 // import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
+import { isCampaignWorkspacePath } from "@/utils/CampaignUtils";
+import {
+  isChatbotEditorPath,
+  isChatbotWorkspacePath,
+} from "@/utils/ChatbotFlowUtils";
+import { isTemplateWorkspacePath } from "@/utils/TemplateDraftUtils";
+import { isWhatsAppManagerWorkspacePath } from "@/utils/WhatsAppManagerUtils";
+import { isTeamMembersWorkspacePath } from "@/utils/TeamMembersUtils";
+import { isDashboardWorkspacePath } from "@/utils/DashboardUtils";
+import { isQuickRepliesWorkspacePath } from "@/utils/QuickReplyUtils";
+import { isContactManagerWorkspacePath } from "@/utils/ContactManagerUtils";
+import { isSettingsWorkspacePath } from "@/utils/SettingsUtils";
+import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
+import { useCurrentAgent } from "@/queries/useAgents";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
+import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
+import {
+  canAccessNavigation,
+  canAccessPath,
+  getDefaultPathForRole,
+} from "@/utils/RoleAccess";
+import {
+  getResizablePanelMaxWidth,
+  getSidebarWidth,
+  isSidebarExpanded,
+  SIDEBAR_DESKTOP_BREAKPOINT,
+} from "@/utils/SidebarUtils";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -26,29 +57,54 @@ export const Route = createFileRoute("/_auth")({
 
 const MIN_PANEL_WIDTH = 300;
 
-function getMenuWidth() {
-  return window.innerWidth >= 1024 ? 64 : 48;
-}
-
-function getMaxPanelWidth() {
-  // Max is 1/2 of available space (equal to chat panel)
-  const availableSpace = window.innerWidth - getMenuWidth();
-  return Math.floor(availableSpace / 2);
-}
-
 function AppLayout() {
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const sidebarCollapsed = useBoundStore((state) => state.ui.sidebarCollapsed);
+  const setSidebarCollapsed = useBoundStore(
+    (state) => state.ui.setSidebarCollapsed,
+  );
   // AI-agent onboarding is intentionally hidden for the Meta review.
   // const { data: agents } = useCurrentAgents();
   // const hasAiAgents = agents?.some((a) => a.ai);
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { data: currentAgent } = useCurrentAgent();
+  const { data: organizationAddresses } = useOrganizationsAddresses();
+  const { data: appearanceSettings } = useOrganizationAppearanceSettings();
+  const hasConnectedWhatsApp = organizationAddresses?.some(
+    (address) =>
+      address.service === "whatsapp" && address.status === "connected",
+  );
   const pathname = location.pathname;
+  const currentRole = currentAgent?.extra?.role;
+  const canAccessCurrentPath =
+    !activeOrgId || canAccessPath(currentRole, pathname);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const menuWidth = getSidebarWidth(viewportWidth, sidebarCollapsed);
+  const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);
+  const canToggleSidebar = viewportWidth >= SIDEBAR_DESKTOP_BREAKPOINT;
   const isStatsRoute = pathname.startsWith("/stats");
+  const isFullscreenWorkspaceRoute = isChatbotEditorPath(pathname);
+  const isWorkspaceRoute =
+    isDashboardWorkspacePath(pathname) ||
+    isCampaignWorkspacePath(pathname) ||
+    isChatbotWorkspacePath(pathname) ||
+    isTemplateWorkspacePath(pathname) ||
+    isWhatsAppManagerWorkspacePath(pathname) ||
+    isTeamMembersWorkspacePath(pathname) ||
+    isQuickRepliesWorkspacePath(pathname) ||
+    isContactManagerWorkspacePath(pathname) ||
+    isSettingsWorkspacePath(pathname);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
+  const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
+  const getMaxPanelWidth = useCallback(
+    () => getResizablePanelMaxWidth(window.innerWidth, menuWidth),
+    [menuWidth],
+  );
 
   const {
     width: panelWidth,
@@ -58,42 +114,90 @@ function AppLayout() {
     minWidth: MIN_PANEL_WIDTH,
     getMaxWidth: getMaxPanelWidth,
   });
+  const effectivePanelWidth =
+    panelWidth === null
+      ? null
+      : Math.min(
+          panelWidth,
+          getResizablePanelMaxWidth(viewportWidth, menuWidth),
+        );
+
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", updateViewportWidth);
+    return () => window.removeEventListener("resize", updateViewportWidth);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.chatBubbleTheme =
+      appearanceSettings?.chat_bubble_theme ?? "orange";
+  }, [activeOrgId, appearanceSettings?.chat_bubble_theme]);
 
   // Sync fragment identifier with activeConvId
   // i.e. /conversations#1234
   useEffect(() => {
     const convId = location.hash;
     setActiveConv(convId);
-  }, [location.hash]);
+  }, [location.hash, setActiveConv]);
+
+  useEffect(() => {
+    if (!canAccessCurrentPath) {
+      void navigate({
+        to: getDefaultPathForRole(currentRole),
+        replace: true,
+      });
+    }
+  }, [canAccessCurrentPath, currentRole, navigate]);
 
   console.log("--------");
   console.log("active org ", activeOrgId);
   console.log("active conv", activeConvId);
 
-  const showCenterPanel = activeConvId || isStatsRoute;
+  const showCenterPanel = activeConvId || isStatsRoute || isWorkspaceRoute;
+  const gridTemplateColumns = isFullscreenWorkspaceRoute
+    ? "1fr"
+    : isWorkspaceRoute
+      ? `${menuWidth}px 1fr`
+      : effectivePanelWidth !== null
+        ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
+        : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
+
+  if (!canAccessCurrentPath) return null;
 
   return (
     <div
-      className="app-grid"
-      style={
-        panelWidth !== null
-          ? { gridTemplateColumns: `${getMenuWidth()}px ${panelWidth}px 1fr` }
-          : undefined
-      }
+      className="app-grid transition-[grid-template-columns] duration-200"
+      style={viewportWidth >= 768 ? { gridTemplateColumns } : undefined}
     >
       {/* Menu - Fixed width */}
-      <div className={showCenterPanel ? "hidden md:flex" : "flex"}>
-        <Menu />
+      <div
+        className={
+          isFullscreenWorkspaceRoute
+            ? "hidden"
+            : showCenterPanel
+              ? "hidden md:flex"
+              : "flex"
+        }
+      >
+        <Menu
+          expanded={sidebarExpanded}
+          canToggle={canToggleSidebar}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
       </div>
       {/* Left Panel - Router Outlet */}
       <div
         ref={panelRef}
         className={
           "flex-col overflow-hidden md:border-r border-border bg-background text-foreground col-span-2 md:col-span-1 relative " +
-          (showCenterPanel ? "hidden md:flex" : "flex")
+          (isWorkspaceRoute
+            ? "hidden"
+            : showCenterPanel
+              ? "hidden md:flex"
+              : "flex")
         }
       >
-        <Outlet />
+        {!isWorkspaceRoute && <Outlet />}
         {/* Resize Handle */}
         <div className="resize-handle z-[60]" onMouseDown={handleMouseDown} />
       </div>
@@ -102,27 +206,49 @@ function AppLayout() {
       <div
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
-          (isStatsRoute
-            ? " flex bg-muted"
-            : activeConvId
-              ? " flex bg-chat"
-              : " hidden md:flex bg-muted")
+          (isWorkspaceRoute
+            ? " flex bg-background text-foreground"
+            : isStatsRoute
+              ? " flex bg-muted"
+              : activeConvId
+                ? " flex bg-chat"
+                : " hidden md:flex bg-muted")
         }
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
       >
-        {isStatsRoute ? (
+        {isWorkspaceRoute ? (
+          <Outlet />
+        ) : isStatsRoute ? (
           <div className="overflow-y-auto h-full">
             <StatsCenter />
           </div>
         ) : activeConvId ? (
-          <>
-            {isHoveringFiles && <FilePicker setHovering={setIsHoveringFiles} />}
-            <FilePreviewer />
-            <ChatHeader />
-            <Chat />
-            <ChatFooter />
-          </>
+          <div className="flex min-h-0 min-w-0 flex-1">
+            <div
+              className={`${
+                customerDetailsOpen ? "hidden md:flex" : "flex"
+              } min-h-0 min-w-0 flex-1 flex-col`}
+            >
+              {isHoveringFiles && (
+                <FilePicker setHovering={setIsHoveringFiles} />
+              )}
+              <FilePreviewer />
+              <ChatHeader
+                customerDetailsOpen={customerDetailsOpen}
+                onToggleCustomerDetails={() =>
+                  setCustomerDetailsOpen((open) => !open)
+                }
+              />
+              <Chat />
+              <ChatFooter />
+            </div>
+            {customerDetailsOpen && (
+              <CustomerDetailsPanel
+                onClose={() => setCustomerDetailsOpen(false)}
+              />
+            )}
+          </div>
         ) : (
           <div className="flex gap-[32px] items-center justify-center h-full">
             {!activeOrgId && (
@@ -148,11 +274,17 @@ function AppLayout() {
                   title={t("Iniciar conversación")}
                   to="/conversations/new"
                 />
-                <ActionCard
-                  icon={<Settings className="w-[24px] h-[24px]" />}
-                  title={t("Configurar WhatsApp")}
-                  to="/integrations/whatsapp/new"
-                />
+                {canAccessNavigation(currentRole, "integrations") && (
+                  <ActionCard
+                    icon={<Settings className="w-[24px] h-[24px]" />}
+                    title={t("Configurar WhatsApp")}
+                    to="/integrations/whatsapp/new"
+                    disabled={hasConnectedWhatsApp}
+                    disabledReason={t(
+                      "Solo se puede conectar un número de WhatsApp por organización.",
+                    )}
+                  />
+                )}
               </>
             )}
           </div>

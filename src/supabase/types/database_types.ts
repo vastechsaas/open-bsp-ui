@@ -204,8 +204,17 @@ export type AgentUpdate = Database["public"]["Tables"]["agents"]["Update"];
 export type OrganizationAddressRow =
   Database["public"]["Tables"]["organizations_addresses"]["Row"];
 
-export type ApiKeyRow = Database["public"]["Tables"]["api_keys"]["Row"];
-export type ApiKeyInsert = Database["public"]["Tables"]["api_keys"]["Insert"];
-export type ApiKeyUpdate = Database["public"]["Tables"]["api_keys"]["Update"];
-
 export type Role = Database["public"]["Enums"]["role"];
+export type ApiKeyRole = Exclude<Role, "supervisor" | "agent">;
+export type ApiKeyRow = Omit<
+  Database["public"]["Tables"]["api_keys"]["Row"],
+  "role"
+> & { role: ApiKeyRole };
+export type ApiKeyInsert = Omit<
+  Database["public"]["Tables"]["api_keys"]["Insert"],
+  "role"
+> & { role?: ApiKeyRole };
+export type ApiKeyUpdate = Omit<
+  Database["public"]["Tables"]["api_keys"]["Update"],
+  "role"
+> & { role?: ApiKeyRole };
