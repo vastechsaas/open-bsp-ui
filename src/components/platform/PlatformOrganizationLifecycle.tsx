@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Modal, Select, message as toast } from "antd";
+import { Select, message as toast } from "antd";
+import { AlertTriangle, RotateCcw, X } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -41,6 +42,7 @@ export default function PlatformOrganizationLifecycleScreen() {
     reason.trim().length > 0 &&
     (!requiresName || confirmedName === selected.organization_name) &&
     (action?.type !== "purge" || password.length > 0);
+  const saving = archive.isPending || restore.isPending || purge.isPending;
 
   const openAction = (next: NonNullable<Action>) => {
     setConfirmedName("");
@@ -194,60 +196,118 @@ export default function PlatformOrganizationLifecycleScreen() {
         </div>
       )}
 
-      <Modal
-        open={!!action}
-        title={
-          action?.type === "archive"
-            ? t("Archivar organización")
-            : action?.type === "restore"
-              ? t("Restaurar organización")
-              : t("Eliminar organización definitivamente")
-        }
-        okText={
-          action?.type === "purge"
-            ? t("Eliminar definitivamente")
-            : t("Confirmar")
-        }
-        okButtonProps={{ danger: action?.type !== "restore", disabled: !valid }}
-        confirmLoading={
-          archive.isPending || restore.isPending || purge.isPending
-        }
-        onCancel={() => setAction(null)}
-        onOk={submit}
-      >
-        <p className="mb-4 text-[13px] text-muted-foreground">
-          {selected?.organization_name}
-        </p>
-        {requiresName && (
-          <label className="mb-4 block">
-            <span className="label">{t("Escribí el nombre exacto")}</span>
-            <input
-              className="text w-full"
-              value={confirmedName}
-              onChange={(event) => setConfirmedName(event.target.value)}
-            />
-          </label>
-        )}
-        {action?.type === "purge" && (
-          <label className="mb-4 block">
-            <span className="label">{t("Tu contraseña")}</span>
-            <input
-              type="password"
-              className="text w-full"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-        )}
-        <label className="block">
-          <span className="label">{t("Motivo")}</span>
-          <textarea
-            className="text min-h-24 w-full"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </label>
-      </Modal>
+      {action && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="organization-lifecycle-dialog-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-popover p-5 text-popover-foreground shadow-2xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span
+                className={`rounded-lg p-2 ${
+                  action.type === "restore"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-destructive/10 text-destructive"
+                }`}
+              >
+                {action.type === "restore" ? (
+                  <RotateCcw className="h-5 w-5" aria-hidden />
+                ) : (
+                  <AlertTriangle className="h-5 w-5" aria-hidden />
+                )}
+              </span>
+              <div>
+                <h3
+                  id="organization-lifecycle-dialog-title"
+                  className="text-lg font-semibold"
+                >
+                  {action.type === "archive"
+                    ? t("Archivar organización")
+                    : action.type === "restore"
+                      ? t("Restaurar organización")
+                      : t("Eliminar organización definitivamente")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selected?.organization_name}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ml-auto rounded-lg p-1.5 hover:bg-muted"
+                onClick={() => setAction(null)}
+                aria-label={t("Cerrar")}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {requiresName && (
+              <label className="mt-5 block text-sm font-medium">
+                {t("Escribí el nombre exacto")}
+                <input
+                  autoFocus
+                  className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
+                  value={confirmedName}
+                  onChange={(event) => setConfirmedName(event.target.value)}
+                />
+              </label>
+            )}
+            {action.type === "purge" && (
+              <label className="mt-5 block text-sm font-medium">
+                {t("Tu contraseña")}
+                <input
+                  type="password"
+                  className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </label>
+            )}
+            <label className="mt-5 block text-sm font-medium">
+              {t("Motivo")}
+              <textarea
+                autoFocus={!requiresName}
+                className="mt-2 min-h-24 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                rows={4}
+              />
+            </label>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted"
+                disabled={saving}
+                onClick={() => setAction(null)}
+              >
+                {t("Cancelar")}
+              </button>
+              <button
+                type="submit"
+                className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${
+                  action.type === "restore"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                }`}
+                disabled={saving || !valid}
+              >
+                {saving
+                  ? t("Guardando…")
+                  : action.type === "purge"
+                    ? t("Eliminar definitivamente")
+                    : t("Confirmar")}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
