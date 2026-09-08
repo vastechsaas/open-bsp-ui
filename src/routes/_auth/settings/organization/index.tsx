@@ -18,9 +18,10 @@ import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
 import { type OrganizationUpdate } from "@/supabase/client";
-import { Modal, message as toast } from "antd";
+import { message as toast } from "antd";
 import { useQueryClient } from "@tanstack/react-query";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
+import { AlertTriangle, X } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/settings/organization/")({
   beforeLoad: () => {
@@ -156,57 +157,104 @@ function EditOrganization() {
         </Button>
       </SectionFooter>
 
-      <Modal
-        open={archiveOpen}
-        title={t("Archivar organización")}
-        okText={t("Archivar")}
-        okButtonProps={{
-          danger: true,
-          disabled:
-            archiveName !== org?.name || archiveReason.trim().length === 0,
-        }}
-        confirmLoading={archiveOrg.isPending}
-        onCancel={() => setArchiveOpen(false)}
-        onOk={() => {
-          if (!org) return;
-          archiveOrg.mutate(
-            { expectedName: archiveName, reason: archiveReason },
-            {
-              onSuccess: async () => {
-                setArchiveOpen(false);
-                setActiveOrg(null);
-                resetWorkspaceStore();
-                queryClient.clear();
-                await resetAuthorizedCache();
-                toast.success(t("Organización archivada"));
-                await navigate({ to: "/settings/organization/archived" });
-              },
-              onError: (error) => toast.error(error.message),
-            },
-          );
-        }}
-      >
-        <p className="mb-4 text-[13px] text-muted-foreground">
-          {t("Escribí el nombre exacto de la organización y el motivo.")}
-        </p>
-        <label className="block">
-          <span className="label">{t("Nombre de la organización")}</span>
-          <input
-            className="text w-full"
-            value={archiveName}
-            onChange={(event) => setArchiveName(event.target.value)}
-            placeholder={org?.name}
-          />
-        </label>
-        <label className="mt-4 block">
-          <span className="label">{t("Motivo")}</span>
-          <textarea
-            className="text min-h-24 w-full"
-            value={archiveReason}
-            onChange={(event) => setArchiveReason(event.target.value)}
-          />
-        </label>
-      </Modal>
+      {archiveOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="archive-organization-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-popover p-5 text-popover-foreground shadow-2xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!org) return;
+              archiveOrg.mutate(
+                { expectedName: archiveName, reason: archiveReason },
+                {
+                  onSuccess: async () => {
+                    setArchiveOpen(false);
+                    setActiveOrg(null);
+                    resetWorkspaceStore();
+                    queryClient.clear();
+                    await resetAuthorizedCache();
+                    toast.success(t("Organización archivada"));
+                    await navigate({ to: "/settings/organization/archived" });
+                  },
+                  onError: (error) => toast.error(error.message),
+                },
+              );
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="rounded-lg bg-destructive/10 p-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" aria-hidden />
+              </span>
+              <div>
+                <h3
+                  id="archive-organization-title"
+                  className="text-lg font-semibold"
+                >
+                  {t("Archivar organización")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t(
+                    "Escribí el nombre exacto de la organización y el motivo.",
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ml-auto rounded-lg p-1.5 hover:bg-muted"
+                onClick={() => setArchiveOpen(false)}
+                aria-label={t("Cerrar")}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <label className="mt-5 block text-sm font-medium">
+              {t("Nombre de la organización")}
+              <input
+                autoFocus
+                className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
+                value={archiveName}
+                onChange={(event) => setArchiveName(event.target.value)}
+                placeholder={org?.name}
+              />
+            </label>
+            <label className="mt-5 block text-sm font-medium">
+              {t("Motivo")}
+              <textarea
+                className="mt-2 min-h-24 w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/25"
+                value={archiveReason}
+                onChange={(event) => setArchiveReason(event.target.value)}
+                rows={4}
+              />
+            </label>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted"
+                disabled={archiveOrg.isPending}
+                onClick={() => setArchiveOpen(false)}
+              >
+                {t("Cancelar")}
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                disabled={
+                  archiveOrg.isPending ||
+                  archiveName !== org?.name ||
+                  archiveReason.trim().length === 0
+                }
+              >
+                {archiveOrg.isPending ? t("Archivando…") : t("Archivar")}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 }
