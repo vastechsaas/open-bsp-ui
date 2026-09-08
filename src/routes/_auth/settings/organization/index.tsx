@@ -5,17 +5,22 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   useCurrentOrganization,
   useUpdateCurrentOrganization,
-  useDeleteCurrentOrganization,
+  useArchiveCurrentOrganization,
 } from "@/queries/useOrganizations";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { useMemo } from "react";
-import useBoundStore from "@/stores/useBoundStore";
+import { useMemo, useState } from "react";
+import useBoundStore, {
+  reset as resetWorkspaceStore,
+} from "@/stores/useBoundStore";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
 import { type OrganizationUpdate } from "@/supabase/client";
+import { Modal, message as toast } from "antd";
+import { useQueryClient } from "@tanstack/react-query";
+import { resetAuthorizedCache } from "@/utils/IdbUtils";
 
 export const Route = createFileRoute("/_auth/settings/organization/")({
   beforeLoad: () => {
@@ -32,12 +37,16 @@ export const Route = createFileRoute("/_auth/settings/organization/")({
 function EditOrganization() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: org } = useCurrentOrganization();
   const { data: agent } = useCurrentAgent();
   const isOwner = agent?.extra?.role === "owner";
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const updateOrg = useUpdateCurrentOrganization();
-  const deleteOrg = useDeleteCurrentOrganization();
+  const archiveOrg = useArchiveCurrentOrganization();
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveName, setArchiveName] = useState("");
+  const [archiveReason, setArchiveReason] = useState("");
 
   const normalizedOrg = useMemo(() => {
     if (!org) return undefined;
@@ -60,21 +69,7 @@ function EditOrganization() {
 
   return (
     <>
-      <SectionHeader
-        title={t("Organización")}
-        hideBackButton
-        onDelete={() =>
-          deleteOrg.mutate(undefined, {
-            onSuccess: () => {
-              setActiveOrg(null);
-              navigate({ to: "/conversations" });
-            },
-          })
-        }
-        deleteDisabled={!isOwner}
-        deleteDisabledReason={t("Requiere permisos de propietario")}
-        deleteLoading={deleteOrg.isPending}
-      />
+      <SectionHeader title={t("Organización")} hideBackButton />
 
       <SectionBody>
         <form
@@ -125,6 +120,26 @@ function EditOrganization() {
             disabled={!isOwner}
           />
         </form>
+
+        {isOwner && org && (
+          <section className="mt-10 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+            <h2 className="text-[14px] font-semibold text-destructive">
+              {t("Archivar organización")}
+            </h2>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {t(
+                "Suspende el acceso y el procesamiento sin borrar mensajes, archivos ni la conexión de Meta. Podrás restaurarla durante 30 días.",
+              )}
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-lg border border-destructive/40 px-3 py-2 text-[12px] font-medium text-destructive hover:bg-destructive/10"
+              onClick={() => setArchiveOpen(true)}
+            >
+              {t("Archivar organización")}
+            </button>
+          </section>
+        )}
       </SectionBody>
 
       <SectionFooter>
@@ -140,6 +155,58 @@ function EditOrganization() {
           {t("Actualizar")}
         </Button>
       </SectionFooter>
+
+      <Modal
+        open={archiveOpen}
+        title={t("Archivar organización")}
+        okText={t("Archivar")}
+        okButtonProps={{
+          danger: true,
+          disabled:
+            archiveName !== org?.name || archiveReason.trim().length === 0,
+        }}
+        confirmLoading={archiveOrg.isPending}
+        onCancel={() => setArchiveOpen(false)}
+        onOk={() => {
+          if (!org) return;
+          archiveOrg.mutate(
+            { expectedName: archiveName, reason: archiveReason },
+            {
+              onSuccess: async () => {
+                setArchiveOpen(false);
+                setActiveOrg(null);
+                resetWorkspaceStore();
+                queryClient.clear();
+                await resetAuthorizedCache();
+                toast.success(t("Organización archivada"));
+                await navigate({ to: "/settings/organization/archived" });
+              },
+              onError: (error) => toast.error(error.message),
+            },
+          );
+        }}
+      >
+        <p className="mb-4 text-[13px] text-muted-foreground">
+          {t("Escribí el nombre exacto de la organización y el motivo.")}
+        </p>
+        <label className="block">
+          <span className="label">{t("Nombre de la organización")}</span>
+          <input
+            className="text w-full"
+            value={archiveName}
+            onChange={(event) => setArchiveName(event.target.value)}
+            placeholder={org?.name}
+          />
+        </label>
+        <label className="mt-4 block">
+          <span className="label">{t("Motivo")}</span>
+          <textarea
+            className="text min-h-24 w-full"
+            value={archiveReason}
+            onChange={(event) => setArchiveReason(event.target.value)}
+          />
+        </label>
+      </Modal>
     </>
   );
 }

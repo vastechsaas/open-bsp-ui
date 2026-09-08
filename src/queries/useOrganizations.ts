@@ -113,23 +113,75 @@ export function useUpdateCurrentOrganization() {
   });
 }
 
-export function useDeleteCurrentOrganization() {
+export function useArchiveCurrentOrganization() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({
+      expectedName,
+      reason,
+    }: {
+      expectedName: string;
+      reason: string;
+    }) => {
       if (!orgId) throw new Error("No active organization");
 
       await supabase
-        .from("organizations")
-        .delete()
-        .eq("id", orgId)
+        .rpc("archive_organization", {
+          p_expected_name: expectedName,
+          p_organization_id: orgId,
+          p_reason: reason,
+          p_request_id: crypto.randomUUID(),
+        })
         .throwOnError();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.organizations.all(),
+      });
+    },
+  });
+}
+
+export function useArchivedOrganizations() {
+  const userId = useBoundStore((state) => state.ui.user?.id);
+
+  return useQuery({
+    queryKey: queryKeys.organizations.archived(),
+    queryFn: async () => {
+      const result = await supabase
+        .rpc("list_my_archived_organizations_page", {
+          p_page: 1,
+          p_page_size: 50,
+        })
+        .throwOnError();
+      return result.data;
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useRestoreOrganization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const result = await supabase
+        .rpc("restore_organization", {
+          p_organization_id: id,
+          p_reason: reason,
+          p_request_id: crypto.randomUUID(),
+        })
+        .throwOnError();
+      return result.data[0];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.organizations.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.organizations.archived(),
       });
     },
   });
