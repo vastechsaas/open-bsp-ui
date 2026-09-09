@@ -209,7 +209,7 @@ export function TextMessage({
               className="text-primary cursor-pointer mt-1"
               onClick={() => setExpanded(!expanded)}
             >
-              {expanded ? t("ver menos...") : t("ver más...")}
+              {expanded ? t("message.show_less") : t("message.show_more")}
             </div>
           )}
 
