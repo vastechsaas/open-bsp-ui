@@ -413,6 +413,8 @@
   "ver descripción...": "show description...",
   "ver menos...": "show less...",
   "ver más...": "show more...",
+  "message.show_less": "show less...",
+  "message.show_more": "show more...",
   "¡Credenciales inválidas!": "Invalid credentials!",
   "Últimos 12 meses": "Last 12 months",
   "Últimos 14 días": "Last 14 days",
