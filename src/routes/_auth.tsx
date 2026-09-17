@@ -39,6 +39,8 @@ import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
+import { useOrganizations } from "@/queries/useOrganizations";
+import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import {
   canAccessNavigation,
   canAccessPath,
@@ -60,6 +62,8 @@ const MIN_PANEL_WIDTH = 300;
 function AppLayout() {
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
+  const organizations = useOrganizations();
   const sidebarCollapsed = useBoundStore((state) => state.ui.sidebarCollapsed);
   const setSidebarCollapsed = useBoundStore(
     (state) => state.ui.setSidebarCollapsed,
@@ -132,6 +136,28 @@ function AppLayout() {
     document.documentElement.dataset.chatBubbleTheme =
       appearanceSettings?.chat_bubble_theme ?? "orange";
   }, [activeOrgId, appearanceSettings?.chat_bubble_theme]);
+
+  useEffect(() => {
+    if (!activeOrgId || !organizations.isSuccess) return;
+    if (
+      organizations.data?.some(
+        (organization) => organization.id === activeOrgId,
+      )
+    )
+      return;
+
+    setActiveOrg(null);
+    setActiveConv(null);
+    void resetAuthorizedCache();
+    void navigate({ to: "/settings/organization/archived", replace: true });
+  }, [
+    activeOrgId,
+    navigate,
+    organizations.data,
+    organizations.isSuccess,
+    setActiveConv,
+    setActiveOrg,
+  ]);
 
   // Sync fragment identifier with activeConvId
   // i.e. /conversations#1234

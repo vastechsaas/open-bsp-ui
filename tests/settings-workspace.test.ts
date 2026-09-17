@@ -45,7 +45,7 @@ void test("Settings landing and legacy member routes use their canonical workspa
   assert.match(memberRoute, /redirect\(\{ to: "\/team-members" \}\)/);
 });
 
-void test("existing Organization, Webhooks, and API Keys content is preserved", () => {
+void test("Organization lifecycle, Webhooks, and API Keys content is preserved", () => {
   const organization = readSource(
     "../src/routes/_auth/settings/organization/index.tsx",
   );
@@ -55,7 +55,9 @@ void test("existing Organization, Webhooks, and API Keys content is preserved", 
   const apiKeys = readSource("../src/routes/_auth/settings/api-keys/index.tsx");
 
   assert.match(organization, /useUpdateCurrentOrganization/);
-  assert.match(organization, /useDeleteCurrentOrganization/);
+  assert.match(organization, /useArchiveCurrentOrganization/);
+  assert.match(organization, /archiveReason/);
+  assert.doesNotMatch(organization, /useDeleteCurrentOrganization/);
   assert.match(webhooks, /useWebhooks/);
   assert.match(apiKeys, /useApiKeys/);
 });
@@ -66,6 +68,10 @@ void test("new Settings labels exist in every supported locale", () => {
     "Información y comportamiento del espacio de trabajo.",
     "Eventos para sistemas externos.",
     "Credenciales para integraciones.",
+    "Archivar organización",
+    "Organizaciones archivadas",
+    "Restaurar organización",
+    "Eliminar organización definitivamente",
   ];
 
   for (const language of ["en", "pt", "fr", "sw"]) {

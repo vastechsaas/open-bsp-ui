@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as PlatformStorageRouteImport } from './routes/platform/storage'
+import { Route as PlatformOrganizationsRouteImport } from './routes/platform/organizations'
 import { Route as PlatformOrganizationIdRouteImport } from './routes/platform/$organizationId'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
@@ -76,6 +77,7 @@ import { Route as AuthTemplatesTemplateIdEditRouteImport } from './routes/_auth/
 import { Route as AuthSettingsWebhooksNewRouteImport } from './routes/_auth/settings/webhooks/new'
 import { Route as AuthSettingsWebhooksWebhookIdRouteImport } from './routes/_auth/settings/webhooks/$webhookId'
 import { Route as AuthSettingsOrganizationNewRouteImport } from './routes/_auth/settings/organization/new'
+import { Route as AuthSettingsOrganizationArchivedRouteImport } from './routes/_auth/settings/organization/archived'
 import { Route as AuthSettingsMembersNewRouteImport } from './routes/_auth/settings/members/new'
 import { Route as AuthSettingsMembersMemberIdRouteImport } from './routes/_auth/settings/members/$memberId'
 import { Route as AuthSettingsApiKeysNewRouteImport } from './routes/_auth/settings/api-keys/new'
@@ -139,6 +141,11 @@ const PlatformIndexRoute = PlatformIndexRouteImport.update({
 const PlatformStorageRoute = PlatformStorageRouteImport.update({
   id: '/storage',
   path: '/storage',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformOrganizationsRoute = PlatformOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
   getParentRoute: () => PlatformRoute,
 } as any)
 const PlatformOrganizationIdRoute = PlatformOrganizationIdRouteImport.update({
@@ -453,6 +460,12 @@ const AuthSettingsOrganizationNewRoute =
     path: '/organization/new',
     getParentRoute: () => AuthSettingsRoute,
   } as any)
+const AuthSettingsOrganizationArchivedRoute =
+  AuthSettingsOrganizationArchivedRouteImport.update({
+    id: '/organization/archived',
+    path: '/organization/archived',
+    getParentRoute: () => AuthSettingsRoute,
+  } as any)
 const AuthSettingsMembersNewRoute = AuthSettingsMembersNewRouteImport.update({
   id: '/members/new',
   path: '/members/new',
@@ -588,6 +601,7 @@ export interface FileRoutesByFullPath {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
@@ -635,6 +649,7 @@ export interface FileRoutesByFullPath {
   '/settings/api-keys/new': typeof AuthSettingsApiKeysNewRoute
   '/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/settings/members/new': typeof AuthSettingsMembersNewRoute
+  '/settings/organization/archived': typeof AuthSettingsOrganizationArchivedRoute
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
@@ -672,6 +687,7 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform': typeof PlatformIndexRoute
   '/agents/$agentId': typeof AuthAgentsAgentIdRoute
@@ -718,6 +734,7 @@ export interface FileRoutesByTo {
   '/settings/api-keys/new': typeof AuthSettingsApiKeysNewRoute
   '/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/settings/members/new': typeof AuthSettingsMembersNewRoute
+  '/settings/organization/archived': typeof AuthSettingsOrganizationArchivedRoute
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
@@ -761,6 +778,7 @@ export interface FileRoutesById {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
   '/_auth/agents/$agentId': typeof AuthAgentsAgentIdRoute
@@ -808,6 +826,7 @@ export interface FileRoutesById {
   '/_auth/settings/api-keys/new': typeof AuthSettingsApiKeysNewRoute
   '/_auth/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/_auth/settings/members/new': typeof AuthSettingsMembersNewRoute
+  '/_auth/settings/organization/archived': typeof AuthSettingsOrganizationArchivedRoute
   '/_auth/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
   '/_auth/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/_auth/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
@@ -851,6 +870,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/organizations'
     | '/platform/storage'
     | '/platform/'
     | '/agents/$agentId'
@@ -898,6 +918,7 @@ export interface FileRouteTypes {
     | '/settings/api-keys/new'
     | '/settings/members/$memberId'
     | '/settings/members/new'
+    | '/settings/organization/archived'
     | '/settings/organization/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
@@ -935,6 +956,7 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/organizations'
     | '/platform/storage'
     | '/platform'
     | '/agents/$agentId'
@@ -981,6 +1003,7 @@ export interface FileRouteTypes {
     | '/settings/api-keys/new'
     | '/settings/members/$memberId'
     | '/settings/members/new'
+    | '/settings/organization/archived'
     | '/settings/organization/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
@@ -1023,6 +1046,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/organizations'
     | '/platform/storage'
     | '/platform/'
     | '/_auth/agents/$agentId'
@@ -1070,6 +1094,7 @@ export interface FileRouteTypes {
     | '/_auth/settings/api-keys/new'
     | '/_auth/settings/members/$memberId'
     | '/_auth/settings/members/new'
+    | '/_auth/settings/organization/archived'
     | '/_auth/settings/organization/new'
     | '/_auth/settings/webhooks/$webhookId'
     | '/_auth/settings/webhooks/new'
@@ -1175,6 +1200,13 @@ declare module '@tanstack/react-router' {
       path: '/storage'
       fullPath: '/platform/storage'
       preLoaderRoute: typeof PlatformStorageRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/organizations': {
+      id: '/platform/organizations'
+      path: '/organizations'
+      fullPath: '/platform/organizations'
+      preLoaderRoute: typeof PlatformOrganizationsRouteImport
       parentRoute: typeof PlatformRoute
     }
     '/platform/$organizationId': {
@@ -1583,6 +1615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsOrganizationNewRouteImport
       parentRoute: typeof AuthSettingsRoute
     }
+    '/_auth/settings/organization/archived': {
+      id: '/_auth/settings/organization/archived'
+      path: '/organization/archived'
+      fullPath: '/settings/organization/archived'
+      preLoaderRoute: typeof AuthSettingsOrganizationArchivedRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/settings/members/new': {
       id: '/_auth/settings/members/new'
       path: '/members/new'
@@ -1736,6 +1775,7 @@ interface AuthSettingsRouteChildren {
   AuthSettingsApiKeysNewRoute: typeof AuthSettingsApiKeysNewRoute
   AuthSettingsMembersMemberIdRoute: typeof AuthSettingsMembersMemberIdRoute
   AuthSettingsMembersNewRoute: typeof AuthSettingsMembersNewRoute
+  AuthSettingsOrganizationArchivedRoute: typeof AuthSettingsOrganizationArchivedRoute
   AuthSettingsOrganizationNewRoute: typeof AuthSettingsOrganizationNewRoute
   AuthSettingsWebhooksWebhookIdRoute: typeof AuthSettingsWebhooksWebhookIdRoute
   AuthSettingsWebhooksNewRoute: typeof AuthSettingsWebhooksNewRoute
@@ -1755,6 +1795,7 @@ const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
   AuthSettingsApiKeysNewRoute: AuthSettingsApiKeysNewRoute,
   AuthSettingsMembersMemberIdRoute: AuthSettingsMembersMemberIdRoute,
   AuthSettingsMembersNewRoute: AuthSettingsMembersNewRoute,
+  AuthSettingsOrganizationArchivedRoute: AuthSettingsOrganizationArchivedRoute,
   AuthSettingsOrganizationNewRoute: AuthSettingsOrganizationNewRoute,
   AuthSettingsWebhooksWebhookIdRoute: AuthSettingsWebhooksWebhookIdRoute,
   AuthSettingsWebhooksNewRoute: AuthSettingsWebhooksNewRoute,
@@ -1937,6 +1978,7 @@ const PlatformOrganizationIdRouteWithChildren =
 
 interface PlatformRouteChildren {
   PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRouteWithChildren
+  PlatformOrganizationsRoute: typeof PlatformOrganizationsRoute
   PlatformStorageRoute: typeof PlatformStorageRoute
   PlatformIndexRoute: typeof PlatformIndexRoute
   PlatformReportsOrganizationIdRoute: typeof PlatformReportsOrganizationIdRoute
@@ -1944,6 +1986,7 @@ interface PlatformRouteChildren {
 
 const PlatformRouteChildren: PlatformRouteChildren = {
   PlatformOrganizationIdRoute: PlatformOrganizationIdRouteWithChildren,
+  PlatformOrganizationsRoute: PlatformOrganizationsRoute,
   PlatformStorageRoute: PlatformStorageRoute,
   PlatformIndexRoute: PlatformIndexRoute,
   PlatformReportsOrganizationIdRoute: PlatformReportsOrganizationIdRoute,

@@ -28,6 +28,7 @@ export const queryKeys = {
   },
   organizations: {
     all: () => ["organizations"] as const,
+    archived: () => ["organizations", "archived"] as const,
     detail: (id: NullableId) => ["organizations", id] as const,
     addresses: (orgId: NullableId) =>
       [orgId, "organizations_addresses"] as const,
@@ -150,6 +151,8 @@ export const queryKeys = {
     overview: () => ["platform", "overview"] as const,
     organizations: (params: object) =>
       ["platform", "organizations", params] as const,
+    organizationLifecycle: (params: object) =>
+      ["platform", "organization-lifecycle", params] as const,
     tenant: (organizationId: NullableId) =>
       ["platform", "tenant", organizationId] as const,
     organizationQueues: (organizationId: NullableId) =>

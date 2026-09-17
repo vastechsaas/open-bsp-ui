@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import SectionHeader from "@/components/SectionHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCreateOrganization } from "@/queries/useOrganizations";
@@ -46,6 +46,13 @@ function NewOrganization() {
               "Tu organización es el espacio de trabajo donde colaboras con tu equipo.",
             )}
           </p>
+
+          <Link
+            to="/settings/organization/archived"
+            className="mt-3 inline-flex text-[12px] font-medium text-primary hover:underline"
+          >
+            {t("Ver organizaciones archivadas")}
+          </Link>
 
           <label>
             <div className="label">{t("Nombre")}</div>
