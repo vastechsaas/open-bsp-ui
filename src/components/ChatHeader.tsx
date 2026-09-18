@@ -20,6 +20,7 @@ import {
   getConversationAssigneeName,
 } from "@/utils/AssignmentUtils";
 import AssignConversationButton from "./AssignConversationButton";
+import ResumeChatbotButton from "./ResumeChatbotButton";
 import ConversationAssignmentBadge from "./ConversationAssignmentBadge";
 import ItemActions from "./ItemActions";
 import QueueTransferDialog from "./QueueTransferDialog";
@@ -172,6 +173,7 @@ export default function Header({
             <ContactRound className="h-4 w-4" aria-hidden />
           </button>
         )}
+        <ResumeChatbotButton conversationId={activeConvId ?? undefined} />
         {isPendingAgent && (
           <AssignConversationButton
             conversationId={activeConvId}
