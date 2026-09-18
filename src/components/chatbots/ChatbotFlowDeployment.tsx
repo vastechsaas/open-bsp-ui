@@ -13,9 +13,11 @@ import type {
   ChatbotFlowDeployment,
   ChatbotFlowVersion,
 } from "@/queries/useChatbotFlows";
+import { useNodeChatbotBridges, useRetryNodeChatbotBridge } from "@/queries/useChatbotFlows";
 
 export function ChatbotFlowDeploymentDialog({
   open,
+  flowId,
   deployments,
   versions,
   addresses,
@@ -29,6 +31,7 @@ export function ChatbotFlowDeploymentDialog({
   onDeactivate,
 }: {
   open: boolean;
+  flowId: string;
   deployments: ChatbotFlowDeployment[];
   versions: ChatbotFlowVersion[];
   addresses: OrganizationAddressRow[];
@@ -41,6 +44,7 @@ export function ChatbotFlowDeploymentDialog({
   onActivate: (input: {
     organizationAddress: string;
     versionId: string;
+    engine: "native" | "node";
   }) => void;
   onDeactivate: (organizationAddress: string) => void;
 }) {
@@ -51,6 +55,9 @@ export function ChatbotFlowDeploymentDialog({
   );
   const [organizationAddress, setOrganizationAddress] = useState("");
   const [versionId, setVersionId] = useState("");
+  const [engine, setEngine] = useState<"native" | "node">("native");
+  const bridges = useNodeChatbotBridges(flowId);
+  const retryBridge = useRetryNodeChatbotBridge(flowId);
 
   useEffect(() => {
     if (!open) return;
@@ -132,6 +139,21 @@ export function ChatbotFlowDeploymentDialog({
           </div>
         ) : (
           <>
+            {(bridges.data ?? []).filter(bridge => bridge.engine !== "native").map(bridge => (
+              <div key={`node-${bridge.organization_address}`} className="mt-[14px] rounded-xl border border-border bg-muted/40 p-[12px] text-[12px]">
+                <div className="font-medium">Node · {bridge.organization_address}</div>
+                <div className="mt-[4px] text-muted-foreground">{t("Sincronización")}: {bridge.sync_status}</div>
+                {bridge.last_error && <div role="alert" className="mt-[5px] text-destructive">{bridge.last_error}</div>}
+                <div className="mt-[8px] flex gap-[8px]">
+                  {bridge.request_id && ["failed", "pending", "syncing"].includes(bridge.sync_status) &&
+                    <button type="button" className="rounded-full border border-border px-[11px] py-[6px]" disabled={retryBridge.isPending || pending}
+                      onClick={() => retryBridge.mutate(bridge.request_id!)}>{t("Reintentar")}</button>}
+                  {bridge.engine === "node" && <button type="button" disabled={pending} className="rounded-full border border-border px-[11px] py-[6px]"
+                    onClick={() => onDeactivate(bridge.organization_address)}>{t("Desactivar")}</button>}
+                </div>
+                {retryBridge.isError && <p role="alert" className="mt-[5px] text-destructive">{retryBridge.error.message}</p>}
+              </div>
+            ))}
             {deployments.length > 0 && (
               <div className="mt-[18px] space-y-[7px]">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -172,6 +194,13 @@ export function ChatbotFlowDeploymentDialog({
             )}
 
             <div className="mt-[18px] grid gap-[12px] sm:grid-cols-2">
+              <DeploymentField label={t("Motor de ejecución")}>
+                <select value={engine} onChange={event => setEngine(event.target.value as "native" | "node")}
+                  className="h-[40px] w-full rounded-lg border border-border bg-background px-[10px] text-[12px]">
+                  <option value="native">{t("Nativo")}</option>
+                  <option value="node">Node</option>
+                </select>
+              </DeploymentField>
               <DeploymentField label={t("Número de WhatsApp")}>
                 <select
                   value={organizationAddress}
@@ -236,7 +265,7 @@ export function ChatbotFlowDeploymentDialog({
                 disabled={pending || !canActivate}
                 className="primary flex min-w-[112px] items-center justify-center gap-[7px] px-[16px] py-[8px] text-[12px] disabled:opacity-50"
                 onClick={() =>
-                  onActivate({ organizationAddress, versionId })
+                  onActivate({ organizationAddress, versionId, engine })
                 }
               >
                 {pending ? (

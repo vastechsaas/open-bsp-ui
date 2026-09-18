@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { type Database, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
@@ -43,6 +44,48 @@ export type ChatbotFlowVersion = Pick<
 
 export type ChatbotFlowDeployment =
   Database["public"]["Tables"]["chatbot_flow_deployments"]["Row"];
+export type NodeChatbotBridge = Database["public"]["Tables"]["chatbot_node_bridges"]["Row"];
+
+export function useNodeChatbotBridges(flowId: string) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  return useQuery({ queryKey: ["chatbot-node-bridges", orgId, flowId], enabled: !!orgId && !!flowId,
+    queryFn: async () => (await invokeChatbotManagement<{ bridges: NodeChatbotBridge[] }>(
+      `flows/${flowId}/node-bridges?organization_id=${encodeURIComponent(orgId!)}`, undefined, "GET")).bridges,
+    refetchInterval: (query) => query.state.data?.some(bridge => ["pending", "syncing"].includes(bridge.sync_status)) ? 5000 : false,
+  });
+}
+
+export function useRetryNodeChatbotBridge(flowId: string) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const client = useQueryClient();
+  return useMutation({ mutationFn: async (requestId: string) => invokeChatbotManagement(
+    `flows/${flowId}/node-bridge/retry`, { organization_id: orgId, request_id: requestId }, "POST"),
+    onSettled: () => client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] }),
+  });
+}
+
+export function useNodeChatbotResume(conversationId?: string) {
+  const request = useRef<{ key: string; id: string } | null>(null);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const client = useQueryClient();
+  const mapping = useQuery({ queryKey: ["node-chatbot-resume", orgId, conversationId], enabled: !!orgId && !!conversationId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chatbot_node_conversations").select("node_conversation_id")
+        .eq("organization_id", orgId!).eq("conversation_id", conversationId!).eq("human_owned", true).limit(1).maybeSingle();
+      if (error) throw error;
+      return data;
+    }, refetchInterval: 10000,
+  });
+  const resume = useMutation({ mutationFn: async () => {
+    const key = `${orgId}:${conversationId}`;
+    if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() };
+    return await invokeChatbotManagement(
+      `conversations/${conversationId}/resume`, { organization_id: orgId, request_id: request.current.id }, "POST");
+  },
+    onSettled: () => client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
+  });
+  return { mapping, resume };
+}
 export type ChatbotWebhookCredential = Pick<
   Database["public"]["Tables"]["chatbot_webhook_credentials"]["Row"],
   "id" | "name" | "created_at" | "updated_at"
@@ -125,6 +168,7 @@ type ActivateChatbotFlowInput = {
   flowId: string;
   organizationAddress: string;
   versionId: string;
+  engine?: "native" | "node";
 };
 
 type DeactivateChatbotFlowInput = {
@@ -360,6 +404,7 @@ export function usePublishChatbotFlow() {
       );
     },
     onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.chatbotFlows.draft(orgId, variables.flowId),
@@ -427,6 +472,7 @@ export function useActivateChatbotFlow() {
       flowId,
       organizationAddress,
       versionId,
+      engine = "native",
     }: ActivateChatbotFlowInput) => {
       if (!orgId) throw new Error("No active organization");
       return await invokeChatbotManagement<{
@@ -437,11 +483,14 @@ export function useActivateChatbotFlow() {
           organization_id: orgId,
           organization_address: organizationAddress,
           version_id: versionId,
+          engine,
+          ...(engine === "node" ? { request_id: crypto.randomUUID() } : {}),
         },
         "PUT",
       );
     },
     onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
       });
@@ -469,6 +518,7 @@ export function useDeactivateChatbotFlow() {
       );
     },
     onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
       });
