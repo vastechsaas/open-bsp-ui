@@ -1368,6 +1368,7 @@ function FlowEditorWorkspace({
         onClose={() => setPreviewVersion(null)}
       />
       <ChatbotFlowDeploymentDialog
+        flowId={editor.flow.id}
         open={deploymentOpen}
         deployments={deploymentsQuery.data ?? []}
         versions={versionsQuery.data ?? []}
