@@ -110,6 +110,7 @@ import {
   CHATBOT_LIST_ROW_TITLE_MAX_LENGTH,
   CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  CHATBOT_NODE_LABEL_MAX_LENGTH,
   CHATBOT_REPLY_BUTTON_MAX_COUNT,
   CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH,
   chatbotConditionOperators,
@@ -146,6 +147,7 @@ import {
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotNodeLabel,
   updateChatbotInteractiveConfig,
   updateChatbotWebhookConfig,
 } from "@/utils/ChatbotFlowUtils";
@@ -706,6 +708,17 @@ function FlowEditorWorkspace({
       setNodes((currentNodes) =>
         currentNodes.map((node) =>
           node.id === nodeId ? updateChatbotMessageText(node, text) : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateNodeLabel = useCallback(
+    (nodeId: string, label: string) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId ? updateChatbotNodeLabel(node, label) : node,
         ),
       );
     },
@@ -1302,6 +1315,7 @@ function FlowEditorWorkspace({
             node={selectedNode}
             open={mobilePanel === "inspector"}
             onClose={() => setMobilePanel(null)}
+            onNodeLabelChange={updateNodeLabel}
             onMessageTextChange={updateMessageText}
             onCollectInputChange={updateCollectInput}
             onInteractiveChange={updateInteractive}
@@ -1627,6 +1641,7 @@ function NodeInspector({
   node,
   open,
   onClose,
+  onNodeLabelChange,
   onMessageTextChange,
   onCollectInputChange,
   onInteractiveChange,
@@ -1648,6 +1663,7 @@ function NodeInspector({
   node: ChatbotFlowNodeType | null;
   open: boolean;
   onClose: () => void;
+  onNodeLabelChange: (nodeId: string, label: string) => void;
   onMessageTextChange: (nodeId: string, text: string) => void;
   onCollectInputChange: (
     nodeId: string,
@@ -1719,14 +1735,22 @@ function NodeInspector({
       {node ? (
         <div className="flex-1 space-y-[14px] overflow-y-auto p-[15px]">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-              {t("Nodo seleccionado")}
-            </div>
-            <div className="mt-[5px] truncate text-[13px] font-medium">
-              {typeof node.data.label === "string"
-                ? t(node.data.label)
-                : node.id}
-            </div>
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                {t("Nombre del nodo")}
+              </span>
+              <input
+                value={
+                  typeof node.data.label === "string" ? node.data.label : ""
+                }
+                maxLength={CHATBOT_NODE_LABEL_MAX_LENGTH}
+                onChange={(event) =>
+                  onNodeLabelChange(node.id, event.target.value)
+                }
+                placeholder={node.id}
+                className="mt-[5px] w-full rounded-lg border border-border bg-background px-[10px] py-[8px] text-[13px] font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
           </div>
           <dl className="grid grid-cols-2 gap-[8px] rounded-lg border border-border bg-background/45 p-[10px] text-[11px]">
             <div>
