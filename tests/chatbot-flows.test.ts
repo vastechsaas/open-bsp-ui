@@ -7,6 +7,7 @@ import {
   ChatbotDraftConflictError,
   ChatbotPublishValidationError,
   CHATBOT_MESSAGE_MAX_LENGTH,
+  CHATBOT_NODE_LABEL_MAX_LENGTH,
   createChatbotListSection,
   createChatbotManagementError,
   createChatbotNode,
@@ -37,6 +38,7 @@ import {
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
   updateChatbotMessageText,
+  updateChatbotNodeLabel,
   updateChatbotWebhookConfig,
   updateChatbotInteractiveConfig,
 } from "../src/utils/ChatbotFlowUtils.ts";
@@ -46,6 +48,18 @@ import {
   applyChatbotSimulationStep,
   createChatbotSimulationSession,
 } from "../src/utils/ChatbotSimulationUtils.ts";
+
+void test("node labels can be renamed without changing their behavior", () => {
+  const node = createChatbotNode("send_message", { x: 100, y: 200 }, "welcome");
+  const renamed = updateChatbotNodeLabel(
+    node,
+    "Welcome to DKR".padEnd(CHATBOT_NODE_LABEL_MAX_LENGTH + 10, "!"),
+  );
+
+  assert.equal(renamed.data.label.length, CHATBOT_NODE_LABEL_MAX_LENGTH);
+  assert.equal(renamed.data.label.startsWith("Welcome to DKR"), true);
+  assert.deepEqual(renamed.data.config, node.data.config);
+});
 
 void test("assign agent is a configured terminal builder node", () => {
   const agentId = "11111111-1111-4111-8111-111111111111";

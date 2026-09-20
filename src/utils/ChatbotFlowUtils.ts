@@ -2,6 +2,7 @@ import type { Edge, Node, Viewport, XYPosition } from "@xyflow/react";
 
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
+export const CHATBOT_NODE_LABEL_MAX_LENGTH = 80;
 export const CHATBOT_INPUT_MAX_LENGTH = 4096;
 export const CHATBOT_INTERACTIVE_BODY_MAX_LENGTH = 1024;
 export const CHATBOT_REPLY_BUTTON_MAX_COUNT = 3;
@@ -603,6 +604,19 @@ export function updateChatbotMessageText(
         ...node.data.config,
         text: text.slice(0, CHATBOT_MESSAGE_MAX_LENGTH),
       },
+    },
+  };
+}
+
+export function updateChatbotNodeLabel(
+  node: ChatbotFlowNode,
+  label: string,
+): ChatbotFlowNode {
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      label: label.slice(0, CHATBOT_NODE_LABEL_MAX_LENGTH),
     },
   };
 }
