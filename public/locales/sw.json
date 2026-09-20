@@ -863,6 +863,7 @@
   "Esta etapa prepara el espacio de trabajo sin adelantar la configuración de nodos.": "Hatua hii inaandaa eneo la kazi bila kuanza usanidi wa nodi mapema.",
   "Nodo": "Nodi",
   "Nodo seleccionado": "Nodi iliyochaguliwa",
+  "Nombre del nodo": "Jina la nodi",
   "Tipo": "Aina",
   "Posición": "Nafasi",
   "La configuración de este nodo se habilitará en su ticket de implementación.": "Mipangilio ya nodi hii itawezeshwa katika tiketi yake ya utekelezaji.",

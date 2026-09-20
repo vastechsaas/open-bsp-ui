@@ -863,6 +863,7 @@
   "Esta etapa prepara el espacio de trabajo sin adelantar la configuración de nodos.": "Cette étape prépare l’espace de travail sans anticiper la configuration des nœuds.",
   "Nodo": "Nœud",
   "Nodo seleccionado": "Nœud sélectionné",
+  "Nombre del nodo": "Nom du nœud",
   "Tipo": "Type",
   "Posición": "Position",
   "La configuración de este nodo se habilitará en su ticket de implementación.": "La configuration de ce nœud sera activée dans son ticket d’implémentation.",

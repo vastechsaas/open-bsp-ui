@@ -863,6 +863,7 @@
   "Esta etapa prepara el espacio de trabajo sin adelantar la configuración de nodos.": "This stage prepares the workspace without introducing node configuration early.",
   "Nodo": "Node",
   "Nodo seleccionado": "Selected node",
+  "Nombre del nodo": "Node name",
   "Tipo": "Type",
   "Posición": "Position",
   "La configuración de este nodo se habilitará en su ticket de implementación.": "This node's settings will be enabled in its implementation ticket.",
