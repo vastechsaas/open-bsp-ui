@@ -8,6 +8,7 @@ import {
   LogOut,
   ShieldCheck,
   UsersRound,
+  UserPlus,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -60,6 +61,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
     location.pathname === "/platform/storage" ||
     location.pathname.endsWith("/storage");
   const lifecycleActive = location.pathname === "/platform/organizations";
+  const onboardingActive = location.pathname === "/platform/onboarding";
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -179,6 +181,17 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           >
             <LayoutDashboard className="h-5 w-5" />
             {t("Vista general")}
+          </Link>
+          <Link
+            to="/platform/onboarding"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+              onboardingActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            }`}
+          >
+            <UserPlus className="h-5 w-5" />
+            {t("Incorporar organización")}
           </Link>
           <Link
             to="/platform/organizations"

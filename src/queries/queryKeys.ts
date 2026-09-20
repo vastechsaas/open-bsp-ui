@@ -153,6 +153,8 @@ export const queryKeys = {
       ["platform", "organizations", params] as const,
     organizationLifecycle: (params: object) =>
       ["platform", "organization-lifecycle", params] as const,
+    organizationProvisioning: (params: object) =>
+      ["platform", "organization-provisioning", params] as const,
     tenant: (organizationId: NullableId) =>
       ["platform", "tenant", organizationId] as const,
     organizationQueues: (organizationId: NullableId) =>
