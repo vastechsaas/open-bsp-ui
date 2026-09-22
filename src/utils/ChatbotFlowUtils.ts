@@ -14,6 +14,7 @@ export const CHATBOT_LIST_ROW_TITLE_MAX_LENGTH = 24;
 export const CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH = 72;
 export const CHATBOT_WEBHOOK_URL_MAX_LENGTH = 2048;
 export const CHATBOT_WEBHOOK_BODY_MAX_LENGTH = 16384;
+export const CHATBOT_TEXT_MENU_MAX_OPTIONS = 10;
 
 export type ChatbotCoreNodeType =
   | "start"
@@ -21,6 +22,7 @@ export type ChatbotCoreNodeType =
   | "interactive_buttons"
   | "list_message"
   | "collect_input"
+  | "text_menu"
   | "condition"
   | "assign_agent"
   | "webhook"
@@ -42,6 +44,17 @@ export type ChatbotConditionBranch = {
 export type ChatbotReplyButton = {
   id: string;
   title: string;
+};
+
+export type ChatbotTextMenuOption = {
+  id: string;
+  value: string;
+  label: string;
+};
+
+export type ChatbotFlowCommands = {
+  main_menu: { keyword: string; target_node_id: string };
+  close: { keyword: string; message: string };
 };
 
 export type ChatbotListRow = {
@@ -83,6 +96,9 @@ export type ChatbotNodeConfig = {
   timeout_ms?: number;
   retry_count?: number;
   response_mappings?: ChatbotWebhookResponseMapping[];
+  options?: ChatbotTextMenuOption[];
+  invalid_response?: string;
+  max_retries?: 3;
   [key: string]: unknown;
 };
 
@@ -144,6 +160,7 @@ export type ChatbotEditorGraph = {
   nodes: ChatbotFlowNode[];
   edges: ChatbotFlowEdge[];
   viewport?: Viewport;
+  settings?: { commands?: ChatbotFlowCommands };
 };
 
 export type ChatbotDraftSaveStatus =
@@ -324,6 +341,7 @@ export function serializeChatbotEditorGraph(
           },
         }
       : {}),
+    ...(graph.settings ? { settings: graph.settings } : {}),
   };
 }
 
@@ -338,6 +356,7 @@ export function getChatbotEditorValidationFingerprint(
   return JSON.stringify({
     nodes: serialized.nodes,
     edges: serialized.edges,
+    settings: serialized.settings,
   });
 }
 
@@ -468,6 +487,7 @@ export function isChatbotCoreNodeType(
     value === "interactive_buttons" ||
     value === "list_message" ||
     value === "collect_input" ||
+    value === "text_menu" ||
     value === "condition" ||
     value === "assign_agent" ||
     value === "webhook" ||
@@ -481,6 +501,7 @@ export function getChatbotNodeDefaultLabel(type: ChatbotCoreNodeType) {
   if (type === "interactive_buttons") return "Botones interactivos";
   if (type === "list_message") return "Mensaje de lista";
   if (type === "collect_input") return "Recopilar respuesta";
+  if (type === "text_menu") return "Menú de texto";
   if (type === "condition") return "Condición";
   if (type === "assign_agent") return "Entrega humana";
   if (type === "webhook") return "Webhook / API";
@@ -497,6 +518,13 @@ function createConditionBranchId() {
 
 function createOptionId(prefix: "button" | "row" | "section") {
   return `${prefix}-${crypto.randomUUID()}`;
+}
+
+export function createChatbotTextMenuOption(
+  value = "",
+  label = "",
+): ChatbotTextMenuOption {
+  return { id: `text-option-${crypto.randomUUID()}`, value, label };
 }
 
 export function createChatbotReplyButton(title = ""): ChatbotReplyButton {
@@ -552,21 +580,30 @@ export function createChatbotNode(
                 }
               : type === "collect_input"
                 ? { prompt: "", variable: "", required: true }
-                : type === "condition"
-                  ? { variable: "" }
-                  : type === "assign_agent"
-                    ? { routing_queue_id: "" }
-                    : type === "webhook"
-                      ? {
-                          method: "POST",
-                          url: "",
-                          headers: [],
-                          body_template: "{}",
-                          timeout_ms: 3000,
-                          retry_count: 0,
-                          response_mappings: [],
-                        }
-                      : {},
+                : type === "text_menu"
+                  ? {
+                      prompt: "",
+                      variable: "menu_choice",
+                      options: [createChatbotTextMenuOption("1", "")],
+                      invalid_response:
+                        "Please enter one of the listed options.",
+                      max_retries: 3,
+                    }
+                  : type === "condition"
+                    ? { variable: "" }
+                    : type === "assign_agent"
+                      ? { routing_queue_id: "" }
+                      : type === "webhook"
+                        ? {
+                            method: "POST",
+                            url: "",
+                            headers: [],
+                            body_template: "{}",
+                            timeout_ms: 3000,
+                            retry_count: 0,
+                            response_mappings: [],
+                          }
+                        : {},
       ...(type === "condition"
         ? { branches: [createChatbotConditionBranch()] }
         : {}),
@@ -635,6 +672,20 @@ export function updateChatbotCollectInputConfig(
         ...node.data.config,
         ...updates,
       },
+    },
+  };
+}
+
+export function updateChatbotTextMenuConfig(
+  node: ChatbotFlowNode,
+  updates: Partial<ChatbotNodeConfig>,
+): ChatbotFlowNode {
+  if (node.data.node_type !== "text_menu") return node;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      config: { ...node.data.config, ...updates },
     },
   };
 }
@@ -718,6 +769,9 @@ export function getChatbotNodeOptionIds(node: ChatbotFlowNode): string[] {
     return (node.data.config.sections ?? []).flatMap((section) =>
       section.rows.map((row) => row.id),
     );
+  }
+  if (node.data.node_type === "text_menu") {
+    return (node.data.config.options ?? []).map((option) => option.id);
   }
   return [];
 }
@@ -824,7 +878,15 @@ export function duplicateChatbotNode(
               })),
             })),
           }
-        : { ...node.data.config };
+        : node.data.node_type === "text_menu"
+          ? {
+              ...node.data.config,
+              options: (node.data.config.options ?? []).map((option) => ({
+                ...option,
+                id: `text-option-${crypto.randomUUID()}`,
+              })),
+            }
+          : { ...node.data.config };
 
   return {
     ...node,
@@ -961,7 +1023,8 @@ export function isValidChatbotConnection(
 
   if (
     sourceNode.data.node_type === "interactive_buttons" ||
-    sourceNode.data.node_type === "list_message"
+    sourceNode.data.node_type === "list_message" ||
+    sourceNode.data.node_type === "text_menu"
   ) {
     if (
       !connection.sourceHandle ||
@@ -1044,7 +1107,8 @@ export function getAvailableChatbotVariables(
     const currentNode = nodeById.get(currentNodeId);
     const variable = currentNode?.data.config.variable;
     if (
-      currentNode?.data.node_type === "collect_input" &&
+      (currentNode?.data.node_type === "collect_input" ||
+        currentNode?.data.node_type === "text_menu") &&
       typeof variable === "string" &&
       /^[a-z][a-z0-9_]*$/.test(variable)
     ) {
@@ -1241,7 +1305,8 @@ export function normalizeChatbotEditorGraph(
         typeof sourceData.value === "string" ? sourceData.value : "";
       const sourceIsInteractive =
         sourceNode?.data.node_type === "interactive_buttons" ||
-        sourceNode?.data.node_type === "list_message";
+        sourceNode?.data.node_type === "list_message" ||
+        sourceNode?.data.node_type === "text_menu";
       const sourceIsWebhook = sourceNode?.data.node_type === "webhook";
       const sourceHandle = sourceIsCondition
         ? kind === "default"
@@ -1348,5 +1413,13 @@ export function normalizeChatbotEditorGraph(
       ? { x: viewport.x, y: viewport.y, zoom: viewport.zoom }
       : undefined;
 
-  return { nodes: normalizedNodes, edges, viewport: normalizedViewport };
+  const settings = isRecord(value.settings)
+    ? (value.settings as ChatbotEditorGraph["settings"])
+    : undefined;
+  return {
+    nodes: normalizedNodes,
+    edges,
+    viewport: normalizedViewport,
+    ...(settings ? { settings } : {}),
+  };
 }
