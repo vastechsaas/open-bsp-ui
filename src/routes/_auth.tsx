@@ -237,11 +237,11 @@ function AppLayout() {
       <div
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
-          (isWorkspaceRoute
-            ? " flex bg-background text-foreground"
-            : isStatsRoute
-              ? " flex bg-muted"
-              : hasPendingInvitations
+          (hasPendingInvitations
+            ? " flex bg-muted"
+            : isWorkspaceRoute
+              ? " flex bg-background text-foreground"
+              : isStatsRoute
                 ? " flex bg-muted"
                 : activeConvId
                   ? " flex bg-chat"
@@ -250,14 +250,14 @@ function AppLayout() {
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
       >
-        {isWorkspaceRoute ? (
+        {hasPendingInvitations ? (
+          <PendingInvitationGate invitations={invitations.data ?? []} />
+        ) : isWorkspaceRoute ? (
           <Outlet />
         ) : isStatsRoute ? (
           <div className="overflow-y-auto h-full">
             <StatsCenter />
           </div>
-        ) : hasPendingInvitations ? (
-          <PendingInvitationGate invitations={invitations.data ?? []} />
         ) : activeConvId ? (
           <div className="flex min-h-0 min-w-0 flex-1">
             <div
