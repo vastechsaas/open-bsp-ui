@@ -53,6 +53,12 @@ const nodePresentation: Record<
     accent: "border-amber-500/45",
     iconBackground: "bg-amber-500/15 text-amber-500",
   },
+  text_menu: {
+    icon: List,
+    badge: "TEXT MENU",
+    accent: "border-indigo-500/45",
+    iconBackground: "bg-indigo-500/15 text-indigo-500",
+  },
   condition: {
     icon: GitBranch,
     badge: "CONDITION",
@@ -98,11 +104,12 @@ export default function ChatbotFlowNode({
   const isList = data.node_type === "list_message";
   const isInteractive = isButtons || isList;
   const isCollectInput = data.node_type === "collect_input";
+  const isTextMenu = data.node_type === "text_menu";
   const isCondition = data.node_type === "condition";
   const messageText =
     isMessage && typeof data.config.text === "string" ? data.config.text : "";
   const prompt =
-    isCollectInput && typeof data.config.prompt === "string"
+    (isCollectInput || isTextMenu) && typeof data.config.prompt === "string"
       ? data.config.prompt
       : "";
   const variable =
@@ -193,6 +200,36 @@ export default function ChatbotFlowNode({
           >
             {variable || t("Variable requerida")}
           </div>
+        </div>
+      )}
+
+      {isTextMenu && (
+        <div className="border-t border-border">
+          <p
+            className={`line-clamp-2 px-[12px] py-[8px] text-[10px] leading-relaxed ${prompt.trim() ? "text-muted-foreground" : "text-destructive"}`}
+          >
+            {prompt.trim() ? prompt : t("Pregunta requerida")}
+          </p>
+          {(data.config.options ?? []).map((option, index) => (
+            <div
+              key={option.id}
+              className="relative flex items-center gap-[8px] border-t border-border/70 px-[12px] py-[7px]"
+            >
+              <span className="shrink-0 font-mono text-[9px] font-bold text-indigo-500">
+                {option.value || index + 1}
+              </span>
+              <span className="truncate text-[9px] text-muted-foreground">
+                {option.label || `${t("Opción")} ${index + 1}`}
+              </span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={option.id}
+                isConnectable={isConnectable}
+                className="!right-[-5px] !h-[9px] !w-[9px] !border-2 !border-card !bg-indigo-500"
+              />
+            </div>
+          ))}
         </div>
       )}
 
@@ -331,14 +368,18 @@ export default function ChatbotFlowNode({
         </div>
       )}
 
-      {!isTerminal && !isCondition && !isInteractive && !isWebhook && (
-        <Handle
-          type="source"
-          position={Position.Right}
-          isConnectable={isConnectable}
-          className="!h-[10px] !w-[10px] !border-2 !border-card !bg-primary"
-        />
-      )}
+      {!isTerminal &&
+        !isCondition &&
+        !isInteractive &&
+        !isWebhook &&
+        !isTextMenu && (
+          <Handle
+            type="source"
+            position={Position.Right}
+            isConnectable={isConnectable}
+            className="!h-[10px] !w-[10px] !border-2 !border-card !bg-primary"
+          />
+        )}
     </div>
   );
 }
