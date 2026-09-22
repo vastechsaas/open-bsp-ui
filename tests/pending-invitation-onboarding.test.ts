@@ -15,6 +15,11 @@ void test("pending invitations are available before organization selection", () 
     layout,
     /<PendingInvitationGate invitations=\{invitations\.data \?\? \[\]\} \/>/,
   );
+  assert.ok(
+    layout.indexOf("{hasPendingInvitations ? (") <
+      layout.indexOf(") : isWorkspaceRoute ? ("),
+    "the invitation gate must render before dashboard and other workspaces",
+  );
   assert.match(gate, /status: "accepted" \| "rejected"/);
   assert.match(gate, /queryKeys\.organizations\.all\(\)/);
 });
