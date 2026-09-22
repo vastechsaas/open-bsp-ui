@@ -113,11 +113,13 @@ import {
   CHATBOT_NODE_LABEL_MAX_LENGTH,
   CHATBOT_REPLY_BUTTON_MAX_COUNT,
   CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH,
+  CHATBOT_TEXT_MENU_MAX_OPTIONS,
   chatbotConditionOperators,
   createChatbotNode,
   createChatbotListRow,
   createChatbotListSection,
   createChatbotReplyButton,
+  createChatbotTextMenuOption,
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
@@ -137,12 +139,14 @@ import {
   type ChatbotCoreNodeType,
   type ChatbotEditorGraph,
   type ChatbotFlowNode as ChatbotFlowNodeType,
+  type ChatbotFlowCommands,
   type ChatbotListSection,
   type ChatbotNodeConfig,
   type ChatbotReplyButton,
   type ChatbotFlowValidationResult,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
+  updateChatbotTextMenuConfig,
   updateChatbotHandoffQueue,
   updateChatbotConditionBranch,
   updateChatbotConditionVariable,
@@ -317,14 +321,26 @@ function FlowEditorWorkspace({
 }) {
   const { translate: t } = useTranslation();
   const initialGraph = ensureChatbotStartNode(graph);
+  const initialSettings = graph.settings ?? {
+    commands: {
+      main_menu: {
+        keyword: "M",
+        target_node_id:
+          initialGraph.nodes.find((node) => node.data.node_type === "start")
+            ?.id ?? "",
+      },
+      close: { keyword: "C", message: "Chat closed." },
+    },
+  };
   const [nodes, setNodes, onNodesChange] = useNodesState(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(graph.edges);
   const [viewport, setViewport] = useState(graph.viewport);
+  const [settings, setSettings] = useState(initialSettings);
   const [expectedUpdatedAt, setExpectedUpdatedAt] = useState(
     editor.draft.updated_at,
   );
   const [savedFingerprint, setSavedFingerprint] = useState(() =>
-    getChatbotEditorGraphFingerprint(graph),
+    getChatbotEditorGraphFingerprint({ ...graph, settings: initialSettings }),
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
@@ -367,8 +383,8 @@ function FlowEditorWorkspace({
     ? getAvailableChatbotVariables(selectedNode.id, nodes, edges)
     : [];
   const editorGraph = useMemo(
-    () => serializeChatbotEditorGraph({ nodes, edges, viewport }),
-    [edges, nodes, viewport],
+    () => serializeChatbotEditorGraph({ nodes, edges, viewport, settings }),
+    [edges, nodes, settings, viewport],
   );
   const currentFingerprint = useMemo(
     () => getChatbotEditorGraphFingerprint(editorGraph),
@@ -602,7 +618,8 @@ function FlowEditorWorkspace({
               value: conditionBranch.value,
             }
           : (sourceNode?.data.node_type === "interactive_buttons" ||
-                sourceNode?.data.node_type === "list_message") &&
+                sourceNode?.data.node_type === "list_message" ||
+                sourceNode?.data.node_type === "text_menu") &&
               connection.sourceHandle
             ? {
                 kind: "option" as const,
@@ -662,6 +679,7 @@ function FlowEditorWorkspace({
         type !== "interactive_buttons" &&
         type !== "list_message" &&
         type !== "collect_input" &&
+        type !== "text_menu" &&
         type !== "condition" &&
         type !== "assign_agent" &&
         type !== "webhook" &&
@@ -731,6 +749,19 @@ function FlowEditorWorkspace({
         currentNodes.map((node) =>
           node.id === nodeId
             ? updateChatbotCollectInputConfig(node, updates)
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const updateTextMenu = useCallback(
+    (nodeId: string, updates: Partial<ChatbotNodeConfig>) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? updateChatbotTextMenuConfig(node, updates)
             : node,
         ),
       );
@@ -1214,6 +1245,9 @@ function FlowEditorWorkspace({
           open={mobilePanel === "library"}
           onClose={() => setMobilePanel(null)}
           onAddNode={addNode}
+          commands={settings.commands}
+          nodes={nodes}
+          onCommandsChange={(commands) => setSettings({ commands })}
         />
 
         <main className="relative min-w-0 flex-1 bg-muted/20">
@@ -1318,6 +1352,7 @@ function FlowEditorWorkspace({
             onNodeLabelChange={updateNodeLabel}
             onMessageTextChange={updateMessageText}
             onCollectInputChange={updateCollectInput}
+            onTextMenuChange={updateTextMenu}
             onInteractiveChange={updateInteractive}
             handoffAgents={handoffAgents}
             routingQueues={routingQueues}
@@ -1432,10 +1467,16 @@ function NodeLibrary({
   open,
   onClose,
   onAddNode,
+  commands,
+  nodes,
+  onCommandsChange,
 }: {
   open: boolean;
   onClose: () => void;
   onAddNode: (type: ChatbotCoreNodeType) => void;
+  commands?: ChatbotFlowCommands;
+  nodes: ChatbotFlowNodeType[];
+  onCommandsChange: (commands: ChatbotFlowCommands) => void;
 }) {
   const { translate: t } = useTranslation();
   const items = [
@@ -1472,6 +1513,13 @@ function NodeLibrary({
       label: t("Recopilar respuesta"),
       description: t("Pregunta y guarda una variable"),
       icon: TextCursorInput,
+      locked: false,
+    },
+    {
+      type: "text_menu" as const,
+      label: t("Menú de texto"),
+      description: t("Muestra opciones numeradas escritas en el chat"),
+      icon: List,
       locked: false,
     },
     {
@@ -1529,6 +1577,82 @@ function NodeLibrary({
           <X className="h-[15px] w-[15px]" />
         </button>
       </div>
+      {commands && (
+        <div className="space-y-[8px] border-t border-border p-[10px]">
+          <div className="text-[11px] font-semibold">
+            {t("Comandos globales")}
+          </div>
+          <div className="grid grid-cols-2 gap-[6px]">
+            <label className="text-[9px] text-muted-foreground">
+              {t("Menú")}
+              <input
+                value={commands.main_menu.keyword}
+                maxLength={8}
+                onChange={(event) =>
+                  onCommandsChange({
+                    ...commands,
+                    main_menu: {
+                      ...commands.main_menu,
+                      keyword: event.target.value,
+                    },
+                  })
+                }
+                className="mt-[3px] h-[30px] w-full rounded border border-border bg-background px-[7px] text-[11px]"
+              />
+            </label>
+            <label className="text-[9px] text-muted-foreground">
+              {t("Cerrar")}
+              <input
+                value={commands.close.keyword}
+                maxLength={8}
+                onChange={(event) =>
+                  onCommandsChange({
+                    ...commands,
+                    close: { ...commands.close, keyword: event.target.value },
+                  })
+                }
+                className="mt-[3px] h-[30px] w-full rounded border border-border bg-background px-[7px] text-[11px]"
+              />
+            </label>
+          </div>
+          <label className="block text-[9px] text-muted-foreground">
+            {t("Nodo del menú principal")}
+            <select
+              value={commands.main_menu.target_node_id}
+              onChange={(event) =>
+                onCommandsChange({
+                  ...commands,
+                  main_menu: {
+                    ...commands.main_menu,
+                    target_node_id: event.target.value,
+                  },
+                })
+              }
+              className="mt-[3px] h-[30px] w-full rounded border border-border bg-background px-[7px] text-[10px]"
+            >
+              {nodes.map((node) => (
+                <option key={node.id} value={node.id}>
+                  {String(node.data.label || node.id)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-[9px] text-muted-foreground">
+            {t("Mensaje al cerrar")}
+            <input
+              value={commands.close.message}
+              maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+              onChange={(event) =>
+                onCommandsChange({
+                  ...commands,
+                  close: { ...commands.close, message: event.target.value },
+                })
+              }
+              className="mt-[3px] h-[30px] w-full rounded border border-border bg-background px-[7px] text-[10px]"
+            />
+          </label>
+        </div>
+      )}
       <div className="space-y-[8px] overflow-y-auto p-[10px]">
         {items.map((item) => (
           <button
@@ -1644,6 +1768,7 @@ function NodeInspector({
   onNodeLabelChange,
   onMessageTextChange,
   onCollectInputChange,
+  onTextMenuChange,
   onInteractiveChange,
   handoffAgents,
   routingQueues,
@@ -1668,6 +1793,10 @@ function NodeInspector({
   onCollectInputChange: (
     nodeId: string,
     updates: Record<string, unknown>,
+  ) => void;
+  onTextMenuChange: (
+    nodeId: string,
+    updates: Partial<ChatbotNodeConfig>,
   ) => void;
   onInteractiveChange: (
     nodeId: string,
@@ -1705,6 +1834,7 @@ function NodeInspector({
   const isButtons = nodeType === "interactive_buttons";
   const isListMessage = nodeType === "list_message";
   const isCollectInput = nodeType === "collect_input";
+  const isTextMenu = nodeType === "text_menu";
   const isCondition = nodeType === "condition";
   const isAssignAgent = nodeType === "assign_agent";
   const isWebhook = nodeType === "webhook";
@@ -1815,6 +1945,12 @@ function NodeInspector({
               node={node}
               availableVariables={availableVariables}
               onChange={(updates) => onCollectInputChange(node.id, updates)}
+            />
+          ) : isTextMenu ? (
+            <TextMenuInspector
+              node={node}
+              availableVariables={availableVariables}
+              onChange={(updates) => onTextMenuChange(node.id, updates)}
             />
           ) : isButtons ? (
             <InteractiveButtonsInspector
@@ -2712,6 +2848,154 @@ function ListMessageInspector({
           {t("Agregar sección")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function TextMenuInspector({
+  node,
+  availableVariables,
+  onChange,
+}: {
+  node: ChatbotFlowNodeType;
+  availableVariables: string[];
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
+}) {
+  const { translate: t } = useTranslation();
+  const prompt =
+    typeof node.data.config.prompt === "string" ? node.data.config.prompt : "";
+  const variable =
+    typeof node.data.config.variable === "string"
+      ? node.data.config.variable
+      : "";
+  const invalidResponse =
+    typeof node.data.config.invalid_response === "string"
+      ? node.data.config.invalid_response
+      : "";
+  const options = node.data.config.options ?? [];
+  const updateOptions = (next: typeof options) => onChange({ options: next });
+  return (
+    <div className="space-y-[13px]">
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Pregunta y opciones")}
+        </span>
+        <textarea
+          value={prompt}
+          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+          rows={5}
+          onChange={(event) => onChange({ prompt: event.target.value })}
+          placeholder={t("Ejemplo: Escribí 1 para pagos o 2 para soporte")}
+          className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        <TemplateVariableControls
+          availableVariables={availableVariables}
+          onInsert={(name) =>
+            onChange({ prompt: appendTemplateVariable(prompt, name) })
+          }
+        />
+      </label>
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Guardar en variable")}
+        </span>
+        <input
+          value={variable}
+          maxLength={64}
+          onChange={(event) => onChange({ variable: event.target.value })}
+          placeholder="menu_choice"
+          className="mt-[6px] h-[36px] w-full rounded-lg border border-border bg-background px-[10px] font-mono text-[12px]"
+        />
+      </label>
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium">{t("Opciones")}</span>
+          <span className="text-[9px] text-muted-foreground">
+            {options.length}/{CHATBOT_TEXT_MENU_MAX_OPTIONS}
+          </span>
+        </div>
+        <div className="mt-[6px] space-y-[6px]">
+          {options.map((option, index) => (
+            <div
+              key={option.id}
+              className="grid grid-cols-[52px_1fr_28px] gap-[5px]"
+            >
+              <input
+                value={option.value}
+                maxLength={32}
+                aria-label={t("Valor")}
+                onChange={(event) =>
+                  updateOptions(
+                    options.map((item) =>
+                      item.id === option.id
+                        ? { ...item, value: event.target.value }
+                        : item,
+                    ),
+                  )
+                }
+                className="h-[32px] rounded border border-border bg-background px-[6px] font-mono text-[10px]"
+              />
+              <input
+                value={option.label}
+                maxLength={128}
+                aria-label={t("Etiqueta")}
+                onChange={(event) =>
+                  updateOptions(
+                    options.map((item) =>
+                      item.id === option.id
+                        ? { ...item, label: event.target.value }
+                        : item,
+                    ),
+                  )
+                }
+                placeholder={`${t("Opción")} ${index + 1}`}
+                className="h-[32px] rounded border border-border bg-background px-[7px] text-[10px]"
+              />
+              <button
+                type="button"
+                aria-label={t("Eliminar opción")}
+                disabled={options.length <= 1}
+                onClick={() =>
+                  updateOptions(options.filter((item) => item.id !== option.id))
+                }
+                className="rounded border border-border text-destructive disabled:opacity-35"
+              >
+                <Trash2 className="mx-auto h-[12px] w-[12px]" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={options.length >= CHATBOT_TEXT_MENU_MAX_OPTIONS}
+          onClick={() =>
+            updateOptions([
+              ...options,
+              createChatbotTextMenuOption(String(options.length + 1), ""),
+            ])
+          }
+          className="mt-[7px] flex h-[32px] w-full items-center justify-center gap-[5px] rounded border border-dashed border-primary/45 text-[10px] text-primary disabled:opacity-40"
+        >
+          <Plus className="h-[12px] w-[12px]" /> {t("Agregar opción")}
+        </button>
+      </div>
+      <label className="block">
+        <span className="text-[11px] font-medium">
+          {t("Respuesta inválida")}
+        </span>
+        <textarea
+          value={invalidResponse}
+          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+          rows={3}
+          onChange={(event) =>
+            onChange({ invalid_response: event.target.value, max_retries: 3 })
+          }
+          className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[8px] text-[11px]"
+        />
+        <span className="mt-[4px] block text-[9px] text-muted-foreground">
+          {t("Después de 3 intentos inválidos, el chat se cierra.")}
+        </span>
+      </label>
     </div>
   );
 }

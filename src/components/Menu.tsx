@@ -21,11 +21,10 @@ import {
   Workflow,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSignOut } from "@/hooks/useSignOut";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizations } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
-import { supabase } from "@/supabase/client";
-import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import { canAccessNavigation } from "@/utils/RoleAccess";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
@@ -37,6 +36,7 @@ type MenuProps = {
 };
 
 export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
+  const signOut = useSignOut();
   const user = useBoundStore((state) => state.ui.user);
   const { data: agent } = useCurrentAgent();
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
@@ -334,8 +334,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                 label: t("Cerrar sesión"),
                 icon: <LogOut className="h-[16px] w-[16px]" />,
                 onClick: () => {
-                  void supabase.auth.signOut();
-                  void resetAuthorizedCache();
+                  void signOut();
                 },
               },
             ],

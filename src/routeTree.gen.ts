@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as PlatformStorageRouteImport } from './routes/platform/storage'
 import { Route as PlatformOrganizationsRouteImport } from './routes/platform/organizations'
+import { Route as PlatformOnboardingRouteImport } from './routes/platform/onboarding'
 import { Route as PlatformOrganizationIdRouteImport } from './routes/platform/$organizationId'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
@@ -146,6 +147,11 @@ const PlatformStorageRoute = PlatformStorageRouteImport.update({
 const PlatformOrganizationsRoute = PlatformOrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
+  getParentRoute: () => PlatformRoute,
+} as any)
+const PlatformOnboardingRoute = PlatformOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => PlatformRoute,
 } as any)
 const PlatformOrganizationIdRoute = PlatformOrganizationIdRouteImport.update({
@@ -601,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
@@ -687,6 +694,7 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform': typeof PlatformIndexRoute
@@ -778,6 +786,7 @@ export interface FileRoutesById {
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
+  '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
   '/platform/': typeof PlatformIndexRoute
@@ -870,6 +879,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/onboarding'
     | '/platform/organizations'
     | '/platform/storage'
     | '/platform/'
@@ -956,6 +966,7 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/platform/onboarding'
     | '/platform/organizations'
     | '/platform/storage'
     | '/platform'
@@ -1046,6 +1057,7 @@ export interface FileRouteTypes {
     | '/oauth/callback'
     | '/oauth/instagram'
     | '/platform/$organizationId'
+    | '/platform/onboarding'
     | '/platform/organizations'
     | '/platform/storage'
     | '/platform/'
@@ -1207,6 +1219,13 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/platform/organizations'
       preLoaderRoute: typeof PlatformOrganizationsRouteImport
+      parentRoute: typeof PlatformRoute
+    }
+    '/platform/onboarding': {
+      id: '/platform/onboarding'
+      path: '/onboarding'
+      fullPath: '/platform/onboarding'
+      preLoaderRoute: typeof PlatformOnboardingRouteImport
       parentRoute: typeof PlatformRoute
     }
     '/platform/$organizationId': {
@@ -1978,6 +1997,7 @@ const PlatformOrganizationIdRouteWithChildren =
 
 interface PlatformRouteChildren {
   PlatformOrganizationIdRoute: typeof PlatformOrganizationIdRouteWithChildren
+  PlatformOnboardingRoute: typeof PlatformOnboardingRoute
   PlatformOrganizationsRoute: typeof PlatformOrganizationsRoute
   PlatformStorageRoute: typeof PlatformStorageRoute
   PlatformIndexRoute: typeof PlatformIndexRoute
@@ -1986,6 +2006,7 @@ interface PlatformRouteChildren {
 
 const PlatformRouteChildren: PlatformRouteChildren = {
   PlatformOrganizationIdRoute: PlatformOrganizationIdRouteWithChildren,
+  PlatformOnboardingRoute: PlatformOnboardingRoute,
   PlatformOrganizationsRoute: PlatformOrganizationsRoute,
   PlatformStorageRoute: PlatformStorageRoute,
   PlatformIndexRoute: PlatformIndexRoute,

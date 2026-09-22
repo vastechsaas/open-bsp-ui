@@ -8,6 +8,7 @@ import {
   LogOut,
   ShieldCheck,
   UsersRound,
+  UserPlus,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -19,6 +20,7 @@ import {
 } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSignOut } from "@/hooks/useSignOut";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   usePlatformOrganizations,
@@ -26,12 +28,10 @@ import {
 } from "@/queries/usePlatformAdmin";
 import { queryKeys } from "@/queries/queryKeys";
 import useBoundStore from "@/stores/useBoundStore";
-import { supabase } from "@/supabase/client";
 import {
   ALL_TENANTS_VALUE,
   getPlatformScopePath,
 } from "@/utils/PlatformAdminUtils";
-import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import Spinner from "@/components/Spinner";
 
 type PlatformLayoutProps = {
@@ -39,6 +39,7 @@ type PlatformLayoutProps = {
 };
 
 export default function PlatformLayout({ children }: PlatformLayoutProps) {
+  const signOut = useSignOut();
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,6 +61,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
     location.pathname === "/platform/storage" ||
     location.pathname.endsWith("/storage");
   const lifecycleActive = location.pathname === "/platform/organizations";
+  const onboardingActive = location.pathname === "/platform/onboarding";
   const [tenantSearch, setTenantSearch] = useState("");
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const debouncedTenantSearch = useDebouncedValue(tenantSearch.trim());
@@ -181,6 +183,17 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
             {t("Vista general")}
           </Link>
           <Link
+            to="/platform/onboarding"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
+              onboardingActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            }`}
+          >
+            <UserPlus className="h-5 w-5" />
+            {t("Incorporar organización")}
+          </Link>
+          <Link
             to="/platform/organizations"
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium ${
               lifecycleActive
@@ -247,8 +260,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
             type="button"
             className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] hover:bg-sidebar-accent"
             onClick={() => {
-              void supabase.auth.signOut();
-              void resetAuthorizedCache();
+              void signOut();
             }}
           >
             <LogOut className="h-4 w-4" />
