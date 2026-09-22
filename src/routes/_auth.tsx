@@ -36,10 +36,12 @@ import { isQuickRepliesWorkspacePath } from "@/utils/QuickReplyUtils";
 import { isContactManagerWorkspacePath } from "@/utils/ContactManagerUtils";
 import { isSettingsWorkspacePath } from "@/utils/SettingsUtils";
 import CustomerDetailsPanel from "@/components/CustomerDetailsPanel";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentAgent, useInvitations } from "@/queries/useAgents";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
 import { useOrganizations } from "@/queries/useOrganizations";
+import PendingInvitationGate from "@/components/PendingInvitationGate";
+import Spinner from "@/components/Spinner";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import {
   canAccessNavigation,
@@ -64,6 +66,7 @@ function AppLayout() {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const organizations = useOrganizations();
+  const invitations = useInvitations();
   const sidebarCollapsed = useBoundStore((state) => state.ui.sidebarCollapsed);
   const setSidebarCollapsed = useBoundStore(
     (state) => state.ui.setSidebarCollapsed,
@@ -102,6 +105,7 @@ function AppLayout() {
     isQuickRepliesWorkspacePath(pathname) ||
     isContactManagerWorkspacePath(pathname) ||
     isSettingsWorkspacePath(pathname);
+  const hasPendingInvitations = (invitations.data?.length ?? 0) > 0;
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
   const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
@@ -179,7 +183,8 @@ function AppLayout() {
   console.log("active org ", activeOrgId);
   console.log("active conv", activeConvId);
 
-  const showCenterPanel = activeConvId || isStatsRoute || isWorkspaceRoute;
+  const showCenterPanel =
+    activeConvId || isStatsRoute || isWorkspaceRoute || hasPendingInvitations;
   const gridTemplateColumns = isFullscreenWorkspaceRoute
     ? "1fr"
     : isWorkspaceRoute
@@ -236,9 +241,11 @@ function AppLayout() {
             ? " flex bg-background text-foreground"
             : isStatsRoute
               ? " flex bg-muted"
-              : activeConvId
-                ? " flex bg-chat"
-                : " hidden md:flex bg-muted")
+              : hasPendingInvitations
+                ? " flex bg-muted"
+                : activeConvId
+                  ? " flex bg-chat"
+                  : " hidden md:flex bg-muted")
         }
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
@@ -249,6 +256,8 @@ function AppLayout() {
           <div className="overflow-y-auto h-full">
             <StatsCenter />
           </div>
+        ) : hasPendingInvitations ? (
+          <PendingInvitationGate invitations={invitations.data ?? []} />
         ) : activeConvId ? (
           <div className="flex min-h-0 min-w-0 flex-1">
             <div
@@ -277,13 +286,16 @@ function AppLayout() {
           </div>
         ) : (
           <div className="flex gap-[32px] items-center justify-center h-full">
-            {!activeOrgId && (
-              <ActionCard
-                icon={<Building2 className="w-[24px] h-[24px]" />}
-                title={t("Crear organización")}
-                to="/settings/organization/new"
-              />
-            )}
+            {!activeOrgId &&
+              (invitations.isLoading ? (
+                <Spinner size={24} />
+              ) : (
+                <ActionCard
+                  icon={<Building2 className="w-[24px] h-[24px]" />}
+                  title={t("Crear organización")}
+                  to="/settings/organization/new"
+                />
+              ))}
             {activeOrgId && (
               <>
                 {/* AI-agent onboarding is intentionally hidden for the Meta review.
