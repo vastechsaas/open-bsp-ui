@@ -1292,6 +1292,7 @@ void test("input and condition editor labels exist in every supported locale", (
     "Versiones",
     "Borrador actual",
     "Versión publicada",
+    "Sin publicar",
     "Vista de solo lectura",
     "Guardá los cambios antes de publicar",
     "Ver resultado",
