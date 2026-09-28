@@ -144,6 +144,8 @@ import {
   type ChatbotNodeConfig,
   type ChatbotReplyButton,
   type ChatbotFlowValidationResult,
+  type ChatbotFlowValidationIssue,
+  getChatbotValidationFocusTarget,
   serializeChatbotEditorGraph,
   updateChatbotCollectInputConfig,
   updateChatbotTextMenuConfig,
@@ -343,6 +345,7 @@ function FlowEditorWorkspace({
     getChatbotEditorGraphFingerprint({ ...graph, settings: initialSettings }),
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [validationField, setValidationField] = useState<string | null>(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [pendingProtectedAction, setPendingProtectedAction] = useState<
     "back" | "reload" | null
@@ -379,6 +382,18 @@ function FlowEditorWorkspace({
   );
   const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
+  const validationNodeLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        nodes.map((node) => [
+          node.id,
+          typeof node.data.label === "string" && node.data.label.trim()
+            ? node.data.label
+            : node.id,
+        ]),
+      ),
+    [nodes],
+  );
   const availableVariables = selectedNode
     ? getAvailableChatbotVariables(selectedNode.id, nodes, edges)
     : [];
@@ -514,15 +529,45 @@ function FlowEditorWorkspace({
     }
   };
 
-  const focusValidationNode = (nodeId: string) => {
-    const node = nodes.find((candidate) => candidate.id === nodeId);
-    if (!node) return;
-    setSelectedNodeId(nodeId);
-    setMobilePanel(null);
-    void setCenter(node.position.x + 110, node.position.y + 48, {
-      zoom: 1.15,
-      duration: 300,
-    });
+  const focusValidationIssue = (issue: ChatbotFlowValidationIssue) => {
+    const target = getChatbotValidationFocusTarget(issue);
+    if (target.kind === "node") {
+      const node = nodes.find((candidate) => candidate.id === target.id);
+      if (!node) return;
+      setEdges((current) =>
+        current.map((edge) => ({ ...edge, selected: false })),
+      );
+      setSelectedNodeId(target.id);
+      setValidationField(target.field ?? null);
+      setMobilePanel("inspector");
+      void setCenter(node.position.x + 110, node.position.y + 48, {
+        zoom: 1.15,
+        duration: 300,
+      });
+      return;
+    }
+    if (target.kind === "edge") {
+      const edge = edges.find((candidate) => candidate.id === target.id);
+      if (!edge) return;
+      const source = nodes.find((node) => node.id === edge.source);
+      const destination = nodes.find((node) => node.id === edge.target);
+      setSelectedNodeId(null);
+      setValidationField(null);
+      setMobilePanel(null);
+      setEdges((current) =>
+        current.map((candidate) => ({
+          ...candidate,
+          selected: candidate.id === target.id,
+        })),
+      );
+      if (source && destination) {
+        void setCenter(
+          (source.position.x + destination.position.x) / 2 + 110,
+          (source.position.y + destination.position.y) / 2 + 48,
+          { zoom: 1.15, duration: 300 },
+        );
+      }
+    }
   };
 
   const publishEditorDraft = async () => {
@@ -1269,14 +1314,28 @@ function FlowEditorWorkspace({
             onNodeClick={(_, node) => {
               setSimulatorOpen(false);
               setSelectedNodeId(node.id);
+              setValidationField(null);
               setMobilePanel(null);
+            }}
+            onEdgeClick={(_, edge) => {
+              setSelectedNodeId(null);
+              setValidationField(null);
+              setEdges((current) =>
+                current.map((candidate) => ({
+                  ...candidate,
+                  selected: candidate.id === edge.id,
+                })),
+              );
             }}
             onNodesDelete={(deletedNodes) => {
               if (deletedNodes.some((node) => node.id === selectedNodeId)) {
                 setSelectedNodeId(null);
               }
             }}
-            onPaneClick={() => setSelectedNodeId(null)}
+            onPaneClick={() => {
+              setSelectedNodeId(null);
+              setValidationField(null);
+            }}
             onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
             defaultViewport={graph.viewport}
             fitView={!graph.viewport && nodes.length > 0}
@@ -1347,6 +1406,7 @@ function FlowEditorWorkspace({
         ) : (
           <NodeInspector
             node={selectedNode}
+            validationField={validationField}
             open={mobilePanel === "inspector"}
             onClose={() => setMobilePanel(null)}
             onNodeLabelChange={updateNodeLabel}
@@ -1394,7 +1454,8 @@ function FlowEditorWorkspace({
         result={validationDialogOpen ? validationResult : null}
         stale={validationIsStale}
         onClose={() => setValidationDialogOpen(false)}
-        onFocusNode={focusValidationNode}
+        nodeLabels={validationNodeLabels}
+        onFocusIssue={focusValidationIssue}
       />
       <PublishChatbotDialog
         open={publishDialogOpen}
@@ -1763,6 +1824,7 @@ function appendTemplateVariable(text: string, variable: string) {
 
 function NodeInspector({
   node,
+  validationField,
   open,
   onClose,
   onNodeLabelChange,
@@ -1786,6 +1848,7 @@ function NodeInspector({
   onDelete,
 }: {
   node: ChatbotFlowNodeType | null;
+  validationField: string | null;
   open: boolean;
   onClose: () => void;
   onNodeLabelChange: (nodeId: string, label: string) => void;
@@ -1844,6 +1907,24 @@ function NodeInspector({
       : "";
   const messageIsEmpty = isMessage && !messageText.trim();
 
+  useEffect(() => {
+    if (!node || !validationField) return;
+    const timer = window.setTimeout(() => {
+      const field = [
+        ...document.querySelectorAll<HTMLElement>("[data-validation-field]"),
+      ].find(
+        (element) =>
+          element.dataset.validationField === validationField &&
+          element.closest("aside"),
+      );
+      field?.scrollIntoView({ behavior: "smooth", block: "center" });
+      field
+        ?.querySelector<HTMLElement>("input, textarea, select, button")
+        ?.focus();
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [node, validationField]);
+
   return (
     <aside
       className={`absolute inset-y-0 right-0 z-30 flex w-[290px] shrink-0 flex-col border-l border-border bg-card shadow-xl transition-transform lg:static lg:z-auto lg:translate-x-0 lg:shadow-none ${
@@ -1894,120 +1975,129 @@ function NodeInspector({
               </dd>
             </div>
           </dl>
-          {isMessage ? (
-            <label className="block">
-              <span className="text-[11px] font-medium">
-                {t("Texto del mensaje")}
-              </span>
-              <textarea
-                value={messageText}
-                maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
-                rows={7}
-                aria-invalid={messageIsEmpty}
-                onChange={(event) =>
-                  onMessageTextChange(node.id, event.target.value)
-                }
-                placeholder={t("Escribí el mensaje que recibirá el contacto")}
-                className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] leading-relaxed outline-none transition focus:ring-2 focus:ring-primary/20 ${
-                  messageIsEmpty
-                    ? "border-destructive"
-                    : "border-border focus:border-primary"
-                }`}
-              />
-              <TemplateVariableControls
-                availableVariables={availableVariables}
-                onInsert={(variable) =>
-                  onMessageTextChange(
-                    node.id,
-                    appendTemplateVariable(messageText, variable),
-                  )
-                }
-              />
-              <span className="mt-[4px] flex justify-between gap-[8px] text-[10px]">
-                <span
-                  className={
-                    messageIsEmpty
-                      ? "text-destructive"
-                      : "text-muted-foreground"
+          <div
+            data-validation-field={validationField ?? undefined}
+            className={
+              validationField
+                ? "rounded-lg ring-2 ring-destructive/70 ring-offset-4 ring-offset-card"
+                : undefined
+            }
+          >
+            {isMessage ? (
+              <label className="block" data-validation-field="text">
+                <span className="text-[11px] font-medium">
+                  {t("Texto del mensaje")}
+                </span>
+                <textarea
+                  value={messageText}
+                  maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+                  rows={7}
+                  aria-invalid={messageIsEmpty}
+                  onChange={(event) =>
+                    onMessageTextChange(node.id, event.target.value)
                   }
-                >
-                  {messageIsEmpty
-                    ? t("El mensaje es obligatorio")
-                    : t("Mensaje listo")}
+                  placeholder={t("Escribí el mensaje que recibirá el contacto")}
+                  className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] leading-relaxed outline-none transition focus:ring-2 focus:ring-primary/20 ${
+                    messageIsEmpty
+                      ? "border-destructive"
+                      : "border-border focus:border-primary"
+                  }`}
+                />
+                <TemplateVariableControls
+                  availableVariables={availableVariables}
+                  onInsert={(variable) =>
+                    onMessageTextChange(
+                      node.id,
+                      appendTemplateVariable(messageText, variable),
+                    )
+                  }
+                />
+                <span className="mt-[4px] flex justify-between gap-[8px] text-[10px]">
+                  <span
+                    className={
+                      messageIsEmpty
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {messageIsEmpty
+                      ? t("El mensaje es obligatorio")
+                      : t("Mensaje listo")}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {messageText.length}/{CHATBOT_MESSAGE_MAX_LENGTH}
+                  </span>
                 </span>
-                <span className="text-muted-foreground">
-                  {messageText.length}/{CHATBOT_MESSAGE_MAX_LENGTH}
-                </span>
-              </span>
-            </label>
-          ) : isCollectInput ? (
-            <CollectInputInspector
-              node={node}
-              availableVariables={availableVariables}
-              onChange={(updates) => onCollectInputChange(node.id, updates)}
-            />
-          ) : isTextMenu ? (
-            <TextMenuInspector
-              node={node}
-              availableVariables={availableVariables}
-              onChange={(updates) => onTextMenuChange(node.id, updates)}
-            />
-          ) : isButtons ? (
-            <InteractiveButtonsInspector
-              node={node}
-              availableVariables={availableVariables}
-              onChange={(updates) => onInteractiveChange(node.id, updates)}
-            />
-          ) : isListMessage ? (
-            <ListMessageInspector
-              node={node}
-              availableVariables={availableVariables}
-              onChange={(updates) => onInteractiveChange(node.id, updates)}
-            />
-          ) : isAssignAgent ? (
-            <HumanHandoffInspector
-              node={node}
-              agents={handoffAgents}
-              queues={routingQueues}
-              onQueueChange={(routingQueueId) =>
-                onHandoffQueueChange(node.id, routingQueueId)
-              }
-            />
-          ) : isWebhook ? (
-            <WebhookInspector
-              node={node}
-              credentials={webhookCredentials}
-              creatingCredential={creatingWebhookCredential}
-              availableVariables={availableVariables}
-              onChange={(updates) => onWebhookChange(node.id, updates)}
-              onCreateCredential={onCreateWebhookCredential}
-            />
-          ) : isCondition ? (
-            <ConditionInspector
-              node={node}
-              availableVariables={availableVariables}
-              onVariableChange={(variable) =>
-                onConditionVariableChange(node.id, variable)
-              }
-              onBranchAdd={() => onConditionBranchAdd(node.id)}
-              onBranchChange={(branchId, updates) =>
-                onConditionBranchChange(node.id, branchId, updates)
-              }
-              onBranchRemove={(branchId) =>
-                onConditionBranchRemove(node.id, branchId)
-              }
-            />
-          ) : (
-            <p className="rounded-lg bg-muted/45 p-[10px] text-[11px] leading-relaxed text-muted-foreground">
-              {isStart
-                ? t(
-                    "Inicio recibe la conversación y debe conectarse con un único paso siguiente.",
-                  )
-                : t(
-                    "Fin completa la conversación y no permite conexiones salientes.",
-                  )}
-            </p>
-          )}
+              </label>
+            ) : isCollectInput ? (
+              <CollectInputInspector
+                node={node}
+                availableVariables={availableVariables}
+                onChange={(updates) => onCollectInputChange(node.id, updates)}
+              />
+            ) : isTextMenu ? (
+              <TextMenuInspector
+                node={node}
+                availableVariables={availableVariables}
+                onChange={(updates) => onTextMenuChange(node.id, updates)}
+              />
+            ) : isButtons ? (
+              <InteractiveButtonsInspector
+                node={node}
+                availableVariables={availableVariables}
+                onChange={(updates) => onInteractiveChange(node.id, updates)}
+              />
+            ) : isListMessage ? (
+              <ListMessageInspector
+                node={node}
+                availableVariables={availableVariables}
+                onChange={(updates) => onInteractiveChange(node.id, updates)}
+              />
+            ) : isAssignAgent ? (
+              <HumanHandoffInspector
+                node={node}
+                agents={handoffAgents}
+                queues={routingQueues}
+                onQueueChange={(routingQueueId) =>
+                  onHandoffQueueChange(node.id, routingQueueId)
+                }
+              />
+            ) : isWebhook ? (
+              <WebhookInspector
+                node={node}
+                credentials={webhookCredentials}
+                creatingCredential={creatingWebhookCredential}
+                availableVariables={availableVariables}
+                onChange={(updates) => onWebhookChange(node.id, updates)}
+                onCreateCredential={onCreateWebhookCredential}
+              />
+            ) : isCondition ? (
+              <ConditionInspector
+                node={node}
+                availableVariables={availableVariables}
+                onVariableChange={(variable) =>
+                  onConditionVariableChange(node.id, variable)
+                }
+                onBranchAdd={() => onConditionBranchAdd(node.id)}
+                onBranchChange={(branchId, updates) =>
+                  onConditionBranchChange(node.id, branchId, updates)
+                }
+                onBranchRemove={(branchId) =>
+                  onConditionBranchRemove(node.id, branchId)
+                }
+              />
+            ) : (
+              <p className="rounded-lg bg-muted/45 p-[10px] text-[11px] leading-relaxed text-muted-foreground">
+                {isStart
+                  ? t(
+                      "Inicio recibe la conversación y debe conectarse con un único paso siguiente.",
+                    )
+                  : t(
+                      "Fin completa la conversación y no permite conexiones salientes.",
+                    )}
+              </p>
+            )}
+          </div>
           {!isStart && (
             <div className="grid grid-cols-2 gap-[8px] border-t border-border pt-[14px]">
               <button
