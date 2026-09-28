@@ -1350,6 +1350,7 @@ void test("input and condition editor labels exist in every supported locale", (
     "Inicio es único y está protegido. Guardá el borrador para conservar los cambios.",
     "El flujo es válido",
     "El flujo necesita correcciones",
+    "Seleccioná una cola de destino.",
     "¿Publicar esta versión?",
     "Publicar",
     "Validar flujo",
