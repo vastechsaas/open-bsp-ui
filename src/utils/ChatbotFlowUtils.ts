@@ -190,7 +190,80 @@ export type ChatbotFlowValidationIssue = {
   message: string;
   node_id?: string;
   edge_id?: string;
+  field?: string;
+  category?: "configuration" | "connection" | "flow" | "reference";
 };
+
+export type ChatbotValidationIssueGroup = {
+  key: string;
+  kind: "node" | "edge" | "flow";
+  label: string;
+  issues: ChatbotFlowValidationIssue[];
+};
+
+const validationMessageKeys: Record<string, string> = {
+  handoff_queue_required: "Seleccioná una cola de destino.",
+  handoff_agent_invalid: "El agente de destino no es válido.",
+  message_text_required: "El texto del mensaje es obligatorio.",
+  input_prompt_required: "La pregunta de entrada es obligatoria.",
+  input_variable_invalid: "El nombre de la variable de entrada no es válido.",
+  options_required: "Agregá al menos una opción.",
+  option_route_missing: "Cada opción debe tener una única conexión.",
+  condition_variable_required: "Seleccioná una variable para la condición.",
+  condition_branch_required: "Agregá al menos una rama de condición.",
+  condition_fallback_required:
+    "La condición necesita una única ruta predeterminada.",
+  webhook_url_invalid: "Ingresá una URL HTTPS válida.",
+  webhook_credential_required: "Seleccioná una credencial para el webhook.",
+  default_route_required: "Conectá este nodo con el siguiente paso.",
+  start_route_required: "Inicio debe tener una única conexión de salida.",
+  dangling_edge_source: "La conexión comienza en un nodo que ya no existe.",
+  dangling_edge_target: "La conexión termina en un nodo que ya no existe.",
+};
+
+export function getChatbotValidationMessageKey(
+  issue: ChatbotFlowValidationIssue,
+): string {
+  return validationMessageKeys[issue.code] ?? issue.message;
+}
+
+export function groupChatbotValidationIssues(
+  issues: ChatbotFlowValidationIssue[],
+  nodeLabels: Readonly<Record<string, string>>,
+): ChatbotValidationIssueGroup[] {
+  const groups = new Map<string, ChatbotValidationIssueGroup>();
+  for (const issue of issues) {
+    const kind = issue.node_id ? "node" : issue.edge_id ? "edge" : "flow";
+    const id = issue.node_id ?? issue.edge_id ?? "flow";
+    const key = `${kind}:${id}`;
+    const label = issue.node_id
+      ? nodeLabels[issue.node_id] || issue.node_id
+      : issue.edge_id
+        ? `Conexión ${issue.edge_id}`
+        : "Problemas del flujo";
+    const group = groups.get(key) ?? { key, kind, label, issues: [] };
+    group.issues.push(issue);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+export function getChatbotValidationFocusTarget(
+  issue: ChatbotFlowValidationIssue,
+):
+  | { kind: "node"; id: string; field?: string }
+  | { kind: "edge"; id: string }
+  | { kind: "flow" } {
+  if (issue.node_id) {
+    return {
+      kind: "node",
+      id: issue.node_id,
+      ...(issue.field ? { field: issue.field } : {}),
+    };
+  }
+  if (issue.edge_id) return { kind: "edge", id: issue.edge_id };
+  return { kind: "flow" };
+}
 
 export type ChatbotFlowValidationResult =
   | { valid: true; definition: unknown }
@@ -229,7 +302,13 @@ function isChatbotFlowValidationIssue(
     Array.isArray(value.path) &&
     typeof value.message === "string" &&
     (value.node_id === undefined || typeof value.node_id === "string") &&
-    (value.edge_id === undefined || typeof value.edge_id === "string")
+    (value.edge_id === undefined || typeof value.edge_id === "string") &&
+    (value.field === undefined || typeof value.field === "string") &&
+    (value.category === undefined ||
+      (typeof value.category === "string" &&
+        ["configuration", "connection", "flow", "reference"].includes(
+          value.category,
+        )))
   );
 }
 

@@ -25,6 +25,9 @@ import {
   getChatbotFlowDuplicateName,
   getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
+  getChatbotValidationFocusTarget,
+  getChatbotValidationMessageKey,
+  groupChatbotValidationIssues,
   isChatbotEditorPath,
   isValidChatbotConnection,
   isChatbotWorkspacePath,
@@ -810,6 +813,67 @@ void test("publish validation errors preserve structured node and edge issues", 
   assert.equal(error.issues.length, 2);
   assert.equal(error.issues[0]?.node_id, "start");
   assert.equal(error.issues[1]?.edge_id, "edge-1");
+});
+
+void test("validation issues group by display name and separate graph issues", () => {
+  const groups = groupChatbotValidationIssues(
+    [
+      {
+        code: "handoff_queue_required",
+        path: ["nodes", 1, "config"],
+        message: "Destination queue is required",
+        node_id: "handoff",
+        field: "routing_queue_id",
+        category: "configuration",
+      },
+      {
+        code: "option_route_missing",
+        path: ["nodes", 1],
+        message: "Missing route",
+        node_id: "handoff",
+      },
+      {
+        code: "invalid_start_count",
+        path: ["nodes"],
+        message: "Missing start",
+      },
+    ],
+    { handoff: "VIP Human Handoff" },
+  );
+
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0]?.label, "VIP Human Handoff");
+  assert.equal(groups[0]?.issues.length, 2);
+  assert.equal(groups[1]?.kind, "flow");
+  assert.equal(groups[1]?.label, "Problemas del flujo");
+});
+
+void test("validation codes map to translated keys and focus targets", () => {
+  const nodeIssue = {
+    code: "handoff_queue_required",
+    path: ["nodes", 1, "config"],
+    message: "Destination queue is required",
+    node_id: "handoff",
+    field: "routing_queue_id",
+  };
+  assert.equal(
+    getChatbotValidationMessageKey(nodeIssue),
+    "Seleccioná una cola de destino.",
+  );
+  assert.deepEqual(getChatbotValidationFocusTarget(nodeIssue), {
+    kind: "node",
+    id: "handoff",
+    field: "routing_queue_id",
+  });
+  assert.deepEqual(
+    getChatbotValidationFocusTarget({
+      code: "dangling_edge_target",
+      path: ["edges", 0, "target"],
+      message: "Missing target",
+      edge_id: "edge-1",
+    }),
+    { kind: "edge", id: "edge-1" },
+  );
 });
 
 void test("chatbot editor adds exactly one protected start to an empty graph", () => {

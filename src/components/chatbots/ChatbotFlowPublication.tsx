@@ -22,7 +22,10 @@ import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { ChatbotFlowVersion } from "@/queries/useChatbotFlows";
 import {
+  type ChatbotFlowValidationIssue,
   type ChatbotFlowValidationResult,
+  getChatbotValidationMessageKey,
+  groupChatbotValidationIssues,
   normalizeChatbotEditorGraph,
 } from "@/utils/ChatbotFlowUtils";
 
@@ -32,15 +35,20 @@ export function ValidationResultsDialog({
   result,
   stale,
   onClose,
-  onFocusNode,
+  nodeLabels,
+  onFocusIssue,
 }: {
   result: ChatbotFlowValidationResult | null;
   stale: boolean;
   onClose: () => void;
-  onFocusNode: (nodeId: string) => void;
+  nodeLabels: Readonly<Record<string, string>>;
+  onFocusIssue: (issue: ChatbotFlowValidationIssue) => void;
 }) {
   const { translate: t } = useTranslation();
   if (!result) return null;
+  const issueGroups = result.valid
+    ? []
+    : groupChatbotValidationIssues(result.issues, nodeLabels);
 
   return (
     <DialogShell
@@ -88,40 +96,50 @@ export function ValidationResultsDialog({
       )}
 
       {!result.valid && (
-        <div className="mt-[16px] max-h-[48vh] space-y-[8px] overflow-y-auto pr-[3px]">
-          {result.issues.map((issue, index) => (
-            <button
-              type="button"
-              key={`${issue.code}:${issue.node_id ?? issue.edge_id ?? index}`}
-              disabled={!issue.node_id}
-              onClick={() => {
-                if (!issue.node_id) return;
-                onFocusNode(issue.node_id);
-                onClose();
-              }}
-              className="block w-full rounded-xl border border-border bg-background/55 p-[12px] text-left transition hover:border-primary/45 hover:bg-muted/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-background/55"
-            >
-              <div className="flex items-center justify-between gap-[12px]">
-                <span className="text-[11px] font-semibold text-destructive">
-                  {t("Problema")} {index + 1}
+        <div className="mt-[16px] max-h-[48vh] space-y-[12px] overflow-y-auto pr-[3px]">
+          {issueGroups.map((group) => (
+            <section key={group.key} className="space-y-[7px]">
+              <div className="flex items-center gap-[7px] px-[2px]">
+                <span className="text-[11px] font-semibold">{group.label}</span>
+                <span className="rounded-full bg-destructive/10 px-[6px] py-[2px] text-[9px] font-semibold text-destructive">
+                  {group.issues.length}
                 </span>
-                {issue.node_id && (
-                  <span className="text-[10px] font-medium text-primary">
-                    {t("Ir al nodo")}
-                  </span>
-                )}
               </div>
-              <div className="mt-[4px] text-[12px] leading-relaxed">
-                {issue.message}
-              </div>
-              <div className="mt-[5px] truncate font-mono text-[10px] text-muted-foreground">
-                {issue.node_id
-                  ? `${t("Nodo")}: ${issue.node_id}`
-                  : issue.edge_id
-                    ? `${t("Conexión")}: ${issue.edge_id}`
-                    : issue.path.join(".")}
-              </div>
-            </button>
+              {group.issues.map((issue, index) => (
+                <button
+                  type="button"
+                  key={`${issue.code}:${issue.node_id ?? issue.edge_id ?? index}:${issue.field ?? ""}`}
+                  disabled={!issue.node_id && !issue.edge_id}
+                  onClick={() => {
+                    if (!issue.node_id && !issue.edge_id) return;
+                    onFocusIssue(issue);
+                    onClose();
+                  }}
+                  className="block w-full rounded-xl border border-border bg-background/55 p-[12px] text-left transition hover:border-primary/45 hover:bg-muted/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-background/55"
+                >
+                  <div className="flex items-center justify-between gap-[12px]">
+                    <span className="text-[11px] font-semibold text-destructive">
+                      {t("Problema")} {index + 1}
+                    </span>
+                    {(issue.node_id || issue.edge_id) && (
+                      <span className="text-[10px] font-medium text-primary">
+                        {issue.node_id
+                          ? t("Ir al nodo")
+                          : t("Ir a la conexión")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-[4px] text-[12px] leading-relaxed">
+                    {t(getChatbotValidationMessageKey(issue))}
+                  </div>
+                  {issue.field && (
+                    <div className="mt-[5px] text-[10px] text-muted-foreground">
+                      {t("Campo")}: {issue.field}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       )}
