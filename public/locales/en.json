@@ -1532,5 +1532,9 @@
   "La conexión termina en un nodo que ya no existe.": "The connection ends at a node that no longer exists.",
   "Problemas del flujo": "Flow problems",
   "Ir a la conexión": "Go to connection",
-  "Campo": "Field"
+  "Campo": "Field",
+  "Cargando mensajes…": "Loading messages…",
+  "No se pudo cargar el historial.": "Could not load message history.",
+  "Inicio de la conversación": "Beginning of conversation",
+  "Cargar mensajes anteriores": "Load older messages"
 }

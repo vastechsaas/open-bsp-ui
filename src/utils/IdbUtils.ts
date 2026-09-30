@@ -74,33 +74,6 @@ export const fetchMessagesFromBackend = async (
   return messagesResponse;
 };
 
-// Fetch messages for a specific conversation for infinite scroll
-// getting a small amount of messages at a time if the conversation
-// is empty, or if the user has reached the top of the conversation
-export const fetchConversationMessages = async (
-  activeConvId: string,
-  timeWindowStart: dayjs.Dayjs,
-) => {
-  const [organizationAddress, contactAddress] = activeConvId.split("<>");
-
-  const msgsQuery = await supabase
-    .from("messages")
-    .select()
-    .match({
-      organization_address: organizationAddress,
-      contact_address: contactAddress,
-    })
-    .lt("timestamp", timeWindowStart.toISOString())
-    .order("updated_at", { ascending: false })
-    .limit(30);
-
-  if (msgsQuery.error) {
-    throw msgsQuery.error;
-  }
-
-  return msgsQuery.data;
-};
-
 // Update messages cache with new messages
 export const updateMessagesCache = async (
   newMessages: MessageRow[],
