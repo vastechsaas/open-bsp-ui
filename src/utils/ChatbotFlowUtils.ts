@@ -88,6 +88,7 @@ export type ChatbotNodeConfig = {
   sections?: ChatbotListSection[];
   agent_id?: string;
   routing_queue_id?: string;
+  acknowledgment_text?: string;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   url?: string;
   headers?: ChatbotWebhookHeader[];
@@ -203,6 +204,8 @@ export type ChatbotValidationIssueGroup = {
 
 const validationMessageKeys: Record<string, string> = {
   handoff_queue_required: "Seleccioná una cola de destino.",
+  handoff_acknowledgment_invalid:
+    "La confirmación al cliente debe contener entre 1 y 4096 caracteres.",
   handoff_agent_invalid: "El agente de destino no es válido.",
   message_text_required: "El texto del mensaje es obligatorio.",
   input_prompt_required: "La pregunta de entrada es obligatoria.",
@@ -823,7 +826,8 @@ export function updateChatbotInteractiveConfig(
 ): ChatbotFlowNode {
   if (
     node.data.node_type !== "interactive_buttons" &&
-    node.data.node_type !== "list_message"
+    node.data.node_type !== "list_message" &&
+    node.data.node_type !== "assign_agent"
   ) {
     return node;
   }

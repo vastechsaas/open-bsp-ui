@@ -1509,5 +1509,8 @@
   "Cargando mensajes…": "Inapakia ujumbe…",
   "No se pudo cargar el historial.": "Historia ya ujumbe haikuweza kupakiwa.",
   "Inicio de la conversación": "Mwanzo wa mazungumzo",
-  "Cargar mensajes anteriores": "Pakia ujumbe wa zamani"
+  "Cargar mensajes anteriores": "Pakia ujumbe wa zamani",
+  "Confirmación al cliente (opcional)": "Ujumbe wa uthibitisho kwa mteja (si lazima)",
+  "Se envía una vez antes de entregar la conversación al equipo de soporte.": "Hutumwa mara moja kabla ya kuhamisha mazungumzo kwa timu ya usaidizi.",
+  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "Ujumbe wa uthibitisho lazima uwe na herufi 1–4096."
 }
