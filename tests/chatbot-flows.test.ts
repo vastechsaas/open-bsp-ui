@@ -99,6 +99,32 @@ void test("new human handoffs target one routing queue without assigning an agen
   });
 });
 
+void test("handoff acknowledgment survives queue changes and graph serialization", () => {
+  const original = createChatbotNode("assign_agent", { x: 0, y: 0 }, "handoff");
+  const configured = updateChatbotInteractiveConfig(original, {
+    acknowledgment_text: "Connecting you to support.",
+  });
+  const routed = updateChatbotHandoffQueue(
+    configured,
+    "22222222-2222-4222-8222-222222222222",
+  );
+  assert.equal(
+    routed.data.config.acknowledgment_text,
+    "Connecting you to support.",
+  );
+  assert.equal(
+    JSON.parse(JSON.stringify(routed)).data.config.acknowledgment_text,
+    "Connecting you to support.",
+  );
+  const cleared = updateChatbotInteractiveConfig(routed, {
+    acknowledgment_text: undefined,
+  });
+  assert.equal(
+    JSON.parse(JSON.stringify(cleared)).data.config.acknowledgment_text,
+    undefined,
+  );
+});
+
 void test("webhook node stores only a credential reference and has two outcome routes", () => {
   const webhook = updateChatbotWebhookConfig(
     createChatbotNode("webhook", { x: 0, y: 0 }, "webhook"),

@@ -2058,6 +2058,7 @@ function NodeInspector({
                 node={node}
                 agents={handoffAgents}
                 queues={routingQueues}
+                onChange={(updates) => onInteractiveChange(node.id, updates)}
                 onQueueChange={(routingQueueId) =>
                   onHandoffQueueChange(node.id, routingQueueId)
                 }
@@ -2139,11 +2140,13 @@ function HumanHandoffInspector({
   agents,
   queues,
   onQueueChange,
+  onChange,
 }: {
   node: ChatbotFlowNodeType;
   agents: ChatbotHandoffAgent[];
   queues: RoutingQueueOption[];
   onQueueChange: (routingQueueId: string) => void;
+  onChange: (updates: Partial<ChatbotNodeConfig>) => void;
 }) {
   const { translate: t } = useTranslation();
   const agentId =
@@ -2188,6 +2191,29 @@ function HumanHandoffInspector({
           {t("Seleccioná una cola para actualizar este nodo.")}
         </div>
       )}
+      <label className="block" data-validation-field="acknowledgment_text">
+        <span className="text-[11px] font-medium">
+          {t("Confirmación al cliente (opcional)")}
+        </span>
+        <textarea
+          value={node.data.config.acknowledgment_text ?? ""}
+          maxLength={4096}
+          rows={3}
+          onChange={(event) =>
+            onChange({
+              acknowledgment_text: event.target.value.trim()
+                ? event.target.value
+                : undefined,
+            })
+          }
+          className="mt-[6px] w-full rounded-lg border border-border bg-background p-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        <span className="block text-[10px] text-muted-foreground">
+          {t(
+            "Se envía una vez antes de entregar la conversación al equipo de soporte.",
+          )}
+        </span>
+      </label>
       <p
         className={`text-[10px] leading-relaxed ${
           selectedQueueAvailable || selectedAgentAvailable
