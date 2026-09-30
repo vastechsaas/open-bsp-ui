@@ -1509,5 +1509,8 @@
   "Cargando mensajes…": "Carregando mensagens…",
   "No se pudo cargar el historial.": "Não foi possível carregar o histórico.",
   "Inicio de la conversación": "Início da conversa",
-  "Cargar mensajes anteriores": "Carregar mensagens anteriores"
+  "Cargar mensajes anteriores": "Carregar mensagens anteriores",
+  "Confirmación al cliente (opcional)": "Confirmação ao cliente (opcional)",
+  "Se envía una vez antes de entregar la conversación al equipo de soporte.": "Enviada uma vez antes de transferir a conversa para a equipe de suporte.",
+  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "A confirmação ao cliente deve conter entre 1 e 4096 caracteres."
 }

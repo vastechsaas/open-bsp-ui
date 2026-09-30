@@ -1536,5 +1536,8 @@
   "Cargando mensajes…": "Loading messages…",
   "No se pudo cargar el historial.": "Could not load message history.",
   "Inicio de la conversación": "Beginning of conversation",
-  "Cargar mensajes anteriores": "Load older messages"
+  "Cargar mensajes anteriores": "Load older messages",
+  "Confirmación al cliente (opcional)": "Customer acknowledgment (optional)",
+  "Se envía una vez antes de entregar la conversación al equipo de soporte.": "Sent once before handing the conversation to the support team.",
+  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "Customer acknowledgment must contain 1–4096 characters."
 }
