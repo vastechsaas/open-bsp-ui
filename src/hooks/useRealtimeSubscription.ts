@@ -273,6 +273,9 @@ export const useRealtimeSubscription = () => {
         dataSubscribed = status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED;
         if (dataSubscribed) {
           dataRetryAttempt = 0;
+          void queryClient.invalidateQueries({
+            queryKey: [activeOrgId, "conversation-history"],
+          });
           void refreshQuickReplies();
           refreshContacts();
           void refreshNotifications();

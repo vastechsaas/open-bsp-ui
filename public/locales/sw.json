@@ -1505,5 +1505,9 @@
   "La conexión termina en un nodo que ya no existe.": "Muunganisho unaishia kwenye hatua ambayo haipo tena.",
   "Problemas del flujo": "Matatizo ya mtiririko",
   "Ir a la conexión": "Nenda kwenye muunganisho",
-  "Campo": "Sehemu"
+  "Campo": "Sehemu",
+  "Cargando mensajes…": "Inapakia ujumbe…",
+  "No se pudo cargar el historial.": "Historia ya ujumbe haikuweza kupakiwa.",
+  "Inicio de la conversación": "Mwanzo wa mazungumzo",
+  "Cargar mensajes anteriores": "Pakia ujumbe wa zamani"
 }

@@ -1505,5 +1505,9 @@
   "La conexión termina en un nodo que ya no existe.": "A conexão termina em um nó que não existe mais.",
   "Problemas del flujo": "Problemas do fluxo",
   "Ir a la conexión": "Ir para a conexão",
-  "Campo": "Campo"
+  "Campo": "Campo",
+  "Cargando mensajes…": "Carregando mensagens…",
+  "No se pudo cargar el historial.": "Não foi possível carregar o histórico.",
+  "Inicio de la conversación": "Início da conversa",
+  "Cargar mensajes anteriores": "Carregar mensagens anteriores"
 }
