@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import "dayjs/locale/pt";
@@ -13,6 +13,8 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { AVATAR_COLORS } from "@/utils/colors";
 import { useMentionableHumans } from "@/queries/usePrivateNotes";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
+import { useConversationHistory } from "@/queries/useConversationHistory";
+import { isNearChatBottom } from "@/utils/ConversationHistoryUtils";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
 type SeparatorType = { text: string; first: true; last: true };
@@ -67,6 +69,11 @@ export default function Chat() {
   ]);
 
   const scroller = useRef<HTMLDivElement>(null);
+  const history = useConversationHistory();
+  const nearBottom = useRef(true);
+  const opened = useRef(false);
+  const previousNewest = useRef<string | undefined>(undefined);
+  const anchor = useRef<{ id: string; offset: number } | null>(null);
 
   const { translate: t, currentLanguage } = useTranslation();
 
@@ -210,32 +217,91 @@ export default function Chat() {
    *   Re-activating the conv -> goes to bottom
    */
 
-  useEffect(() => {
-    const scrollerRef = scroller.current;
-
-    if (!scrollerRef || !scroller.current) {
-      return;
-    }
-  }, [messages.length, activeConvId]);
-
-  useEffect(() => {
-    scrollToBottom(false);
+  useLayoutEffect(() => {
+    opened.current = false;
+    nearBottom.current = true;
+    previousNewest.current = undefined;
+    anchor.current = null;
   }, [activeConvId]);
 
-  // Keep the scroll at the bottom when new messages are added
-  // prevent the scroll from jumping when the user is reading old messages
-  useEffect(() => {
-    const scrollRef = scroller.current;
-    if (!scrollRef) {
-      return;
+  useLayoutEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    const newest = messages[0];
+    if (!opened.current && history.isSuccess && !history.isFetching) {
+      element.scrollTop = element.scrollHeight;
+      opened.current = true;
+    } else if (anchor.current) {
+      const target = Array.from(
+        element.querySelectorAll<HTMLElement>("[data-message-id]"),
+      ).find((row) => row.dataset.messageId === anchor.current?.id);
+      if (target)
+        element.scrollTop +=
+          target.getBoundingClientRect().top -
+          element.getBoundingClientRect().top -
+          anchor.current.offset;
+    } else if (
+      opened.current &&
+      (nearBottom.current ||
+        (newest?.id !== previousNewest.current &&
+          newest?.direction === "outgoing" &&
+          newest.agent_id === activeAgentId))
+    ) {
+      element.scrollTop = element.scrollHeight;
     }
-    scrollToBottom();
-  }, [messages.length]);
+    previousNewest.current = newest?.id;
+    nearBottom.current = isNearChatBottom(
+      element.scrollTop,
+      element.scrollHeight,
+      element.clientHeight,
+    );
+    // Preserve an anchor until a prepended page has entered the message store.
+    if (
+      anchor.current &&
+      !history.isFetching &&
+      (history.isFetchNextPageError ||
+        history.data?.pages.at(-1)?.length === 0 ||
+        messages.some(
+          (row) => row.id === history.data?.pages.at(-1)?.at(-1)?.id,
+        ))
+    ) {
+      anchor.current = null;
+    }
+  }, [
+    messages,
+    history.isSuccess,
+    history.isFetching,
+    history.isFetchNextPageError,
+    history.data,
+    activeAgentId,
+  ]);
+
+  const loadOlder = () => {
+    const element = scroller.current;
+    if (
+      !element ||
+      !opened.current ||
+      !history.hasNextPage ||
+      history.isFetching ||
+      history.isFetchNextPageError
+    )
+      return;
+    const top = element.getBoundingClientRect().top;
+    const visible = Array.from(
+      element.querySelectorAll<HTMLElement>("[data-message-id]"),
+    ).find((row) => row.getBoundingClientRect().bottom > top);
+    if (visible)
+      anchor.current = {
+        id: visible.dataset.messageId!,
+        offset: visible.getBoundingClientRect().top - top,
+      };
+    void history.fetchNextPage({ cancelRefetch: false });
+  };
 
   // Adjust scroll when visual viewport resizes (e.g. mobile keyboard opens)
   useEffect(() => {
     const handleResize = () => {
-      scrollToBottom(false);
+      if (nearBottom.current) scrollToBottom(false);
     };
 
     if (window.visualViewport) {
@@ -281,38 +347,88 @@ export default function Chat() {
     activeConvId && (
       <div
         ref={scroller}
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          nearBottom.current = isNearChatBottom(
+            element.scrollTop,
+            element.scrollHeight,
+            element.clientHeight,
+          );
+          if (element.scrollTop <= 100) loadOlder();
+        }}
         className="grow pb-[8px] overflow-y-auto [scrollbar-gutter:stable]"
       >
         <div className="min-h-[12px]" />
+        <div className="px-3 py-2 text-center text-xs text-muted-foreground">
+          {history.isFetching && t("Cargando mensajes…")}
+          {history.isError && (
+            <span>
+              {t("No se pudo cargar el historial.")}{" "}
+              <button
+                type="button"
+                className="text-primary underline"
+                onClick={() => {
+                  anchor.current = null;
+                  if (history.isFetchNextPageError)
+                    void history.fetchNextPage({ cancelRefetch: false });
+                  else void history.refetch();
+                }}
+              >
+                {t("Reintentar")}
+              </button>
+            </span>
+          )}
+          {history.isSuccess &&
+            !history.isFetching &&
+            !history.hasNextPage &&
+            t("Inicio de la conversación")}
+          {history.isSuccess &&
+            history.hasNextPage &&
+            !history.isFetching &&
+            !history.isFetchNextPageError && (
+              <button
+                type="button"
+                className="text-primary underline"
+                onClick={loadOlder}
+              >
+                {t("Cargar mensajes anteriores")}
+              </button>
+            )}
+        </div>
         <div className="flex flex-col">
           {envelopesAndSeparators.map((envOrSep, index) =>
             "message" in envOrSep ? (
-              <Message
+              <div
                 key={envOrSep.message.id}
-                message={envOrSep.message}
-                first={envOrSep.first}
-                last={envOrSep.last}
-                orgName={orgName}
-                convName={convName}
-                avatar={
-                  isPrivateNote(envOrSep.message)
-                    ? undefined
-                    : getAgentAvatar(envOrSep.message.agent_id)
-                }
-                authorName={
-                  envOrSep.message.agent_id
-                    ? authorNames.get(envOrSep.message.agent_id)
-                    : undefined
-                }
-                transferTargetName={
-                  isPrivateNote(envOrSep.message) &&
-                  envOrSep.message.content.transfer
-                    ? authorNames.get(
-                        envOrSep.message.content.transfer.to_agent_id,
-                      )
-                    : undefined
-                }
-              />
+                data-message-id={envOrSep.message.id}
+              >
+                <Message
+                  key={envOrSep.message.id}
+                  message={envOrSep.message}
+                  first={envOrSep.first}
+                  last={envOrSep.last}
+                  orgName={orgName}
+                  convName={convName}
+                  avatar={
+                    isPrivateNote(envOrSep.message)
+                      ? undefined
+                      : getAgentAvatar(envOrSep.message.agent_id)
+                  }
+                  authorName={
+                    envOrSep.message.agent_id
+                      ? authorNames.get(envOrSep.message.agent_id)
+                      : undefined
+                  }
+                  transferTargetName={
+                    isPrivateNote(envOrSep.message) &&
+                    envOrSep.message.content.transfer
+                      ? authorNames.get(
+                          envOrSep.message.content.transfer.to_agent_id,
+                        )
+                      : undefined
+                  }
+                />
+              </div>
             ) : (
               <Separator key={index} text={envOrSep.text} />
             ),

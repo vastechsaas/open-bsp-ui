@@ -1505,5 +1505,9 @@
   "La conexión termina en un nodo que ya no existe.": "La connexion se termine sur un nœud qui n’existe plus.",
   "Problemas del flujo": "Problèmes du flux",
   "Ir a la conexión": "Aller à la connexion",
-  "Campo": "Champ"
+  "Campo": "Champ",
+  "Cargando mensajes…": "Chargement des messages…",
+  "No se pudo cargar el historial.": "Impossible de charger l’historique.",
+  "Inicio de la conversación": "Début de la conversation",
+  "Cargar mensajes anteriores": "Charger les messages précédents"
 }

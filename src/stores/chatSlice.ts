@@ -13,14 +13,7 @@ export function timestampDescending(a?: MessageRow, b?: MessageRow) {
   const tb = +new Date(b?.timestamp || 0);
   if (ta !== tb) return tb - ta;
 
-  // Ties are common: WhatsApp delivers whole-second timestamps, and echoed
-  // outgoing messages get their ms-disambiguated timestamp overwritten by
-  // Meta's second-resolution one. created_at preserves the true insertion
-  // order in those cases; id is the final, fully deterministic fallback.
-  const ca = +new Date(a?.created_at || 0);
-  const cb = +new Date(b?.created_at || 0);
-  if (ca !== cb) return cb - ca;
-
+  // Match the history cursor's timestamp/id order for whole-second ties.
   return (b?.id || "").localeCompare(a?.id || "");
 }
 
