@@ -34,6 +34,8 @@ import {
   getQuickReplySuggestions,
 } from "@/utils/QuickReplyUtils";
 import VoiceRecorder from "./VoiceRecorder";
+import { useNodeConversationLifecycle } from "@/queries/useChatbotFlows";
+import { nodeHumanSendingBlocked } from "@/utils/NodeConversationUtils";
 
 function TemplateVarInput({
   placeholder,
@@ -122,6 +124,7 @@ export default function ChatFooter() {
     setConversationFileDrafts(activeConvId || "", fileDrafts);
 
   const { data: agent } = useCurrentAgent();
+  const nodeLifecycle = useNodeConversationLifecycle(activeConvId || undefined);
   const agentId = agent?.id;
   const isAgent = agent?.extra?.role === "agent";
   const sendAsContact = !isAgent && storedSendAsContact;
@@ -601,6 +604,19 @@ export default function ChatFooter() {
     return (
       <div className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] font-medium text-muted-foreground shadow-sm">
         {t("Esta conversación es historial de solo lectura")}
+      </div>
+    );
+  }
+
+  if (!privateNoteMode && nodeHumanSendingBlocked(nodeLifecycle.mapping.data)) {
+    return (
+      <div
+        role="status"
+        className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] text-muted-foreground"
+      >
+        {nodeLifecycle.mapping.data?.pending_request_id
+          ? t("Cerrando—sincronización pendiente")
+          : t("El chatbot está atendiendo esta conversación")}
       </div>
     );
   }
