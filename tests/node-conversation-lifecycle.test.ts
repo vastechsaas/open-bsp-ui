@@ -145,3 +145,21 @@ test("controls have complete translations, pending/retry state and account-scope
       assert.ok(translations[key], `${locale}:${key}`);
   }
 });
+
+void test("lifecycle header controls use explicit theme colors, including disabled close", () => {
+  const controls = readFileSync(
+    new URL("../src/components/ResumeChatbotButton.tsx", import.meta.url),
+    "utf8",
+  );
+  const buttons = [
+    ...controls.matchAll(/<button\b[\s\S]*?className="([^"]+)"/g),
+  ];
+  const [close, overflow, retry] = buttons.map((button) => button[1]);
+  assert.match(close, /\bbg-muted\/70\b/);
+  assert.match(close, /\btext-foreground\b/);
+  assert.match(close, /disabled:text-muted-foreground/);
+  assert.doesNotMatch(close, /disabled:opacity-/);
+  assert.match(close, /focus-visible:ring-2/);
+  assert.match(overflow, /\btext-foreground\b/);
+  assert.match(retry, /\btext-destructive\b/);
+});

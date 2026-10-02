@@ -56,7 +56,7 @@ export default function ResolveConversationControls({
         {(pending || snapshot?.state === "human_owned") && (
           <button
             type="button"
-            className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
+            className="inline-flex min-h-8 items-center rounded-full border border-border bg-muted/70 px-3 py-1.5 text-xs font-medium text-foreground transition-colors enabled:hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             disabled={pending || !canResolve}
             onClick={() => lifecycle.action.mutate("resolve-and-close")}
           >
@@ -83,7 +83,7 @@ export default function ResolveConversationControls({
           >
             <button
               type="button"
-              className="rounded-full p-1.5 hover:bg-muted"
+              className="rounded-full p-1.5 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t("Más acciones de conversación")}
             >
               <MoreHorizontal className="h-4 w-4" />
@@ -96,7 +96,7 @@ export default function ResolveConversationControls({
           {error}{" "}
           <button
             type="button"
-            className="underline"
+            className="text-destructive underline"
             disabled={lifecycle.action.isPending}
             onClick={() => {
               const operation = snapshot?.operation;
