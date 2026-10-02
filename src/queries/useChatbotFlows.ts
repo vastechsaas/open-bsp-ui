@@ -15,6 +15,10 @@ import type {
   DataTablePageParams,
 } from "@/utils/DataTableUtils";
 import { queryKeys } from "./queryKeys";
+import {
+  conversationRetry,
+  type NodeConversationSnapshot,
+} from "@/utils/NodeConversationUtils";
 
 export type ChatbotFlowListRow =
   Database["public"]["Functions"]["list_chatbot_flows_page"]["Returns"][number];
@@ -44,23 +48,43 @@ export type ChatbotFlowVersion = Pick<
 
 export type ChatbotFlowDeployment =
   Database["public"]["Tables"]["chatbot_flow_deployments"]["Row"];
-export type NodeChatbotBridge = Database["public"]["Tables"]["chatbot_node_bridges"]["Row"];
+export type NodeChatbotBridge =
+  Database["public"]["Tables"]["chatbot_node_bridges"]["Row"];
 
 export function useNodeChatbotBridges(flowId: string) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
-  return useQuery({ queryKey: ["chatbot-node-bridges", orgId, flowId], enabled: !!orgId && !!flowId,
-    queryFn: async () => (await invokeChatbotManagement<{ bridges: NodeChatbotBridge[] }>(
-      `flows/${flowId}/node-bridges?organization_id=${encodeURIComponent(orgId!)}`, undefined, "GET")).bridges,
-    refetchInterval: (query) => query.state.data?.some(bridge => ["pending", "syncing"].includes(bridge.sync_status)) ? 5000 : false,
+  return useQuery({
+    queryKey: ["chatbot-node-bridges", orgId, flowId],
+    enabled: !!orgId && !!flowId,
+    queryFn: async () =>
+      (
+        await invokeChatbotManagement<{ bridges: NodeChatbotBridge[] }>(
+          `flows/${flowId}/node-bridges?organization_id=${encodeURIComponent(orgId!)}`,
+          undefined,
+          "GET",
+        )
+      ).bridges,
+    refetchInterval: (query) =>
+      query.state.data?.some((bridge) =>
+        ["pending", "syncing"].includes(bridge.sync_status),
+      )
+        ? 5000
+        : false,
   });
 }
 
 export function useRetryNodeChatbotBridge(flowId: string) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const client = useQueryClient();
-  return useMutation({ mutationFn: async (requestId: string) => invokeChatbotManagement(
-    `flows/${flowId}/node-bridge/retry`, { organization_id: orgId, request_id: requestId }, "POST"),
-    onSettled: () => client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] }),
+  return useMutation({
+    mutationFn: async (requestId: string) =>
+      invokeChatbotManagement(
+        `flows/${flowId}/node-bridge/retry`,
+        { organization_id: orgId, request_id: requestId },
+        "POST",
+      ),
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] }),
   });
 }
 
@@ -68,23 +92,124 @@ export function useNodeChatbotResume(conversationId?: string) {
   const request = useRef<{ key: string; id: string } | null>(null);
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const client = useQueryClient();
-  const mapping = useQuery({ queryKey: ["node-chatbot-resume", orgId, conversationId], enabled: !!orgId && !!conversationId,
+  const mapping = useQuery({
+    queryKey: ["node-chatbot-resume", orgId, conversationId],
+    enabled: !!orgId && !!conversationId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("chatbot_node_conversations").select("node_conversation_id")
-        .eq("organization_id", orgId!).eq("conversation_id", conversationId!).eq("human_owned", true).limit(1).maybeSingle();
+      const { data, error } = await supabase
+        .from("chatbot_node_conversations")
+        .select("node_conversation_id")
+        .eq("organization_id", orgId!)
+        .eq("conversation_id", conversationId!)
+        .eq("human_owned", true)
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
       return data;
-    }, refetchInterval: 10000,
+    },
+    refetchInterval: 10000,
   });
-  const resume = useMutation({ mutationFn: async () => {
-    const key = `${orgId}:${conversationId}`;
-    if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() };
-    return await invokeChatbotManagement(
-      `conversations/${conversationId}/resume`, { organization_id: orgId, request_id: request.current.id }, "POST");
-  },
-    onSettled: () => client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
+  const resume = useMutation({
+    mutationFn: async () => {
+      const key = `${orgId}:${conversationId}`;
+      if (request.current?.key !== key)
+        request.current = { key, id: crypto.randomUUID() };
+      return await invokeChatbotManagement(
+        `conversations/${conversationId}/resume`,
+        { organization_id: orgId, request_id: request.current.id },
+        "POST",
+      );
+    },
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
   });
   return { mapping, resume };
+}
+
+export function useNodeConversationLifecycle(conversationId?: string) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const request = useRef<{ key: string; id: string } | null>(null);
+  const client = useQueryClient();
+  const key = ["node-conversation-lifecycle", userId, orgId, conversationId];
+  const mapping = useQuery({
+    queryKey: ["node-conversation-mapping", userId, orgId, conversationId],
+    enabled: !!userId && !!orgId && !!conversationId,
+    refetchInterval: 5000,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase
+        .from("chatbot_node_conversations")
+        .select("human_owned,lifecycle_enabled,pending_request_id")
+        .eq("organization_id", orgId!)
+        .eq("conversation_id", conversationId!)
+        .abortSignal(signal)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const status = useQuery({
+    queryKey: key,
+    enabled: !!userId && !!orgId && !!conversationId && !!mapping.data,
+    refetchInterval: 5000,
+    retry: 1,
+    queryFn: ({ signal }) =>
+      invokeChatbotManagement<NodeConversationSnapshot>(
+        `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}`,
+        undefined,
+        "GET",
+        signal,
+      ),
+  });
+  const action = useMutation({
+    mutationFn: async (actionName: "resolve-and-close" | "resume") => {
+      const snapshot = status.data;
+      if (
+        !snapshot?.enabled ||
+        !snapshot.last_inbound_wamid ||
+        !snapshot.revision
+      )
+        throw new Error("Refresh conversation state before continuing");
+      const requestKey = `${userId}:${orgId}:${conversationId}:${actionName}:${snapshot.revision}:${snapshot.last_inbound_wamid}`;
+      if (request.current?.key !== requestKey)
+        request.current = { key: requestKey, id: crypto.randomUUID() };
+      const retry = conversationRetry(snapshot, actionName);
+      const result = await invokeChatbotManagement<{
+        request_id: string;
+        status: string;
+        last_error?: string;
+      }>(
+        `conversations/${conversationId}/${actionName}`,
+        {
+          organization_id: orgId,
+          request_id: retry?.request_id ?? request.current.id,
+          observed_last_inbound_wamid:
+            retry?.observed_last_inbound_wamid ?? snapshot.last_inbound_wamid,
+          expected_revision: retry?.expected_revision ?? snapshot.revision,
+        },
+        "POST",
+      );
+      if (result.status === "failed")
+        throw new Error(result.last_error || "Conversation action failed");
+      return result;
+    },
+    onSettled: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: key }),
+        client.invalidateQueries({
+          queryKey: [
+            "node-conversation-mapping",
+            userId,
+            orgId,
+            conversationId,
+          ],
+        }),
+        client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
+        client.invalidateQueries({ queryKey: [orgId, "conversation_queues"] }),
+      ]);
+    },
+  });
+  return { mapping, status, action };
 }
 export type ChatbotWebhookCredential = Pick<
   Database["public"]["Tables"]["chatbot_webhook_credentials"]["Row"],
@@ -207,11 +332,13 @@ async function invokeChatbotManagement<T>(
   path: string,
   body?: Record<string, unknown>,
   method: "DELETE" | "GET" | "POST" | "PUT" = "POST",
+  signal?: AbortSignal,
 ) {
   const { data, error } = await supabase.functions.invoke<T>(
     `chatbot-management/${path}`,
     {
       method,
+      signal,
       ...(body ? { body } : {}),
     },
   );
@@ -404,7 +531,9 @@ export function usePublishChatbotFlow() {
       );
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["chatbot-node-bridges"],
+      });
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.chatbotFlows.draft(orgId, variables.flowId),
@@ -490,7 +619,9 @@ export function useActivateChatbotFlow() {
       );
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["chatbot-node-bridges"],
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
       });
@@ -518,7 +649,9 @@ export function useDeactivateChatbotFlow() {
       );
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["chatbot-node-bridges"],
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
       });
