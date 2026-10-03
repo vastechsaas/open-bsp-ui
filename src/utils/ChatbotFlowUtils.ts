@@ -1,4 +1,5 @@
 import type { Edge, Node, Viewport, XYPosition } from "@xyflow/react";
+import type { ResponseListFormat } from "./ChatbotResponseFormatter";
 
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
@@ -73,6 +74,7 @@ export type ChatbotWebhookHeader = { name: string; value: string };
 export type ChatbotWebhookResponseMapping = {
   variable: string;
   path: string;
+  format?: ResponseListFormat;
 };
 
 export type ChatbotNodeConfig = {
@@ -218,6 +220,10 @@ const validationMessageKeys: Record<string, string> = {
     "La condición necesita una única ruta predeterminada.",
   webhook_url_invalid: "Ingresá una URL HTTPS válida.",
   webhook_credential_required: "Seleccioná una credencial para el webhook.",
+  webhook_response_format_invalid:
+    "Revisá la plantilla de lista, los separadores, el texto vacío y el límite de elementos.",
+  webhook_response_mapping_invalid:
+    "Revisá la ruta de respuesta y la variable de salida.",
   default_route_required: "Conectá este nodo con el siguiente paso.",
   start_route_required: "Inicio debe tener una única conexión de salida.",
   dangling_edge_source: "La conexión comienza en un nodo que ya no existe.",

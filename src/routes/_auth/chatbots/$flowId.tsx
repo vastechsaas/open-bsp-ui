@@ -66,6 +66,7 @@ import {
   VersionPreviewDialog,
 } from "@/components/chatbots/ChatbotFlowPublication";
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
+import { ChatbotResponseMappings } from "@/components/chatbots/ChatbotResponseMappings";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
@@ -2521,72 +2522,11 @@ function WebhookInspector({
         </details>
       </div>
 
-      <div className="space-y-[7px]">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-medium">
-            {t("Mapear respuesta")}
-          </span>
-          <button
-            type="button"
-            className="text-[10px] font-medium text-primary"
-            onClick={() =>
-              onChange({
-                response_mappings: [...mappings, { variable: "", path: "" }],
-              })
-            }
-          >
-            + {t("Agregar")}
-          </button>
-        </div>
-        {mappings.map((mapping, index) => (
-          <div key={index} className="grid grid-cols-2 gap-[5px]">
-            <input
-              value={mapping.path}
-              placeholder="data.status"
-              onChange={(event) =>
-                onChange({
-                  response_mappings: mappings.map((item, itemIndex) =>
-                    itemIndex === index
-                      ? { ...item, path: event.target.value }
-                      : item,
-                  ),
-                })
-              }
-              className="h-[32px] rounded-md border border-border bg-background px-[7px] font-mono text-[9px]"
-            />
-            <div className="flex gap-[4px]">
-              <input
-                value={mapping.variable}
-                placeholder="customer_status"
-                onChange={(event) =>
-                  onChange({
-                    response_mappings: mappings.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, variable: event.target.value }
-                        : item,
-                    ),
-                  })
-                }
-                className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] font-mono text-[9px]"
-              />
-              <button
-                type="button"
-                aria-label={t("Eliminar")}
-                onClick={() =>
-                  onChange({
-                    response_mappings: mappings.filter(
-                      (_, itemIndex) => itemIndex !== index,
-                    ),
-                  })
-                }
-                className="text-destructive"
-              >
-                <X className="h-[13px] w-[13px]" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ChatbotResponseMappings
+        key={node.id}
+        mappings={mappings}
+        onChange={(response_mappings) => onChange({ response_mappings })}
+      />
 
       <p className="rounded-lg bg-cyan-500/10 p-[8px] text-[9px] leading-relaxed text-cyan-700 dark:text-cyan-300">
         {t(
