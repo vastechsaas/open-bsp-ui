@@ -6,6 +6,7 @@ import {
 import { useCurrentAgent } from "@/queries/useAgents";
 import {
   canResolveNodeConversation,
+  canTakeOverNodeConversation,
   isConversationManager,
 } from "@/utils/NodeConversationUtils";
 import useBoundStore from "@/stores/useBoundStore";
@@ -32,6 +33,11 @@ export default function ResolveConversationControls({
   const pending =
     !!lifecycle.mapping.data?.pending_request_id || lifecycle.action.isPending;
   const canResolve = canResolveNodeConversation(snapshot, visibleInbound);
+  const waiting = snapshot?.support_request?.status === "waiting";
+  const canTakeOver = canTakeOverNodeConversation(snapshot);
+  const takingOver =
+    (lifecycle.action.variables === "takeover" && lifecycle.action.isPending) ||
+    (pending && snapshot?.operation?.action === "takeover");
   const manager = isConversationManager(agent?.extra?.role);
   const canReturn =
     manager &&
@@ -52,17 +58,45 @@ export default function ResolveConversationControls({
     legacy.resume.error?.message;
   return (
     <div className="flex max-w-[250px] flex-col items-end gap-1">
+      {waiting && (
+        <div role="status" className="text-xs font-medium text-foreground">
+          {t("Esperando soporte · Chatbot activo")}
+        </div>
+      )}
+      {snapshot?.support_request?.status === "handling" && (
+        <div role="status" className="text-xs font-medium text-foreground">
+          {snapshot.support_request.handled_by_agent_id === agent?.id
+            ? t("Estás atendiendo este chat · Chatbot pausado")
+            : t("Soporte humano activo · Chatbot pausado")}
+        </div>
+      )}
+      {waiting && snapshot.support_request?.reason && (
+        <div
+          className="max-w-[250px] truncate text-xs text-muted-foreground"
+          title={snapshot.support_request.reason}
+        >
+          {t("Solicitud original")}: {snapshot.support_request.reason}
+        </div>
+      )}
       <div className="flex items-center gap-1">
-        {(pending || snapshot?.state === "human_owned") && (
+        {(pending || waiting || snapshot?.state === "human_owned") && (
           <button
             type="button"
             className="inline-flex min-h-8 items-center rounded-full border border-border bg-muted/70 px-3 py-1.5 text-xs font-medium text-foreground transition-colors enabled:hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-            disabled={pending || !canResolve}
-            onClick={() => lifecycle.action.mutate("resolve-and-close")}
+            disabled={pending || (waiting ? !canTakeOver : !canResolve)}
+            onClick={() =>
+              lifecycle.action.mutate(
+                waiting ? "takeover" : "resolve-and-close",
+              )
+            }
           >
             {pending
-              ? t("Cerrando—sincronización pendiente")
-              : t("Resolver y cerrar")}
+              ? takingOver
+                ? t("Tomando control—sincronización pendiente")
+                : t("Cerrando—sincronización pendiente")
+              : waiting
+                ? t("Tomar control del chat")
+                : t("Resolver y cerrar")}
           </button>
         )}
         {canReturn && (
@@ -103,15 +137,19 @@ export default function ResolveConversationControls({
               if (
                 operation &&
                 operation.status !== "succeeded" &&
-                (operation.action === "resolve-and-close"
-                  ? snapshot.can_resolve
-                  : manager)
+                (operation.action === "takeover"
+                  ? snapshot.can_takeover
+                  : operation.action === "resolve-and-close"
+                    ? snapshot.can_resolve
+                    : manager)
               ) {
                 lifecycle.action.mutate(operation.action);
               } else void lifecycle.status.refetch();
             }}
           >
-            {t("Actualizar y reintentar")}
+            {snapshot?.operation?.action === "takeover"
+              ? t("Reintentar toma de control")
+              : t("Actualizar y reintentar")}
           </button>
         </div>
       )}

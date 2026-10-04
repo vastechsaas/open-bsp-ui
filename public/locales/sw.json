@@ -1582,5 +1582,13 @@
   "Teléfono del cliente": "Simu ya mteja",
   "Variables recopiladas": "Vigezo vilivyokusanywa",
   "Las variables del sistema son de solo lectura.": "Vigezo vya mfumo ni vya kusoma pekee.",
-  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Nambari ya WhatsApp ya mteja katika muundo wa kimataifa. Uigaji hutumia +923001234567."
+  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Nambari ya WhatsApp ya mteja katika muundo wa kimataifa. Uigaji hutumia +923001234567.",
+  "Esperando soporte · Chatbot activo": "Inasubiri usaidizi · Chatbot inafanya kazi",
+  "Estás atendiendo este chat · Chatbot pausado": "Unashughulikia mazungumzo haya · Chatbot imesitishwa",
+  "Soporte humano activo · Chatbot pausado": "Usaidizi wa binadamu unaendelea · Chatbot imesitishwa",
+  "Solicitud original": "Ombi la awali",
+  "Tomando control—sincronización pendiente": "Kuchukua mazungumzo—usawazishaji unasubiri",
+  "Tomar control del chat": "Chukua mazungumzo",
+  "Reintentar toma de control": "Jaribu kuchukua tena",
+  "Toma el control del chat antes de responder al cliente": "Chukua mazungumzo kabla ya kumjibu mteja"
 }

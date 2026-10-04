@@ -162,7 +162,9 @@ export function useNodeConversationLifecycle(conversationId?: string) {
       ),
   });
   const action = useMutation({
-    mutationFn: async (actionName: "resolve-and-close" | "resume") => {
+    mutationFn: async (
+      actionName: "resolve-and-close" | "resume" | "takeover",
+    ) => {
       const snapshot = status.data;
       if (
         !snapshot?.enabled ||

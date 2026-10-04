@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   canResolveNodeConversation,
+  canTakeOverNodeConversation,
   conversationRetry,
   isConversationManager,
   nodeHumanSendingBlocked,
@@ -141,9 +142,89 @@ test("controls have complete translations, pending/retry state and account-scope
       "Cerrando—sincronización pendiente",
       "Volver al chatbot",
       "Actualizar y reintentar",
+      "Esperando soporte · Chatbot activo",
+      "Estás atendiendo este chat · Chatbot pausado",
+      "Soporte humano activo · Chatbot pausado",
+      "Solicitud original",
+      "Tomando control—sincronización pendiente",
+      "Tomar control del chat",
+      "Reintentar toma de control",
+      "Toma el control del chat antes de responder al cliente",
     ])
       assert.ok(translations[key], `${locale}:${key}`);
   }
+});
+
+test("takeover requires authorized waiting ownership and never follows assignment alone", () => {
+  const snapshot = {
+    enabled: true,
+    takeover_enabled: true,
+    can_takeover: true,
+    state: "bot_ready" as const,
+    revision: "4",
+    last_inbound_wamid: "wamid.latest",
+    support_request: {
+      id: "request",
+      status: "waiting" as const,
+      reason: "Refund",
+      requested_at: "today",
+      source_wamid: "wamid.first",
+      target: { routing_queue_id: "mobile" },
+    },
+  };
+  assert.equal(canTakeOverNodeConversation(snapshot), true);
+  assert.equal(
+    canTakeOverNodeConversation({ ...snapshot, can_takeover: false }),
+    false,
+  );
+  assert.equal(
+    canTakeOverNodeConversation({ ...snapshot, takeover_enabled: false }),
+    false,
+  );
+  assert.equal(
+    canTakeOverNodeConversation({
+      ...snapshot,
+      pending_request_id: "other-agent",
+    }),
+    false,
+  );
+  assert.equal(
+    canTakeOverNodeConversation({ ...snapshot, state: "human_owned" }),
+    false,
+  );
+  assert.equal(canResolveNodeConversation(snapshot, ["wamid.latest"]), false);
+  const operation = {
+    request_id: "stable-takeover",
+    status: "failed",
+    last_error: "outage",
+    action: "takeover" as const,
+    expected_revision: "4",
+    observed_last_inbound_wamid: "wamid.first",
+  };
+  assert.equal(
+    conversationRetry({ ...snapshot, operation }, "takeover"),
+    operation,
+  );
+  assert.equal(
+    conversationRetry({ ...snapshot, revision: "5", operation }, "takeover"),
+    null,
+  );
+  const controls = readFileSync(
+    new URL("../src/components/ResumeChatbotButton.tsx", import.meta.url),
+    "utf8",
+  );
+  const footer = readFileSync(
+    new URL("../src/components/ChatFooter.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(controls, /canTakeOverNodeConversation/);
+  assert.match(controls, /handled_by_agent_id === agent\?\.id/);
+  assert.match(
+    controls,
+    /mutate\(\s*waiting \? "takeover" : "resolve-and-close",?\s*\)/,
+  );
+  assert.match(footer, /!privateNoteMode && nodeHumanSendingBlocked/);
+  assert.match(footer, /\{composerModeTabs\}/);
 });
 
 void test("lifecycle header controls use explicit theme colors, including disabled close", () => {
