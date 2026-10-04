@@ -34,6 +34,8 @@ export default function ResolveConversationControls({
     !!lifecycle.mapping.data?.pending_request_id || lifecycle.action.isPending;
   const canResolve = canResolveNodeConversation(snapshot, visibleInbound);
   const waiting = snapshot?.support_request?.status === "waiting";
+  const syncingSupport =
+    !!snapshot?.takeover_enabled && !!snapshot.takeover_sync_pending;
   const canTakeOver = canTakeOverNodeConversation(snapshot);
   const takingOver =
     (lifecycle.action.variables === "takeover" && lifecycle.action.isPending) ||
@@ -50,7 +52,10 @@ export default function ResolveConversationControls({
       : !!legacy.mapping.data);
   if (!pending && !snapshot?.enabled && !canReturn) return null;
   const error =
-    lifecycle.action.error?.message ||
+    (lifecycle.action.variables === "takeover" &&
+    snapshot?.state === "human_owned"
+      ? null
+      : lifecycle.action.error?.message) ||
     lifecycle.status.error?.message ||
     (snapshot?.operation?.status === "failed"
       ? snapshot.operation.last_error
@@ -83,7 +88,11 @@ export default function ResolveConversationControls({
           <button
             type="button"
             className="inline-flex min-h-8 items-center rounded-full border border-border bg-muted/70 px-3 py-1.5 text-xs font-medium text-foreground transition-colors enabled:hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-            disabled={pending || (waiting ? !canTakeOver : !canResolve)}
+            disabled={
+              pending ||
+              syncingSupport ||
+              (waiting ? !canTakeOver : !canResolve)
+            }
             onClick={() =>
               lifecycle.action.mutate(
                 waiting ? "takeover" : "resolve-and-close",
@@ -94,9 +103,11 @@ export default function ResolveConversationControls({
               ? takingOver
                 ? t("Tomando control—sincronización pendiente")
                 : t("Cerrando—sincronización pendiente")
-              : waiting
-                ? t("Tomar control del chat")
-                : t("Resolver y cerrar")}
+              : syncingSupport
+                ? t("Sincronizando solicitud de soporte…")
+                : waiting
+                  ? t("Tomar control del chat")
+                  : t("Resolver y cerrar")}
           </button>
         )}
         {canReturn && (

@@ -19,6 +19,10 @@ import {
   conversationRetry,
   type NodeConversationSnapshot,
 } from "@/utils/NodeConversationUtils";
+import {
+  performTakeover,
+  type ConversationActionRequest,
+} from "@/utils/NodeTakeoverUtils";
 
 export type ChatbotFlowListRow =
   Database["public"]["Functions"]["list_chatbot_flows_page"]["Returns"][number];
@@ -129,7 +133,7 @@ export function useNodeChatbotResume(conversationId?: string) {
 export function useNodeConversationLifecycle(conversationId?: string) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const userId = useBoundStore((state) => state.ui.user?.id);
-  const request = useRef<{ key: string; id: string } | null>(null);
+  const request = useRef<ConversationActionRequest | null>(null);
   const client = useQueryClient();
   const key = ["node-conversation-lifecycle", userId, orgId, conversationId];
   const mapping = useQuery({
@@ -165,6 +169,47 @@ export function useNodeConversationLifecycle(conversationId?: string) {
     mutationFn: async (
       actionName: "resolve-and-close" | "resume" | "takeover",
     ) => {
+      if (actionName === "takeover") {
+        const supportRequestId = status.data?.support_request?.id;
+        if (!userId || !orgId || !conversationId || !supportRequestId)
+          throw new Error("Refresh conversation state before continuing");
+        const ensureScope = () => {
+          const state = useBoundStore.getState();
+          if (
+            state.ui.user?.id !== userId ||
+            state.ui.activeOrgId !== orgId ||
+            state.ui.activeConvId !== conversationId
+          )
+            throw new Error("Conversation changed. No takeover was submitted.");
+        };
+        const result = await performTakeover({
+          scope: `${userId}:${orgId}:${conversationId}`,
+          organizationId: orgId,
+          supportRequestId,
+          request,
+          ensureScope,
+          snapshot: async () => {
+            const fresh =
+              await invokeChatbotManagement<NodeConversationSnapshot>(
+                `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId)}`,
+                undefined,
+                "GET",
+              );
+            ensureScope();
+            client.setQueryData(key, fresh);
+            return fresh;
+          },
+          submit: (body) =>
+            invokeChatbotManagement(
+              `conversations/${conversationId}/takeover`,
+              body,
+              "POST",
+            ),
+        });
+        if (result.status === "failed")
+          throw new Error(result.last_error || "Conversation action failed");
+        return result;
+      }
       const snapshot = status.data;
       if (
         !snapshot?.enabled ||
