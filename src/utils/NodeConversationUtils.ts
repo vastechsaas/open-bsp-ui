@@ -7,6 +7,7 @@ export type NodeConversationSnapshot = {
   can_resolve?: boolean;
   can_resume?: boolean;
   takeover_enabled?: boolean;
+  takeover_sync_pending?: boolean;
   can_takeover?: boolean;
   support_request?: {
     id: string;
@@ -24,6 +25,7 @@ export type NodeConversationSnapshot = {
     action: "resolve-and-close" | "resume" | "takeover";
     expected_revision: string;
     observed_last_inbound_wamid: string;
+    actor_is_current?: boolean;
   } | null;
 };
 
@@ -65,6 +67,7 @@ export function conversationRetry(
 ) {
   const operation = snapshot.operation;
   return operation &&
+    operation.actor_is_current !== false &&
     operation.action === action &&
     operation.status !== "succeeded" &&
     (snapshot.pending_request_id === operation.request_id ||
@@ -83,6 +86,7 @@ export function canTakeOverNodeConversation(
     snapshot?.enabled &&
       snapshot.takeover_enabled &&
       snapshot.can_takeover &&
+      !snapshot.takeover_sync_pending &&
       snapshot.support_request?.status === "waiting" &&
       snapshot.state !== "human_owned" &&
       !snapshot.pending_request_id &&
