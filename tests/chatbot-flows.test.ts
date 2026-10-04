@@ -194,11 +194,11 @@ void test("webhook response mappings are available only after the success route"
 
   assert.deepEqual(
     getAvailableChatbotVariables(success.id, [webhook, success, error], edges),
-    ["customer_status"],
+    ["customer_phone", "customer_status"],
   );
   assert.deepEqual(
     getAvailableChatbotVariables(error.id, [webhook, success, error], edges),
-    [],
+    ["customer_phone"],
   );
 });
 
@@ -1204,7 +1204,7 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "start-input", source: "start", target: "input" },
       { id: "input-condition", source: "input", target: "condition" },
     ]),
-    ["customer_city"],
+    ["customer_city", "customer_phone"],
   );
   assert.deepEqual(
     getAvailableChatbotVariables("condition", nodes, [
@@ -1213,7 +1213,7 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "start-message", source: "start", target: "message" },
       { id: "message-condition", source: "message", target: "condition" },
     ]),
-    [],
+    ["customer_phone"],
   );
 });
 

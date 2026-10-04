@@ -124,6 +124,7 @@ import {
   duplicateChatbotNode,
   ensureChatbotStartNode,
   getAvailableChatbotVariables,
+  CHATBOT_SYSTEM_VARIABLES,
   getChatbotConditionEdgeLabel,
   getChatbotDraftSaveStatus,
   getChatbotEditorActionAvailability,
@@ -1786,6 +1787,10 @@ function TemplateVariableControls({
   onInsert: (variable: string) => void;
 }) {
   const { translate: t } = useTranslation();
+  const collectedVariables = availableVariables.filter(
+    (variable) =>
+      !(CHATBOT_SYSTEM_VARIABLES as readonly string[]).includes(variable),
+  );
 
   return (
     <div className="mt-[7px] rounded-lg border border-border bg-muted/25 p-[8px]">
@@ -1793,9 +1798,31 @@ function TemplateVariableControls({
         <Braces className="h-[11px] w-[11px] text-primary" />
         {t("Insertar variable")}
       </div>
-      {availableVariables.length > 0 ? (
+      <div className="mt-[6px] text-[9px] text-muted-foreground">
+        {t("Variables del sistema (solo lectura)")}
+      </div>
+      <div className="mt-[4px] flex flex-wrap gap-[5px]">
+        {CHATBOT_SYSTEM_VARIABLES.map((variable) => (
+          <button
+            key={variable}
+            type="button"
+            onClick={() => onInsert(variable)}
+            title={t(
+              "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.",
+            )}
+            className="rounded-md border border-primary/30 bg-primary/5 px-[6px] py-[3px] text-[9px] text-primary hover:bg-primary/10"
+          >
+            {t("Teléfono del cliente")}{" "}
+            <span className="font-mono">{`{{${variable}}}`}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-[6px] text-[9px] text-muted-foreground">
+        {t("Variables recopiladas")}
+      </div>
+      {collectedVariables.length > 0 ? (
         <div className="mt-[6px] flex flex-wrap gap-[5px]">
-          {availableVariables.map((variable) => (
+          {collectedVariables.map((variable) => (
             <button
               key={variable}
               type="button"
