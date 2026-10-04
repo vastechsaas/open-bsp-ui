@@ -6,11 +6,22 @@ export type NodeConversationSnapshot = {
   pending_request_id?: string | null;
   can_resolve?: boolean;
   can_resume?: boolean;
+  takeover_enabled?: boolean;
+  can_takeover?: boolean;
+  support_request?: {
+    id: string;
+    status: "waiting" | "handling" | "resolved" | "released";
+    reason: string;
+    requested_at: string;
+    source_wamid: string;
+    target: { routing_queue_id: string } | { agent_id: string };
+    handled_by_agent_id?: string;
+  };
   operation?: {
     request_id: string;
     status: string;
     last_error: string | null;
-    action: "resolve-and-close" | "resume";
+    action: "resolve-and-close" | "resume" | "takeover";
     expected_revision: string;
     observed_last_inbound_wamid: string;
   } | null;
@@ -50,7 +61,7 @@ export function canResolveNodeConversation(
 
 export function conversationRetry(
   snapshot: NodeConversationSnapshot,
-  action: "resolve-and-close" | "resume",
+  action: "resolve-and-close" | "resume" | "takeover",
 ) {
   const operation = snapshot.operation;
   return operation &&
@@ -58,7 +69,24 @@ export function conversationRetry(
     operation.status !== "succeeded" &&
     (snapshot.pending_request_id === operation.request_id ||
       (operation.expected_revision === snapshot.revision &&
-        operation.observed_last_inbound_wamid === snapshot.last_inbound_wamid))
+        (action === "takeover" ||
+          operation.observed_last_inbound_wamid ===
+            snapshot.last_inbound_wamid)))
     ? operation
     : null;
+}
+
+export function canTakeOverNodeConversation(
+  snapshot?: NodeConversationSnapshot,
+) {
+  return Boolean(
+    snapshot?.enabled &&
+      snapshot.takeover_enabled &&
+      snapshot.can_takeover &&
+      snapshot.support_request?.status === "waiting" &&
+      snapshot.state !== "human_owned" &&
+      !snapshot.pending_request_id &&
+      snapshot.revision &&
+      snapshot.last_inbound_wamid,
+  );
 }

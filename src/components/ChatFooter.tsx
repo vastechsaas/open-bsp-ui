@@ -614,9 +614,14 @@ export default function ChatFooter() {
         role="status"
         className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] text-muted-foreground"
       >
+        {composerModeTabs}
         {nodeLifecycle.mapping.data?.pending_request_id
-          ? t("Cerrando—sincronización pendiente")
-          : t("El chatbot está atendiendo esta conversación")}
+          ? nodeLifecycle.status.data?.operation?.action === "takeover"
+            ? t("Tomando control—sincronización pendiente")
+            : t("Cerrando—sincronización pendiente")
+          : nodeLifecycle.status.data?.support_request?.status === "waiting"
+            ? t("Toma el control del chat antes de responder al cliente")
+            : t("El chatbot está atendiendo esta conversación")}
       </div>
     );
   }
