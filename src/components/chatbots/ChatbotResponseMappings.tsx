@@ -7,6 +7,7 @@ import {
   responseValueAtPath,
   type ResponseListFormat,
 } from "@/utils/ChatbotResponseFormatter";
+import { discoverApiResponsePaths } from "@/utils/ChatbotApiEditor";
 
 const inputClass =
   "mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground";
@@ -22,12 +23,23 @@ const defaultFormat = (): ResponseListFormat => ({
 export function ChatbotResponseMappings({
   mappings,
   onChange,
+  guided = false,
 }: {
   mappings: ChatbotWebhookResponseMapping[];
   onChange: (mappings: ChatbotWebhookResponseMapping[]) => void;
+  guided?: boolean;
 }) {
   const { translate: t } = useTranslation();
   const [sample, setSample] = useState("");
+  let sampleBody: unknown;
+  let sampleInvalid = false;
+  try {
+    if (sample.trim()) sampleBody = JSON.parse(sample);
+  } catch {
+    sampleInvalid = true;
+  }
+  const responsePaths =
+    sample.trim() && !sampleInvalid ? discoverApiResponsePaths(sampleBody) : [];
   function update(
     index: number,
     values: Partial<ChatbotWebhookResponseMapping>,
@@ -44,6 +56,21 @@ export function ChatbotResponseMappings({
   function preview(mapping: ChatbotWebhookResponseMapping) {
     try {
       const body: unknown = JSON.parse(sample);
+      if (!mapping.format) {
+        const value = responseValueAtPath(body, mapping.path);
+        if (
+          value !== null &&
+          typeof value !== "string" &&
+          typeof value !== "number" &&
+          typeof value !== "boolean"
+        )
+          return {
+            error: t(
+              "Elegí un valor simple o usá Lista formateada para una lista.",
+            ),
+          };
+        return { text: value === null ? "null" : String(value) };
+      }
       const result = formatResponseList(
         responseValueAtPath(body, mapping.path),
         body,
@@ -80,8 +107,20 @@ export function ChatbotResponseMappings({
         </button>
       </div>
       {mappings.map((mapping, index) => {
-        const result =
-          sample.trim() && mapping.format ? preview(mapping) : null;
+        const result = sample.trim() ? preview(mapping) : null;
+        let itemPaths: string[] = [];
+        try {
+          const items = responseValueAtPath(sampleBody, mapping.path);
+          if (Array.isArray(items) && items.length)
+            itemPaths = discoverApiResponsePaths(items[0]).filter(
+              (path) =>
+                path !== "$" ||
+                items[0] === null ||
+                typeof items[0] !== "object",
+            );
+        } catch {
+          /* Invalid sample paths are shown by the preview. */
+        }
         return (
           <div
             key={index}
@@ -89,7 +128,9 @@ export function ChatbotResponseMappings({
           >
             <div className="flex items-start gap-2">
               <label className="min-w-0 flex-1 text-xs">
-                {t("Ruta de respuesta")}
+                {guided
+                  ? t("Información de la respuesta")
+                  : t("Ruta de respuesta")}
                 <input
                   className={inputClass}
                   value={mapping.path}
@@ -98,9 +139,29 @@ export function ChatbotResponseMappings({
                     update(index, { path: event.target.value })
                   }
                 />
+                {responsePaths.length > 0 && (
+                  <select
+                    className={inputClass}
+                    aria-label={t("Elegir campo del ejemplo")}
+                    value={
+                      responsePaths.includes(mapping.path) ? mapping.path : ""
+                    }
+                    onChange={(event) => {
+                      if (event.target.value)
+                        update(index, { path: event.target.value });
+                    }}
+                  >
+                    <option value="">{t("Elegir campo del ejemplo")}</option>
+                    {responsePaths.map((path) => (
+                      <option key={path} value={path}>
+                        {path}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
               <label className="min-w-0 flex-1 text-xs">
-                {t("Variable de salida")}
+                {guided ? t("Guardar como variable") : t("Variable de salida")}
                 <input
                   className={inputClass}
                   value={mapping.variable}
@@ -152,6 +213,27 @@ export function ChatbotResponseMappings({
                     }
                   />
                 </label>
+                {guided && itemPaths.length > 0 && (
+                  <div
+                    className="flex flex-wrap gap-1"
+                    aria-label={t("Agregar información al mensaje")}
+                  >
+                    {itemPaths.map((path) => (
+                      <button
+                        key={path}
+                        type="button"
+                        className="rounded-md border border-primary/30 px-2 py-1 text-[11px] text-primary"
+                        onClick={() =>
+                          updateFormat(index, {
+                            item_template: `${mapping.format!.item_template}${mapping.format!.item_template ? "\n" : ""}{{${path === "$" ? "item" : `item.${path}`}}}`,
+                          })
+                        }
+                      >
+                        {path === "$" ? t("Valor") : path}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="text-[11px] text-muted-foreground">
                   {t(
                     "Usá campos de item o response e index. Las listas de valores simples se unen con el separador de valores.",
@@ -162,89 +244,103 @@ export function ChatbotResponseMappings({
                     "{{item.name}} · {{item.features}} · {{response.currency}} · {{index}}"
                   }
                 </code>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs">
-                    {t("Separador entre elementos")}
-                    <select
-                      className={inputClass}
-                      value={mapping.format.separator}
-                      onChange={(event) =>
-                        updateFormat(index, { separator: event.target.value })
-                      }
-                    >
-                      <option value={"\n\n"}>{t("Línea en blanco")}</option>
-                      <option value={"\n"}>{t("Salto de línea")}</option>
-                      <option value=", ">{t("Coma")}</option>
-                      {!["\n\n", "\n", ", "].includes(
-                        mapping.format.separator,
-                      ) && (
-                        <option value={mapping.format.separator}>
-                          {t("Personalizado")}
-                        </option>
-                      )}
-                    </select>
-                  </label>
-                  <label className="text-xs">
-                    {t("Separador de valores")}
-                    <input
-                      className={inputClass}
-                      maxLength={32}
-                      value={mapping.format.array_separator}
-                      onChange={(event) =>
-                        updateFormat(index, {
-                          array_separator: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                </div>
-                <label className="block text-xs">
-                  {t("Texto si la lista está vacía")}
-                  <input
-                    className={inputClass}
-                    maxLength={500}
-                    value={mapping.format.empty_text}
-                    onChange={(event) =>
-                      updateFormat(index, { empty_text: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="block text-xs">
-                  {t("Máximo de elementos")}
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={mapping.format.max_items}
-                    onChange={(event) =>
-                      updateFormat(index, {
-                        max_items: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
+                <details open={!guided}>
+                  <summary className="cursor-pointer text-xs text-primary">
+                    {t("Opciones de formato")}
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-xs">
+                        {t("Separador entre elementos")}
+                        <select
+                          className={inputClass}
+                          value={mapping.format.separator}
+                          onChange={(event) =>
+                            updateFormat(index, {
+                              separator: event.target.value,
+                            })
+                          }
+                        >
+                          <option value={"\n\n"}>{t("Línea en blanco")}</option>
+                          <option value={"\n"}>{t("Salto de línea")}</option>
+                          <option value=", ">{t("Coma")}</option>
+                          {!["\n\n", "\n", ", "].includes(
+                            mapping.format.separator,
+                          ) && (
+                            <option value={mapping.format.separator}>
+                              {t("Personalizado")}
+                            </option>
+                          )}
+                        </select>
+                      </label>
+                      <label className="text-xs">
+                        {t("Separador de valores")}
+                        <input
+                          className={inputClass}
+                          maxLength={32}
+                          value={mapping.format.array_separator}
+                          onChange={(event) =>
+                            updateFormat(index, {
+                              array_separator: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <label className="block text-xs">
+                      {t("Texto si la lista está vacía")}
+                      <input
+                        className={inputClass}
+                        maxLength={500}
+                        value={mapping.format.empty_text}
+                        onChange={(event) =>
+                          updateFormat(index, {
+                            empty_text: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block text-xs">
+                      {t("Máximo de elementos")}
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={mapping.format.max_items}
+                        onChange={(event) =>
+                          updateFormat(index, {
+                            max_items: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                </details>
                 <p className="text-[11px] text-muted-foreground">
                   {t(
                     "No se recortan resultados. Si faltan campos o se superan los límites, se usa la ruta de error de la API.",
                   )}
                 </p>
-                {result &&
-                  ("error" in result ? (
-                    <p role="alert" className="text-xs text-destructive">
-                      {result.error}
-                    </p>
-                  ) : (
-                    <pre className="whitespace-pre-wrap break-words rounded-md bg-muted p-2 text-xs text-foreground">
-                      {result.text}
-                    </pre>
-                  ))}
               </>
             )}
+            {result &&
+              ("error" in result ? (
+                <p role="alert" className="text-xs text-destructive">
+                  {result.error}
+                </p>
+              ) : (
+                <pre
+                  aria-label={t("Vista previa del mensaje")}
+                  className="whitespace-pre-wrap break-words rounded-md bg-muted p-2 text-xs text-foreground"
+                >
+                  {result.text}
+                </pre>
+              ))}
           </div>
         );
       })}
-      {mappings.some((mapping) => mapping.format) && (
+      {(guided || mappings.some((mapping) => mapping.format)) && (
         <label className="block text-xs">
           {t("Respuesta JSON de ejemplo")}
           <textarea
@@ -260,6 +356,11 @@ export function ChatbotResponseMappings({
             )}
           </span>
         </label>
+      )}
+      {guided && sampleInvalid && (
+        <p role="alert" className="text-xs text-destructive">
+          {t("Ingresá una respuesta JSON válida para la vista previa.")}
+        </p>
       )}
     </section>
   );
