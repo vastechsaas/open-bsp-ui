@@ -1566,5 +1566,10 @@
   "Cargar mensajes anteriores": "Load older messages",
   "Confirmación al cliente (opcional)": "Customer acknowledgment (optional)",
   "Se envía una vez antes de entregar la conversación al equipo de soporte.": "Sent once before handing the conversation to the support team.",
-  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "Customer acknowledgment must contain 1–4096 characters."
+  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "Customer acknowledgment must contain 1–4096 characters.",
+  "Variables del sistema (solo lectura)": "System variables (read-only)",
+  "Teléfono del cliente": "Customer phone",
+  "Variables recopiladas": "Collected variables",
+  "Las variables del sistema son de solo lectura.": "System variables are read-only.",
+  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Customer's WhatsApp number in international format. Simulation uses +923001234567."
 }

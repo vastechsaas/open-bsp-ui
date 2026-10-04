@@ -1539,5 +1539,10 @@
   "Cargar mensajes anteriores": "Carregar mensagens anteriores",
   "Confirmación al cliente (opcional)": "Confirmação ao cliente (opcional)",
   "Se envía una vez antes de entregar la conversación al equipo de soporte.": "Enviada uma vez antes de transferir a conversa para a equipe de suporte.",
-  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "A confirmação ao cliente deve conter entre 1 e 4096 caracteres."
+  "La confirmación al cliente debe contener entre 1 y 4096 caracteres.": "A confirmação ao cliente deve conter entre 1 e 4096 caracteres.",
+  "Variables del sistema (solo lectura)": "Variáveis do sistema (somente leitura)",
+  "Teléfono del cliente": "Telefone do cliente",
+  "Variables recopiladas": "Variáveis coletadas",
+  "Las variables del sistema son de solo lectura.": "As variáveis do sistema são somente leitura.",
+  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Número de WhatsApp do cliente em formato internacional. A simulação usa +923001234567."
 }
