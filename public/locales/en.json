@@ -1609,5 +1609,13 @@
   "Teléfono del cliente": "Customer phone",
   "Variables recopiladas": "Collected variables",
   "Las variables del sistema son de solo lectura.": "System variables are read-only.",
-  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Customer's WhatsApp number in international format. Simulation uses +923001234567."
+  "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.": "Customer's WhatsApp number in international format. Simulation uses +923001234567.",
+  "Esperando soporte · Chatbot activo": "Waiting for support · Chatbot active",
+  "Estás atendiendo este chat · Chatbot pausado": "You’re handling this chat · Chatbot paused",
+  "Soporte humano activo · Chatbot pausado": "Human support active · Chatbot paused",
+  "Solicitud original": "Original request",
+  "Tomando control—sincronización pendiente": "Taking over—sync pending",
+  "Tomar control del chat": "Take over chat",
+  "Reintentar toma de control": "Retry takeover",
+  "Toma el control del chat antes de responder al cliente": "Take over chat before replying to the customer"
 }
