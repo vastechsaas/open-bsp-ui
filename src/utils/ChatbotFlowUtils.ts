@@ -290,6 +290,15 @@ export class ChatbotDraftConflictError extends Error {
   }
 }
 
+export class ChatbotConversationConflictError extends Error {
+  code: string;
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = "ChatbotConversationConflictError";
+    this.code = code;
+  }
+}
+
 export class ChatbotPublishValidationError extends Error {
   issues: ChatbotFlowValidationIssue[];
 
@@ -333,6 +342,8 @@ export function createChatbotManagementError(
       ? body.message
       : "Chatbot management request failed";
   if (status === 409) {
+    if (isRecord(body.cause) && typeof body.cause.code === "string")
+      return new ChatbotConversationConflictError(message, body.cause.code);
     return new ChatbotDraftConflictError(
       message,
       typeof body.current_updated_at === "string"
