@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
   type DragEvent,
+  type ReactNode,
 } from "react";
 import {
   createFileRoute,
@@ -67,6 +68,14 @@ import {
 } from "@/components/chatbots/ChatbotFlowPublication";
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
 import { ChatbotResponseMappings } from "@/components/chatbots/ChatbotResponseMappings";
+import { ChatbotApiRequestFields } from "@/components/chatbots/ChatbotApiRequestFields";
+import { ChatbotApiRoutes } from "@/components/chatbots/ChatbotApiRoutes";
+import {
+  readApiRequestFields,
+  buildApiCredentialHeaders,
+  updateApiOutcomeRoute,
+  type CredentialKind,
+} from "@/utils/ChatbotApiEditor";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
@@ -1408,6 +1417,27 @@ function FlowEditorWorkspace({
         ) : (
           <NodeInspector
             node={selectedNode}
+            apiRoutes={
+              selectedNode?.data.node_type === "webhook" ? (
+                <ChatbotApiRoutes
+                  nodeId={selectedNode.id}
+                  nodes={nodes}
+                  edges={edges}
+                  onChange={(outcome, target) =>
+                    setEdges((current) =>
+                      updateApiOutcomeRoute(
+                        nodes,
+                        current,
+                        selectedNode.id,
+                        outcome,
+                        target,
+                        `edge-${crypto.randomUUID()}`,
+                      ),
+                    )
+                  }
+                />
+              ) : null
+            }
             validationField={validationField}
             open={mobilePanel === "inspector"}
             onClose={() => setMobilePanel(null)}
@@ -1874,8 +1904,10 @@ function NodeInspector({
   onConditionBranchRemove,
   onDuplicate,
   onDelete,
+  apiRoutes,
 }: {
   node: ChatbotFlowNodeType | null;
+  apiRoutes: ReactNode;
   validationField: string | null;
   open: boolean;
   onClose: () => void;
@@ -2093,6 +2125,8 @@ function NodeInspector({
               />
             ) : isWebhook ? (
               <WebhookInspector
+                key={node.id}
+                routes={apiRoutes}
                 node={node}
                 credentials={webhookCredentials}
                 creatingCredential={creatingWebhookCredential}
@@ -2272,8 +2306,10 @@ function WebhookInspector({
   availableVariables,
   onChange,
   onCreateCredential,
+  routes,
 }: {
   node: ChatbotFlowNodeType;
+  routes: ReactNode;
   credentials: ChatbotWebhookCredential[];
   creatingCredential: boolean;
   availableVariables: string[];
@@ -2287,24 +2323,34 @@ function WebhookInspector({
   const config = node.data.config;
   const headers = config.headers ?? [];
   const mappings = config.response_mappings ?? [];
+  const fields = readApiRequestFields(config.body_template);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const advanced = showAdvanced || fields === null;
   const [credentialName, setCredentialName] = useState("");
-  const [credentialHeader, setCredentialHeader] = useState("Authorization");
+  const [credentialKind, setCredentialKind] =
+    useState<CredentialKind>("api_key");
+  const [credentialHeader, setCredentialHeader] = useState("X-Api-Key");
   const [credentialValue, setCredentialValue] = useState("");
   const [credentialError, setCredentialError] = useState(false);
 
   const createCredential = async () => {
     if (
       !credentialName.trim() ||
-      !credentialHeader.trim() ||
+      (credentialKind !== "bearer" && !credentialHeader.trim()) ||
       !credentialValue
     ) {
       setCredentialError(true);
       return;
     }
     try {
-      const credential = await onCreateCredential(credentialName.trim(), {
-        [credentialHeader.trim()]: credentialValue,
-      });
+      const credential = await onCreateCredential(
+        credentialName.trim(),
+        buildApiCredentialHeaders(
+          credentialKind,
+          credentialHeader,
+          credentialValue,
+        ),
+      );
       onChange({ secret_id: credential.id });
       setCredentialName("");
       setCredentialValue("");
@@ -2316,6 +2362,33 @@ function WebhookInspector({
 
   return (
     <div className="space-y-[14px]">
+      <div className="flex gap-2" aria-label={t("Modo del editor API")}>
+        <button
+          type="button"
+          aria-pressed={!advanced}
+          disabled={fields === null}
+          onClick={() => setShowAdvanced(false)}
+          className={`flex-1 rounded-lg border px-2 py-2 text-xs disabled:opacity-50 ${!advanced ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+        >
+          {t("Guiado")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={advanced}
+          onClick={() => setShowAdvanced(true)}
+          className={`flex-1 rounded-lg border px-2 py-2 text-xs ${advanced ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+        >
+          {t("Avanzado")}
+        </button>
+      </div>
+      {fields === null && (
+        <p className="text-[11px] text-muted-foreground">
+          {t(
+            "Este cuerpo usa JSON avanzado. Se conserva sin cambios; editá los objetos anidados o expresiones en modo Avanzado.",
+          )}
+        </p>
+      )}
+      <h3 className="text-xs font-semibold">{t("1. Conexión API")}</h3>
       <div className="grid grid-cols-[90px_1fr] gap-[8px]">
         <label>
           <span className="text-[10px] font-medium">{t("Método")}</span>
@@ -2353,140 +2426,6 @@ function WebhookInspector({
         }
       />
 
-      <div className="grid grid-cols-2 gap-[8px]">
-        <label>
-          <span className="text-[10px] font-medium">{t("Tiempo límite")}</span>
-          <select
-            value={config.timeout_ms ?? 3000}
-            onChange={(event) =>
-              onChange({ timeout_ms: Number(event.target.value) })
-            }
-            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-          >
-            {[1000, 3000, 5000, 10000].map((timeout) => (
-              <option key={timeout} value={timeout}>
-                {timeout / 1000}s
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="text-[10px] font-medium">{t("Reintentos")}</span>
-          <select
-            value={config.retry_count ?? 0}
-            onChange={(event) =>
-              onChange({ retry_count: Number(event.target.value) })
-            }
-            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-          >
-            {[0, 1, 2].map((retry) => (
-              <option key={retry} value={retry}>
-                {retry}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {!["GET", "DELETE"].includes(config.method ?? "POST") && (
-        <label className="block">
-          <span className="text-[10px] font-medium">{t("Cuerpo JSON")}</span>
-          <textarea
-            value={config.body_template ?? ""}
-            rows={4}
-            maxLength={16384}
-            onChange={(event) =>
-              onChange({ body_template: event.target.value })
-            }
-            className="mt-[5px] w-full rounded-lg border border-border bg-background px-[8px] py-[7px] font-mono text-[10px]"
-          />
-          <TemplateVariableControls
-            availableVariables={availableVariables}
-            onInsert={(variable) =>
-              onChange({
-                body_template: appendTemplateVariable(
-                  config.body_template ?? "",
-                  variable,
-                ),
-              })
-            }
-          />
-        </label>
-      )}
-
-      <div className="space-y-[7px]">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-medium">
-            {t("Encabezados públicos")}
-          </span>
-          <button
-            type="button"
-            className="text-[10px] font-medium text-primary"
-            onClick={() =>
-              onChange({
-                headers: [...headers, { name: "X-Header", value: "" }],
-              })
-            }
-          >
-            + {t("Agregar")}
-          </button>
-        </div>
-        {headers.map((header, index) => (
-          <div
-            key={`${index}-${header.name}`}
-            className="grid grid-cols-2 gap-[5px]"
-          >
-            <input
-              value={header.name}
-              onChange={(event) =>
-                onChange({
-                  headers: headers.map((item, itemIndex) =>
-                    itemIndex === index
-                      ? { ...item, name: event.target.value }
-                      : item,
-                  ),
-                })
-              }
-              className="h-[32px] rounded-md border border-border bg-background px-[7px] text-[10px]"
-            />
-            <div className="flex gap-[4px]">
-              <input
-                value={header.value}
-                onChange={(event) =>
-                  onChange({
-                    headers: headers.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, value: event.target.value }
-                        : item,
-                    ),
-                  })
-                }
-                className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] text-[10px]"
-              />
-              <button
-                type="button"
-                aria-label={t("Eliminar")}
-                onClick={() =>
-                  onChange({
-                    headers: headers.filter(
-                      (_, itemIndex) => itemIndex !== index,
-                    ),
-                  })
-                }
-                className="text-destructive"
-              >
-                <X className="h-[13px] w-[13px]" />
-              </button>
-            </div>
-          </div>
-        ))}
-        <p className="text-[9px] leading-relaxed text-muted-foreground">
-          {t(
-            "Authorization, cookies y claves API deben guardarse como credenciales protegidas.",
-          )}
-        </p>
-      </div>
-
       <div className="space-y-[7px] rounded-lg border border-border p-[9px]">
         <label className="block">
           <span className="text-[10px] font-medium">
@@ -2507,6 +2446,11 @@ function WebhookInspector({
             ))}
           </select>
         </label>
+        <p className="text-[11px] text-muted-foreground">
+          {t(
+            "La credencial guardada incluye cómo enviar la clave. Se agrega en el servidor y no se guarda en el flujo.",
+          )}
+        </p>
         <details>
           <summary className="cursor-pointer text-[10px] font-medium text-primary">
             {t("Crear credencial")}
@@ -2514,20 +2458,45 @@ function WebhookInspector({
           <div className="mt-[7px] space-y-[5px]">
             <input
               value={credentialName}
+              aria-label={t("Nombre")}
               onChange={(event) => setCredentialName(event.target.value)}
               placeholder={t("Nombre")}
               className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
             />
-            <input
-              value={credentialHeader}
-              onChange={(event) => setCredentialHeader(event.target.value)}
-              placeholder="Authorization"
-              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-            />
+            <label className="block text-xs">
+              {t("Enviar credencial como")}
+              <select
+                value={credentialKind}
+                onChange={(event) =>
+                  setCredentialKind(event.target.value as CredentialKind)
+                }
+                className="mt-1 h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+              >
+                <option value="api_key">{t("Clave API")}</option>
+                <option value="bearer">{t("Token Bearer")}</option>
+                {(advanced || credentialKind === "custom") && (
+                  <option value="custom">
+                    {t("Encabezado personalizado")}
+                  </option>
+                )}
+              </select>
+            </label>
+            {credentialKind !== "bearer" && (
+              <label className="block text-xs">
+                {t("Nombre del encabezado")}
+                <input
+                  value={credentialHeader}
+                  onChange={(event) => setCredentialHeader(event.target.value)}
+                  placeholder="X-Api-Key"
+                  className="mt-1 h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+                />
+              </label>
+            )}
             <input
               type="password"
               autoComplete="new-password"
               value={credentialValue}
+              aria-label={t("Valor secreto")}
               onChange={(event) => setCredentialValue(event.target.value)}
               placeholder={t("Valor secreto")}
               className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
@@ -2549,11 +2518,166 @@ function WebhookInspector({
         </details>
       </div>
 
+      {advanced && (
+        <div className="grid grid-cols-2 gap-[8px]">
+          <label>
+            <span className="text-[10px] font-medium">
+              {t("Tiempo límite")}
+            </span>
+            <select
+              value={config.timeout_ms ?? 3000}
+              onChange={(event) =>
+                onChange({ timeout_ms: Number(event.target.value) })
+              }
+              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+            >
+              {[1000, 3000, 5000, 10000].map((timeout) => (
+                <option key={timeout} value={timeout}>
+                  {timeout / 1000}s
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="text-[10px] font-medium">{t("Reintentos")}</span>
+            <select
+              value={config.retry_count ?? 0}
+              onChange={(event) =>
+                onChange({ retry_count: Number(event.target.value) })
+              }
+              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+            >
+              {[0, 1, 2].map((retry) => (
+                <option key={retry} value={retry}>
+                  {retry}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+
+      {!["GET", "DELETE"].includes(config.method ?? "POST") &&
+        (advanced ? (
+          <label className="block">
+            <span className="text-[10px] font-medium">{t("Cuerpo JSON")}</span>
+            <textarea
+              value={config.body_template ?? ""}
+              rows={4}
+              maxLength={16384}
+              onChange={(event) =>
+                onChange({ body_template: event.target.value })
+              }
+              className="mt-[5px] w-full rounded-lg border border-border bg-background px-[8px] py-[7px] font-mono text-[10px]"
+            />
+            <TemplateVariableControls
+              availableVariables={availableVariables}
+              onInsert={(variable) =>
+                onChange({
+                  body_template: appendTemplateVariable(
+                    config.body_template ?? "",
+                    variable,
+                  ),
+                })
+              }
+            />
+          </label>
+        ) : (
+          <ChatbotApiRequestFields
+            fields={fields ?? []}
+            variables={availableVariables}
+            onChange={(body_template) => onChange({ body_template })}
+          />
+        ))}
+
+      {advanced && (
+        <div className="space-y-[7px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium">
+              {t("Encabezados públicos")}
+            </span>
+            <button
+              type="button"
+              className="text-[10px] font-medium text-primary"
+              onClick={() =>
+                onChange({
+                  headers: [...headers, { name: "X-Header", value: "" }],
+                })
+              }
+            >
+              + {t("Agregar")}
+            </button>
+          </div>
+          {headers.map((header, index) => (
+            <div
+              key={`${index}-${header.name}`}
+              className="grid grid-cols-2 gap-[5px]"
+            >
+              <input
+                value={header.name}
+                onChange={(event) =>
+                  onChange({
+                    headers: headers.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, name: event.target.value }
+                        : item,
+                    ),
+                  })
+                }
+                className="h-[32px] rounded-md border border-border bg-background px-[7px] text-[10px]"
+              />
+              <div className="flex gap-[4px]">
+                <input
+                  value={header.value}
+                  onChange={(event) =>
+                    onChange({
+                      headers: headers.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, value: event.target.value }
+                          : item,
+                      ),
+                    })
+                  }
+                  className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] text-[10px]"
+                />
+                <button
+                  type="button"
+                  aria-label={t("Eliminar")}
+                  onClick={() =>
+                    onChange({
+                      headers: headers.filter(
+                        (_, itemIndex) => itemIndex !== index,
+                      ),
+                    })
+                  }
+                  className="text-destructive"
+                >
+                  <X className="h-[13px] w-[13px]" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <p className="text-[9px] leading-relaxed text-muted-foreground">
+            {t(
+              "Authorization, cookies y claves API deben guardarse como credenciales protegidas.",
+            )}
+          </p>
+        </div>
+      )}
+
+      <h3 className="text-xs font-semibold">{t("3. Respuesta y mensaje")}</h3>
       <ChatbotResponseMappings
         key={node.id}
         mappings={mappings}
+        guided={!advanced}
         onChange={(response_mappings) => onChange({ response_mappings })}
       />
+      <p className="rounded-lg bg-muted p-2 text-[11px] text-muted-foreground">
+        {t(
+          "Guardá la respuesta en una variable y usala en el siguiente nodo Mensaje. Conectá las salidas Éxito y Error a los pasos correspondientes.",
+        )}
+      </p>
+      {routes}
 
       <p className="rounded-lg bg-cyan-500/10 p-[8px] text-[9px] leading-relaxed text-cyan-700 dark:text-cyan-300">
         {t(
