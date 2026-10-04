@@ -244,3 +244,32 @@ void test("lifecycle header controls use explicit theme colors, including disabl
   assert.match(overflow, /\btext-foreground\b/);
   assert.match(retry, /\btext-destructive\b/);
 });
+
+void test("takeover and close controls keep a single compact row with accessible status hints", () => {
+  const controls = readFileSync(
+    new URL("../src/components/ResumeChatbotButton.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    controls,
+    /<div className="flex h-8 shrink-0 items-center gap-1" title=\{supportHint\}>/,
+  );
+  assert.doesNotMatch(controls, /flex-col|max-w-\[250px\]/);
+  assert.match(
+    controls,
+    /role="status" className="sr-only" aria-live="polite"/,
+  );
+  assert.match(controls, /Solicitud original/);
+  assert.match(controls, /aria-label=\{progressLabel\}/);
+  assert.match(controls, /aria-busy=\{pending \|\| syncingSupport\}/);
+  const action = controls.match(/<button\b[\s\S]*?<\/button>/)?.[0] || "";
+  assert.match(action, /h-8 shrink-0/);
+  assert.match(action, /whitespace-nowrap/);
+  assert.match(action, /LoaderCircle/);
+  assert.match(action, /\{actionLabel\}/);
+  assert.doesNotMatch(action, /\{progressLabel\}\s*<\/button>/);
+  assert.match(controls, /<Popover[\s\S]*?placement="bottomRight"/);
+  assert.match(controls, /role="alert"[\s\S]*?max-w-72 break-words/);
+  assert.match(controls, /<AlertCircle/);
+  assert.match(controls, /Reintentar toma de control/);
+});
