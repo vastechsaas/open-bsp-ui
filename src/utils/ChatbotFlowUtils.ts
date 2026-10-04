@@ -3,6 +3,7 @@ import type { ResponseListFormat } from "./ChatbotResponseFormatter";
 
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
+export const CHATBOT_SYSTEM_VARIABLES = ["customer_phone"] as const;
 export const CHATBOT_NODE_LABEL_MAX_LENGTH = 80;
 export const CHATBOT_INPUT_MAX_LENGTH = 4096;
 export const CHATBOT_INTERACTIVE_BODY_MAX_LENGTH = 1024;
@@ -205,6 +206,7 @@ export type ChatbotValidationIssueGroup = {
 };
 
 const validationMessageKeys: Record<string, string> = {
+  system_variable_read_only: "Las variables del sistema son de solo lectura.",
   handoff_queue_required: "Seleccioná una cola de destino.",
   handoff_acknowledgment_invalid:
     "La confirmación al cliente debe contener entre 1 y 4096 caracteres.",
@@ -1230,7 +1232,12 @@ export function getAvailableChatbotVariables(
     }
     return variables;
   });
-  return [...intersectVariableSets(predecessorSets)].sort();
+  return [
+    ...new Set([
+      ...CHATBOT_SYSTEM_VARIABLES,
+      ...intersectVariableSets(predecessorSets),
+    ]),
+  ].sort();
 }
 
 export function insertChatbotTemplateVariable(
