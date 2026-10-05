@@ -3,7 +3,10 @@ import type { ResponseListFormat } from "./ChatbotResponseFormatter";
 
 export type ChatbotFlowStatus = "active" | "archived";
 export const CHATBOT_MESSAGE_MAX_LENGTH = 4096;
-export const CHATBOT_SYSTEM_VARIABLES = ["customer_phone"] as const;
+export const CHATBOT_SYSTEM_VARIABLES = [
+  "customer_phone",
+  "conversation_id",
+] as const;
 export const CHATBOT_NODE_LABEL_MAX_LENGTH = 80;
 export const CHATBOT_INPUT_MAX_LENGTH = 4096;
 export const CHATBOT_INTERACTIVE_BODY_MAX_LENGTH = 1024;

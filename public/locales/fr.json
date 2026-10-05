@@ -1586,6 +1586,8 @@
   "Esperando soporte · Chatbot activo": "En attente de support · Chatbot actif",
   "Estás atendiendo este chat · Chatbot pausado": "Vous gérez cette discussion · Chatbot en pause",
   "Soporte humano activo · Chatbot pausado": "Support humain actif · Chatbot en pause",
+  "ID de la conversación": "ID de la conversation",
+  "Identificador de la conversación actual, generado por el sistema.": "Identifiant de la conversation actuelle, fourni par le système.",
   "Solicitud original": "Demande initiale",
   "Tomando control—sincronización pendiente": "Prise en charge—synchronisation en attente",
   "Sincronizando solicitud de soporte…": "Synchronisation de la demande d’assistance…",
