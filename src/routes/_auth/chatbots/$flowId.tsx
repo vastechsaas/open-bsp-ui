@@ -1838,11 +1838,17 @@ function TemplateVariableControls({
             type="button"
             onClick={() => onInsert(variable)}
             title={t(
-              "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.",
+              variable === "conversation_id"
+                ? "Identificador de la conversación actual, generado por el sistema."
+                : "Número de WhatsApp del cliente en formato internacional. En simulación: +923001234567.",
             )}
             className="rounded-md border border-primary/30 bg-primary/5 px-[6px] py-[3px] text-[9px] text-primary hover:bg-primary/10"
           >
-            {t("Teléfono del cliente")}{" "}
+            {t(
+              variable === "conversation_id"
+                ? "ID de la conversación"
+                : "Teléfono del cliente",
+            )}{" "}
             <span className="font-mono">{`{{${variable}}}`}</span>
           </button>
         ))}

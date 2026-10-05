@@ -1613,6 +1613,8 @@
   "Esperando soporte · Chatbot activo": "Waiting for support · Chatbot active",
   "Estás atendiendo este chat · Chatbot pausado": "You’re handling this chat · Chatbot paused",
   "Soporte humano activo · Chatbot pausado": "Human support active · Chatbot paused",
+  "ID de la conversación": "Conversation ID",
+  "Identificador de la conversación actual, generado por el sistema.": "The current conversation ID, provided by the system.",
   "Solicitud original": "Original request",
   "Tomando control—sincronización pendiente": "Taking over—sync pending",
   "Sincronizando solicitud de soporte…": "Synchronizing support request…",
