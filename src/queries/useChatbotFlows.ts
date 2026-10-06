@@ -257,6 +257,9 @@ export function useNodeConversationLifecycle(conversationId?: string) {
         }),
         client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
         client.invalidateQueries({ queryKey: [orgId, "conversation_queues"] }),
+        client.invalidateQueries({
+          queryKey: [orgId, "support-inbox", userId],
+        }),
       ]);
     },
   });

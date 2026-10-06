@@ -15,6 +15,7 @@ import {
   useMentionedConversations,
 } from "@/queries/usePrivateNotes";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useSupportInboxVisibility } from "@/queries/useSupportInboxVisibility";
 
 export type ConvMetadata = {
   convId: string;
@@ -82,6 +83,12 @@ const ChatList = () => {
     () => mentionedQuery.data?.pages.flatMap((page) => page.rows) || [],
     [mentionedQuery.data],
   );
+  const inbox = useSupportInboxVisibility([
+    ...[...conversations.values()]
+      .filter((conversation) => conversation.organization_id === activeOrgId)
+      .map((conversation) => conversation.id),
+    ...mentionedRows.map((row) => row.id),
+  ]);
 
   useEffect(() => {
     if (!isMentionedQueue || mentionedRows.length === 0) return;
@@ -107,6 +114,7 @@ const ChatList = () => {
     .filter(
       (a) =>
         a.conv.organization_id === activeOrgId &&
+        inbox.visibleIds.has(a.convId) &&
         conversationQueueFilters[activeQueueKey](
           a.conv,
           getConversationMessages(a.convId),
@@ -136,7 +144,9 @@ const ChatList = () => {
   }
 
   const itemIds = isMentionedQueue
-    ? mentionedRows.map((row) => row.id)
+    ? mentionedRows
+        .map((row) => row.id)
+        .filter((id) => inbox.visibleIds.has(id))
     : items.map((a) => a.convId);
   const latestMentionById = new Map(
     mentionedRows.map((row) => [row.id, row.latest_mention_at]),
@@ -156,6 +166,29 @@ const ChatList = () => {
 
   return (
     <div className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]">
+      {inbox.isError && (
+        <div
+          role="alert"
+          className="mb-3 rounded-lg border border-border p-3 text-sm text-foreground"
+        >
+          {t("No se pudo actualizar la bandeja de soporte.")}
+          <button
+            type="button"
+            className="ml-2 text-primary underline"
+            onClick={() => void inbox.retry()}
+          >
+            {t("Reintentar")}
+          </button>
+        </div>
+      )}
+      {inbox.isPending && (
+        <div
+          role="status"
+          className="py-2 text-center text-sm text-muted-foreground"
+        >
+          {t("Cargando...")}
+        </div>
+      )}
       {isMentionedQueue && mentionedQuery.isPending ? (
         <div className="h-full flex items-center justify-center text-muted-foreground text-[14px]">
           {t("Cargando...")}
@@ -183,7 +216,7 @@ const ChatList = () => {
             </button>
           )}
         </div>
-      ) : (
+      ) : !inbox.isPending && !inbox.isError ? (
         <div className="h-full flex items-center justify-center flex-col text-foreground text-[15px] mt-[-24px]">
           {emptyLabel}
           {isMentionedQueue && mentionedQuery.error && (
@@ -208,7 +241,7 @@ const ChatList = () => {
             </button>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
