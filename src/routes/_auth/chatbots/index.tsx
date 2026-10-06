@@ -4,7 +4,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Archive,
   ArchiveRestore,
-  CircleDot,
   Clock3,
   Copy,
   GitBranch,
@@ -19,6 +18,12 @@ import {
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import DataTablePagination from "@/components/DataTablePagination";
 import Spinner from "@/components/Spinner";
+import ChatbotServingStatus from "@/components/chatbots/ChatbotServingStatus";
+import { useChatbotServing } from "@/queries/useChatbotServing";
+import {
+  getChatbotServingStates,
+  type ChatbotServingState,
+} from "@/utils/ChatbotServingUtils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
@@ -32,7 +37,6 @@ import {
 } from "@/queries/useChatbotFlows";
 import {
   getChatbotFlowDuplicateName,
-  getChatbotFlowStatusLabel,
   getChatbotFlowVersionSummary,
   type ChatbotFlowStatus,
 } from "@/utils/ChatbotFlowUtils";
@@ -82,6 +86,14 @@ function ChatbotFlowList() {
   const archiveFlow = useArchiveChatbotFlow();
   const restoreFlow = useRestoreChatbotFlow();
   const flows = flowPage?.rows || [];
+  const serving = useChatbotServing(flows.map((flow) => flow.id));
+  const servingProps = (flow: ChatbotFlowListRow) => ({
+    servingStates: serving.data
+      ? getChatbotServingStates(flow.id, flow.status, serving.data)
+      : [],
+    servingLoading: serving.isPending,
+    servingError: serving.isError,
+  });
   const total = flowPage?.total || 0;
   const hasFilters = !!search.trim() || statusFilter !== "all";
   const nameMutationPending = createFlow.isPending || duplicateFlow.isPending;
@@ -167,6 +179,12 @@ function ChatbotFlowList() {
           )}
         </header>
 
+        <p className="mb-[14px] text-[12px] text-muted-foreground">
+          {t(
+            "Disponible no significa activado. La atención al cliente muestra la versión confirmada para nuevos recorridos, no el borrador.",
+          )}
+        </p>
+
         <section className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
           <div className="flex flex-col gap-[10px] border-b border-border p-[14px] lg:flex-row">
             <label className="flex h-[42px] items-center gap-[9px] rounded-lg border border-input bg-background px-[12px] lg:max-w-[420px] lg:flex-1">
@@ -185,11 +203,30 @@ function ChatbotFlowList() {
               onChange={setStatusFilter}
               options={[
                 { value: "all", label: t("Todos los estados") },
-                { value: "active", label: t("Activos") },
+                { value: "active", label: t("Disponibles") },
                 { value: "archived", label: t("Archivados") },
               ]}
             />
           </div>
+
+          {serving.isError && flows.length > 0 && (
+            <div
+              role="alert"
+              className="flex items-center gap-[10px] border-b border-border px-[14px] py-[10px] text-[12px]"
+            >
+              <span className="text-destructive">
+                {t("No se pudo comprobar qué chatbot está activado.")}
+              </span>
+              <button
+                type="button"
+                className="text-primary underline disabled:opacity-50"
+                disabled={serving.isFetching}
+                onClick={() => void serving.refetch()}
+              >
+                {t("Reintentar")}
+              </button>
+            </div>
+          )}
 
           {!canManage && (
             <div className="flex items-start gap-[9px] border-b border-border bg-muted/35 px-[14px] py-[10px] text-[12px] text-muted-foreground">
@@ -243,7 +280,9 @@ function ChatbotFlowList() {
                   <thead className="bg-muted/45 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
                     <tr>
                       <th className="px-[18px] py-[12px]">{t("Flujo")}</th>
-                      <th className="px-[16px] py-[12px]">{t("Estado")}</th>
+                      <th className="px-[16px] py-[12px]">
+                        {t("Atención al cliente")}
+                      </th>
                       <th className="px-[16px] py-[12px]">{t("Versiones")}</th>
                       <th className="px-[16px] py-[12px]">{t("Creado por")}</th>
                       <th className="px-[16px] py-[12px]">
@@ -259,6 +298,7 @@ function ChatbotFlowList() {
                       <FlowTableRow
                         key={flow.id}
                         flow={flow}
+                        {...servingProps(flow)}
                         canManage={canManage}
                         disabled={
                           nameMutationPending || lifecycleMutationPending
@@ -286,6 +326,7 @@ function ChatbotFlowList() {
                   <FlowCard
                     key={flow.id}
                     flow={flow}
+                    {...servingProps(flow)}
                     canManage={canManage}
                     disabled={nameMutationPending || lifecycleMutationPending}
                     onOpen={() =>
@@ -382,12 +423,15 @@ function ChatbotFlowList() {
 
 function FlowTableRow({
   flow,
+  servingStates,
+  servingLoading,
+  servingError,
   canManage,
   disabled,
   onOpen,
   onDuplicate,
   onLifecycle,
-}: FlowActionsProps & { flow: ChatbotFlowListRow }) {
+}: FlowActionsProps & FlowServingProps & { flow: ChatbotFlowListRow }) {
   const { translate: t } = useTranslation();
 
   return (
@@ -417,11 +461,20 @@ function FlowTableRow({
                 ? t("Cambios sin publicar")
                 : t("Sin cambios pendientes")}
             </div>
+            <div className="mt-[2px] text-[11px] text-muted-foreground">
+              {flow.status === "archived" ? t("Archivado") : t("Disponible")}
+            </div>
           </div>
         </div>
       </td>
       <td className="px-[16px] py-[15px]">
-        <FlowStatusBadge status={flow.status} />
+        <ChatbotServingStatus
+          states={servingStates}
+          loading={servingLoading}
+          error={servingError}
+          archived={flow.status === "archived"}
+          translate={t}
+        />
       </td>
       <td className="px-[16px] py-[15px]">
         <FlowVersions flow={flow} />
@@ -456,12 +509,15 @@ function FlowTableRow({
 
 function FlowCard({
   flow,
+  servingStates,
+  servingLoading,
+  servingError,
   canManage,
   disabled,
   onOpen,
   onDuplicate,
   onLifecycle,
-}: FlowActionsProps & { flow: ChatbotFlowListRow }) {
+}: FlowActionsProps & FlowServingProps & { flow: ChatbotFlowListRow }) {
   const { translate: t } = useTranslation();
 
   return (
@@ -488,7 +544,15 @@ function FlowCard({
               : t("Sin cambios pendientes")}
           </div>
         </div>
-        <FlowStatusBadge status={flow.status} />
+      </div>
+      <div className="mt-[12px]">
+        <ChatbotServingStatus
+          states={servingStates}
+          loading={servingLoading}
+          error={servingError}
+          archived={flow.status === "archived"}
+          translate={t}
+        />
       </div>
       <div className="mt-[16px] grid grid-cols-2 gap-[12px] rounded-lg bg-muted/35 p-[12px]">
         <div>
@@ -531,6 +595,12 @@ type FlowActionsProps = {
   onOpen: () => void;
   onDuplicate: () => void;
   onLifecycle: (action: "archive" | "restore") => void;
+};
+
+type FlowServingProps = {
+  servingStates: ChatbotServingState[];
+  servingLoading: boolean;
+  servingError: boolean;
 };
 
 function FlowActionButtons({
@@ -597,24 +667,6 @@ function FlowActionButtons({
         </span>
       </button>
     </div>
-  );
-}
-
-function FlowStatusBadge({ status }: { status: string }) {
-  const { translate: t } = useTranslation();
-  const active = status === "active";
-
-  return (
-    <span
-      className={`inline-flex items-center gap-[6px] whitespace-nowrap rounded-full px-[9px] py-[4px] text-[11px] font-medium ${
-        active
-          ? "bg-green-500/12 text-green-600 dark:text-green-400"
-          : "bg-muted text-muted-foreground"
-      }`}
-    >
-      <CircleDot className="h-[11px] w-[11px]" />
-      {t(getChatbotFlowStatusLabel(status))}
-    </span>
   );
 }
 

@@ -87,8 +87,12 @@ export function useRetryNodeChatbotBridge(flowId: string) {
         { organization_id: orgId, request_id: requestId },
         "POST",
       ),
-    onSettled: () =>
-      client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] }),
+    onSettled: async () => {
+      await client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
+      await client.invalidateQueries({
+        queryKey: [orgId, "chatbot_flows", "serving"],
+      });
+    },
   });
 }
 
@@ -672,6 +676,9 @@ export function useActivateChatbotFlow() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
       });
+      await queryClient.invalidateQueries({
+        queryKey: [orgId, "chatbot_flows", "serving"],
+      });
     },
   });
 }
@@ -701,6 +708,9 @@ export function useDeactivateChatbotFlow() {
       });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [orgId, "chatbot_flows", "serving"],
       });
     },
   });
