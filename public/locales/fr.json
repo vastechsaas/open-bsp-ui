@@ -1604,5 +1604,6 @@
   "Sincronizando solicitud de soporte…": "Synchronisation de la demande d’assistance…",
   "Tomar control del chat": "Prendre en charge la discussion",
   "Reintentar toma de control": "Réessayer la prise en charge",
-  "Toma el control del chat antes de responder al cliente": "Prenez en charge la discussion avant de répondre au client"
+  "Toma el control del chat antes de responder al cliente": "Prenez en charge la discussion avant de répondre au client",
+  "No se pudo actualizar la bandeja de soporte.": "Impossible d’actualiser la boîte de réception du support."
 }

@@ -1631,5 +1631,6 @@
   "Sincronizando solicitud de soporte…": "Synchronizing support request…",
   "Tomar control del chat": "Take over chat",
   "Reintentar toma de control": "Retry takeover",
-  "Toma el control del chat antes de responder al cliente": "Take over chat before replying to the customer"
+  "Toma el control del chat antes de responder al cliente": "Take over chat before replying to the customer",
+  "No se pudo actualizar la bandeja de soporte.": "Could not refresh the support inbox."
 }

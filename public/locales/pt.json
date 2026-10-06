@@ -1604,5 +1604,6 @@
   "Sincronizando solicitud de soporte…": "Sincronizando solicitação de suporte…",
   "Tomar control del chat": "Assumir chat",
   "Reintentar toma de control": "Tentar assumir novamente",
-  "Toma el control del chat antes de responder al cliente": "Assuma o chat antes de responder ao cliente"
+  "Toma el control del chat antes de responder al cliente": "Assuma o chat antes de responder ao cliente",
+  "No se pudo actualizar la bandeja de soporte.": "Não foi possível atualizar a caixa de entrada de suporte."
 }
