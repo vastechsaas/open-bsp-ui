@@ -55,7 +55,7 @@ export function ChatbotFlowDeploymentDialog({
   );
   const [organizationAddress, setOrganizationAddress] = useState("");
   const [versionId, setVersionId] = useState("");
-  const [engine, setEngine] = useState<"native" | "node">("native");
+  const [engine, setEngine] = useState<"native" | "node">("node");
   const bridges = useNodeChatbotBridges(flowId);
   const retryBridge = useRetryNodeChatbotBridge(flowId);
 
@@ -197,7 +197,7 @@ export function ChatbotFlowDeploymentDialog({
               <DeploymentField label={t("Motor de ejecución")}>
                 <select value={engine} onChange={event => setEngine(event.target.value as "native" | "node")}
                   className="h-[40px] w-full rounded-lg border border-border bg-background px-[10px] text-[12px]">
-                  <option value="native">{t("Nativo")}</option>
+                  {/* <option value="native">{t("Nativo")}</option> */}
                   <option value="node">Node</option>
                 </select>
               </DeploymentField>

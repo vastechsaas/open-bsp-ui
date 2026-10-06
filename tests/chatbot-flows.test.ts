@@ -449,6 +449,22 @@ void test("chatbot duplication uses a predictable editable name", () => {
   assert.equal(getChatbotFlowDuplicateName("  Ventas  "), "Ventas (copia)");
 });
 
+void test("chatbot activation offers only Node and defaults to Node", () => {
+  const dialog = readFileSync(
+    new URL("../src/components/chatbots/ChatbotFlowDeployment.tsx", import.meta.url),
+    "utf8",
+  );
+  const queries = readFileSync(
+    new URL("../src/queries/useChatbotFlows.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(dialog, /useState<"native" \| "node">\("node"\)/);
+  const uncommented = dialog.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+  assert.doesNotMatch(uncommented, /<option value="native">/);
+  assert.match(uncommented, /<option value="node">Node<\/option>/);
+  assert.match(queries, /engine = "node"/);
+});
+
 void test("chatbot activation uses the server-owned runtime identity", () => {
   const deploymentDialog = readFileSync(
     new URL(

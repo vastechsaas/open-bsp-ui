@@ -652,7 +652,7 @@ export function useActivateChatbotFlow() {
       flowId,
       organizationAddress,
       versionId,
-      engine = "native",
+      engine = "node",
     }: ActivateChatbotFlowInput) => {
       if (!orgId) throw new Error("No active organization");
       return await invokeChatbotManagement<{
