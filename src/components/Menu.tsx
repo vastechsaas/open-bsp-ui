@@ -26,6 +26,7 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizations } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { canAccessNavigation } from "@/utils/RoleAccess";
+import { useChatbotPermissions } from "@/queries/useModulePermissions";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
 
@@ -56,6 +57,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const userName = agent?.name || metadata?.name || user?.email || "?";
   const userPicture = agent?.picture || metadata?.picture;
   const role = agent?.extra?.role;
+  const chatbotPermissions = useChatbotPermissions();
   const showTools =
     canAccessNavigation(role, "integrations") ||
     canAccessNavigation(role, "stats");
@@ -173,16 +175,17 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
             <Megaphone className="h-[21px] w-[21px] stroke-[2]" />
           </LinkButton>
 
-          <LinkButton
-            to="/chatbots"
-            access="chatbots"
-            role={role}
-            title={t("Chatbots")}
-            isActive={pathname.startsWith("/chatbots")}
-            expanded={expanded}
-          >
-            <Workflow className="h-[21px] w-[21px] stroke-[2]" />
-          </LinkButton>
+          {chatbotPermissions.isSuccess && chatbotPermissions.data.can_view && (
+            <LinkButton
+              to="/chatbots"
+              role={role}
+              title={t("Chatbots")}
+              isActive={pathname.startsWith("/chatbots")}
+              expanded={expanded}
+            >
+              <Workflow className="h-[21px] w-[21px] stroke-[2]" />
+            </LinkButton>
+          )}
 
           <LinkButton
             to="/templates"

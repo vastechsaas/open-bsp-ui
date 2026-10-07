@@ -1606,5 +1606,20 @@
   "Sincronizando solicitud de soporte…": "Kusawazisha ombi la usaidizi…",
   "Tomar control del chat": "Chukua mazungumzo",
   "Reintentar toma de control": "Jaribu kuchukua tena",
-  "Toma el control del chat antes de responder al cliente": "Chukua mazungumzo kabla ya kumjibu mteja"
+  "Toma el control del chat antes de responder al cliente": "Chukua mazungumzo kabla ya kumjibu mteja",
+  "No se pudo actualizar la bandeja de soporte.": "Imeshindikana kusasisha kikasha cha msaada.",
+  "Cargando permisos…": "Inapakia ruhusa…",
+  "No se pudieron cargar los permisos.": "Imeshindwa kupakia ruhusa.",
+  "Permisos de módulos": "Ruhusa za moduli",
+  "Definí quién puede ver o administrar el constructor de chatbots en esta organización.": "Chagua nani anaweza kuona au kusimamia kijenzi cha chatbot katika shirika hili.",
+  "Constructor de chatbots": "Kijenzi cha chatbot",
+  "Administrar requiere Ver. Los cambios no detienen los chatbots activos.": "Kusimamia kunahitaji Kuona. Mabadiliko hayasimamishi chatbot zinazotumika.",
+  "Los permisos cambiaron. Recargá antes de guardar.": "Ruhusa zimebadilika. Pakia upya kabla ya kuhifadhi.",
+  "No se pudieron guardar los permisos. Reintentá.": "Imeshindwa kuhifadhi ruhusa. Jaribu tena.",
+  "Tenés cambios sin guardar. ¿Querés salir?": "Una mabadiliko ambayo hayajahifadhiwa. Unataka kuondoka?",
+  "No tenés acceso al constructor de chatbots.": "Huna ruhusa ya kufikia kijenzi cha chatbot.",
+  "Tu acceso cambió. Los cambios sin guardar no se guardaron.": "Ruhusa zako zimebadilika. Mabadiliko yaliyokuwa yanasubiri hayajahifadhiwa.",
+  "Estado de activación": "Hali ya uanzishaji",
+  "No se pudo cargar": "Imeshindwa kupakia",
+  "Descartar cambios": "Ondoa mabadiliko"
 }

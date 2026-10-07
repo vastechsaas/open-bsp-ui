@@ -1606,5 +1606,20 @@
   "Sincronizando solicitud de soporte…": "Sincronizando solicitação de suporte…",
   "Tomar control del chat": "Assumir chat",
   "Reintentar toma de control": "Tentar assumir novamente",
-  "Toma el control del chat antes de responder al cliente": "Assuma o chat antes de responder ao cliente"
+  "Toma el control del chat antes de responder al cliente": "Assuma o chat antes de responder ao cliente",
+  "No se pudo actualizar la bandeja de soporte.": "Não foi possível atualizar a caixa de entrada de suporte.",
+  "Cargando permisos…": "Carregando permissões…",
+  "No se pudieron cargar los permisos.": "Não foi possível carregar as permissões.",
+  "Permisos de módulos": "Permissões de módulos",
+  "Definí quién puede ver o administrar el constructor de chatbots en esta organización.": "Escolha quem pode visualizar ou administrar o construtor de chatbots nesta organização.",
+  "Constructor de chatbots": "Construtor de chatbots",
+  "Administrar requiere Ver. Los cambios no detienen los chatbots activos.": "Administrar requer Visualizar. As alterações não interrompem chatbots ativos.",
+  "Los permisos cambiaron. Recargá antes de guardar.": "As permissões mudaram. Recarregue antes de salvar.",
+  "No se pudieron guardar los permisos. Reintentá.": "Não foi possível salvar as permissões. Tente novamente.",
+  "Tenés cambios sin guardar. ¿Querés salir?": "Você tem alterações não salvas. Deseja sair?",
+  "No tenés acceso al constructor de chatbots.": "Você não tem acesso ao construtor de chatbots.",
+  "Tu acceso cambió. Los cambios sin guardar no se guardaron.": "Seu acesso mudou. As alterações pendentes não foram salvas.",
+  "Estado de activación": "Status de ativação",
+  "No se pudo cargar": "Não foi possível carregar",
+  "Descartar cambios": "Descartar alterações"
 }

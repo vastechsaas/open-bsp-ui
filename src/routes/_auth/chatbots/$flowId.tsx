@@ -2,6 +2,8 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  type Dispatch,
+  type SetStateAction,
   useState,
   type DragEvent,
   type ReactNode,
@@ -67,6 +69,9 @@ import {
   VersionPreviewDialog,
 } from "@/components/chatbots/ChatbotFlowPublication";
 import ChatbotFlowNode from "@/components/chatbots/ChatbotFlowNode";
+import ChatbotServingStatus from "@/components/chatbots/ChatbotServingStatus";
+import { useChatbotServing } from "@/queries/useChatbotServing";
+import { getChatbotServingStates } from "@/utils/ChatbotServingUtils";
 import { ChatbotResponseMappings } from "@/components/chatbots/ChatbotResponseMappings";
 import { ChatbotApiRequestFields } from "@/components/chatbots/ChatbotApiRequestFields";
 import { ChatbotApiRoutes } from "@/components/chatbots/ChatbotApiRoutes";
@@ -78,18 +83,16 @@ import {
 } from "@/utils/ChatbotApiEditor";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
+import { useChatbotPermissions } from "@/queries/useModulePermissions";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
-import {
-  type RoutingQueueOption,
-  useRoutingQueueOptions,
-} from "@/queries/useRoutingQueues";
+import { type RoutingQueueOption } from "@/queries/useRoutingQueues";
 import {
   type ChatbotFlowEditorData,
   type ChatbotFlowVersion,
   type ChatbotWebhookCredential,
   useActivateChatbotFlow,
   useChatbotFlowDraft,
+  useChatbotBuilderOptions,
   useChatbotFlowDeployments,
   useChatbotFlowVersions,
   useDeactivateChatbotFlow,
@@ -208,21 +211,6 @@ function createWebhookSimulationMocks(nodes: ChatbotFlowNodeType[]) {
   );
 }
 
-function isActiveHumanAgent(agent: AgentRow) {
-  if (agent.ai || !agent.user_id) return false;
-  const extra = agent.extra;
-  if (
-    !extra ||
-    typeof extra !== "object" ||
-    Array.isArray(extra) ||
-    !("invitation" in extra) ||
-    !extra.invitation
-  ) {
-    return true;
-  }
-  return extra.invitation.status === "accepted";
-}
-
 function ChatbotFlowEditor() {
   const { flowId } = Route.useParams();
   const navigate = useNavigate();
@@ -231,17 +219,12 @@ function ChatbotFlowEditor() {
   const [lastPublishedVersion, setLastPublishedVersion] = useState<
     number | null
   >(null);
-  const { data: currentAgent, isLoading: agentLoading } = useCurrentAgent();
-  const { data: agents, isLoading: agentsLoading } = useCurrentAgents();
-  const routingQueuesQuery = useRoutingQueueOptions();
+  const permissions = useChatbotPermissions();
+  const canView = permissions.isSuccess && permissions.data.can_view;
+  const canManage = permissions.isSuccess && permissions.data.can_manage;
+  const options = useChatbotBuilderOptions();
   const webhookCredentialsQuery = useChatbotWebhookCredentials();
-  const handoffAgents = (agents ?? [])
-    .filter(isActiveHumanAgent)
-    .map(({ id, name }) => ({ id, name }));
-  const canManage =
-    currentAgent?.extra?.role === "owner" ||
-    currentAgent?.extra?.role === "admin";
-  const draftQuery = useChatbotFlowDraft(flowId, canManage);
+  const draftQuery = useChatbotFlowDraft(flowId, canView);
 
   const goBack = () => navigate({ to: "/chatbots" });
   const reloadDraft = async () => {
@@ -251,19 +234,37 @@ function ChatbotFlowEditor() {
     }
   };
 
-  if (agentLoading || agentsLoading || routingQueuesQuery.isLoading) {
+  if (permissions.isPending || (canView && options.isPending)) {
     return <EditorLoading label={t("Cargando editor")} />;
   }
 
-  if (!canManage) {
+  if (permissions.isError)
     return (
       <EditorState
-        title={t("No tenés permisos para editar este chatbot")}
-        description={t(
-          "Solo propietarios y administradores pueden abrir el editor de flujos.",
-        )}
+        title={t("No se pudieron cargar los permisos.")}
+        description=""
+        actionLabel={t("Reintentar")}
+        onAction={() => void permissions.refetch()}
+      />
+    );
+  if (!canView) {
+    return (
+      <EditorState
+        title={t("No tenés acceso al constructor de chatbots.")}
+        description=""
         actionLabel={t("Volver al listado")}
         onAction={() => void goBack()}
+      />
+    );
+  }
+
+  if (options.isError) {
+    return (
+      <EditorState
+        title={t("No se pudo cargar")}
+        description=""
+        actionLabel={t("Reintentar")}
+        onAction={() => void options.refetch()}
       />
     );
   }
@@ -291,6 +292,7 @@ function ChatbotFlowEditor() {
     <ReactFlowProvider>
       <FlowEditorWorkspace
         key={`${draftQuery.data.draft.id}:${workspaceRevision}`}
+        canManage={canManage}
         editor={draftQuery.data}
         graph={normalizeChatbotEditorGraph(draftQuery.data.draft.editor_graph)}
         onBack={() => void goBack()}
@@ -299,8 +301,8 @@ function ChatbotFlowEditor() {
         lastPublishedVersion={lastPublishedVersion}
         onPublished={setLastPublishedVersion}
         onDismissPublished={() => setLastPublishedVersion(null)}
-        handoffAgents={handoffAgents}
-        routingQueues={routingQueuesQuery.data ?? []}
+        handoffAgents={options.data?.agents ?? []}
+        routingQueues={options.data?.queues ?? []}
         webhookCredentials={webhookCredentialsQuery.data ?? []}
       />
     </ReactFlowProvider>
@@ -308,6 +310,7 @@ function ChatbotFlowEditor() {
 }
 
 function FlowEditorWorkspace({
+  canManage,
   editor,
   graph,
   onBack,
@@ -320,6 +323,7 @@ function FlowEditorWorkspace({
   routingQueues,
   webhookCredentials,
 }: {
+  canManage: boolean;
   editor: ChatbotFlowEditorData;
   graph: ChatbotEditorGraph;
   onBack: () => void;
@@ -345,8 +349,22 @@ function FlowEditorWorkspace({
       close: { keyword: "C", message: "Chat closed." },
     },
   };
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialGraph.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(graph.edges);
+  const [nodes, setNodesState, onNodesChange] = useNodesState(
+    initialGraph.nodes,
+  );
+  const [edges, setEdgesState, onEdgesChange] = useEdgesState(graph.edges);
+  const setNodes = useCallback<Dispatch<SetStateAction<typeof nodes>>>(
+    (change) => {
+      if (canManage) setNodesState(change);
+    },
+    [canManage, setNodesState],
+  );
+  const setEdges = useCallback<Dispatch<SetStateAction<typeof edges>>>(
+    (change) => {
+      if (canManage) setEdgesState(change);
+    },
+    [canManage, setEdgesState],
+  );
   const [viewport, setViewport] = useState(graph.viewport);
   const [settings, setSettings] = useState(initialSettings);
   const [expectedUpdatedAt, setExpectedUpdatedAt] = useState(
@@ -386,6 +404,7 @@ function FlowEditorWorkspace({
     versionsOpen || deploymentOpen,
   );
   const deploymentsQuery = useChatbotFlowDeployments(editor.flow.id);
+  const serving = useChatbotServing([editor.flow.id]);
   const addressesQuery = useOrganizationsAddresses();
   const connectedWhatsAppAddresses = (addressesQuery.data ?? []).filter(
     (address) =>
@@ -420,7 +439,15 @@ function FlowEditorWorkspace({
     () => getChatbotEditorValidationFingerprint(editorGraph),
     [editorGraph],
   );
-  const dirty = currentFingerprint !== savedFingerprint;
+  const unsaved = currentFingerprint !== savedFingerprint;
+  const dirty = canManage && unsaved;
+  const [accessState, setAccessState] = useState({
+    manage: canManage,
+    revoked: false,
+  });
+  if (accessState.manage !== canManage) {
+    setAccessState({ manage: canManage, revoked: !canManage });
+  }
   const conflict =
     saveDraft.error instanceof ChatbotDraftConflictError ||
     publishDraft.error instanceof ChatbotDraftConflictError;
@@ -501,7 +528,7 @@ function FlowEditorWorkspace({
   });
 
   const saveEditorGraph = useCallback(async () => {
-    if (!actionAvailability.canSave) return;
+    if (!canManage || !actionAvailability.canSave) return;
     try {
       const savedDraft = await saveDraft.mutateAsync({
         flowId: editor.flow.id,
@@ -516,6 +543,7 @@ function FlowEditorWorkspace({
     }
   }, [
     actionAvailability.canSave,
+    canManage,
     currentFingerprint,
     editor.draft.id,
     editor.flow.id,
@@ -545,7 +573,7 @@ function FlowEditorWorkspace({
     if (target.kind === "node") {
       const node = nodes.find((candidate) => candidate.id === target.id);
       if (!node) return;
-      setEdges((current) =>
+      setEdgesState((current) =>
         current.map((edge) => ({ ...edge, selected: false })),
       );
       setSelectedNodeId(target.id);
@@ -565,7 +593,7 @@ function FlowEditorWorkspace({
       setSelectedNodeId(null);
       setValidationField(null);
       setMobilePanel(null);
-      setEdges((current) =>
+      setEdgesState((current) =>
         current.map((candidate) => ({
           ...candidate,
           selected: candidate.id === target.id,
@@ -955,6 +983,7 @@ function FlowEditorWorkspace({
 
   useEffect(() => {
     const handleEditorKeyDown = (event: KeyboardEvent) => {
+      if (!canManage) return;
       const target = event.target instanceof Element ? event.target : null;
       const shortcut = getChatbotEditorShortcut({
         key: event.key,
@@ -1019,6 +1048,7 @@ function FlowEditorWorkspace({
     simulatorOpen,
     validationDialogOpen,
     versionsOpen,
+    canManage,
   ]);
 
   return (
@@ -1042,27 +1072,35 @@ function FlowEditorWorkspace({
               {t("Borrador")} v{editor.draft.version}
             </span>
             <span aria-hidden="true">•</span>
-            <SaveStatusLabel status={saveStatus} />
+            {canManage ? (
+              <SaveStatusLabel status={saveStatus} />
+            ) : (
+              <span className="rounded bg-primary/10 px-2 py-0.5 text-primary">
+                {t("Solo lectura")}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-[7px]">
-          <button
-            type="button"
-            title={t("Biblioteca de nodos")}
-            aria-label={t("Biblioteca de nodos")}
-            className={`flex h-[36px] w-[36px] items-center justify-center rounded-lg border lg:hidden ${
-              mobilePanel === "library"
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border hover:bg-muted"
-            }`}
-            onClick={() =>
-              setMobilePanel((current) =>
-                current === "library" ? null : "library",
-              )
-            }
-          >
-            <PanelLeft className="h-[17px] w-[17px]" />
-          </button>
+          {canManage && (
+            <button
+              type="button"
+              title={t("Biblioteca de nodos")}
+              aria-label={t("Biblioteca de nodos")}
+              className={`flex h-[36px] w-[36px] items-center justify-center rounded-lg border lg:hidden ${
+                mobilePanel === "library"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border hover:bg-muted"
+              }`}
+              onClick={() =>
+                setMobilePanel((current) =>
+                  current === "library" ? null : "library",
+                )
+              }
+            >
+              <PanelLeft className="h-[17px] w-[17px]" />
+            </button>
+          )}
           <button
             type="button"
             title={t("Inspector")}
@@ -1134,54 +1172,62 @@ function FlowEditorWorkspace({
             />
             <span className="hidden sm:inline">{t("Recargar")}</span>
           </button>
-          <button
-            type="button"
-            title={`${t("Guardar borrador")} (Ctrl/⌘ S)`}
-            aria-label={t("Guardar borrador")}
-            disabled={!actionAvailability.canSave}
-            className="primary flex h-[36px] min-w-[96px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
-            onClick={() => void saveEditorGraph()}
-          >
-            {saveDraft.isPending ? (
-              <RefreshCw className="h-[15px] w-[15px] animate-spin" />
-            ) : (
-              <Save className="h-[15px] w-[15px]" />
-            )}
-            <span>{saveDraft.isPending ? t("Guardando…") : t("Guardar")}</span>
-          </button>
-          <button
-            type="button"
-            title={
-              dirty
-                ? t("Guardá los cambios antes de publicar")
-                : t("Publicar flujo")
-            }
-            aria-label={t("Publicar flujo")}
-            disabled={!actionAvailability.canPublish}
-            className="primary flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
-            onClick={() => setPublishDialogOpen(true)}
-          >
-            {publishDraft.isPending ? (
-              <RefreshCw className="h-[15px] w-[15px] animate-spin" />
-            ) : (
-              <Rocket className="h-[15px] w-[15px]" />
-            )}
-            <span className="hidden sm:inline">{t("Publicar")}</span>
-          </button>
-          <button
-            type="button"
-            title={t("Activar chatbot")}
-            aria-label={t("Activar chatbot")}
-            className="flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] rounded-lg border border-primary/45 px-[12px] text-[12px] text-primary hover:bg-primary/10"
-            onClick={() => setDeploymentOpen(true)}
-          >
-            <RadioTower className="h-[15px] w-[15px]" />
-            <span className="hidden xl:inline">
-              {deploymentsQuery.data?.length
-                ? `${t("Activo")} (${deploymentsQuery.data.length})`
-                : t("Activar")}
-            </span>
-          </button>
+          {canManage && (
+            <button
+              type="button"
+              title={`${t("Guardar borrador")} (Ctrl/⌘ S)`}
+              aria-label={t("Guardar borrador")}
+              disabled={!actionAvailability.canSave}
+              className="primary flex h-[36px] min-w-[96px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={() => void saveEditorGraph()}
+            >
+              {saveDraft.isPending ? (
+                <RefreshCw className="h-[15px] w-[15px] animate-spin" />
+              ) : (
+                <Save className="h-[15px] w-[15px]" />
+              )}
+              <span>
+                {saveDraft.isPending ? t("Guardando…") : t("Guardar")}
+              </span>
+            </button>
+          )}
+          {canManage && (
+            <button
+              type="button"
+              title={
+                dirty
+                  ? t("Guardá los cambios antes de publicar")
+                  : t("Publicar flujo")
+              }
+              aria-label={t("Publicar flujo")}
+              disabled={!actionAvailability.canPublish}
+              className="primary flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] px-[12px] text-[12px] disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={() => setPublishDialogOpen(true)}
+            >
+              {publishDraft.isPending ? (
+                <RefreshCw className="h-[15px] w-[15px] animate-spin" />
+              ) : (
+                <Rocket className="h-[15px] w-[15px]" />
+              )}
+              <span className="hidden sm:inline">{t("Publicar")}</span>
+            </button>
+          )}
+          {canManage && (
+            <button
+              type="button"
+              title={t("Activar chatbot")}
+              aria-label={t("Activar chatbot")}
+              className="flex h-[36px] min-w-[42px] items-center justify-center gap-[7px] rounded-lg border border-primary/45 px-[12px] text-[12px] text-primary hover:bg-primary/10"
+              onClick={() => setDeploymentOpen(true)}
+            >
+              <RadioTower className="h-[15px] w-[15px]" />
+              <span className="hidden xl:inline">
+                {deploymentsQuery.data?.length
+                  ? `${t("Activo")} (${deploymentsQuery.data.length})`
+                  : t("Activar")}
+              </span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -1287,6 +1333,31 @@ function FlowEditorWorkspace({
         </div>
       )}
 
+      {!canManage && accessState.revoked && (
+        <p role="alert" className="border-b border-border bg-muted p-3 text-sm">
+          {t("Tu acceso cambió. Los cambios sin guardar no se guardaron.")}
+        </p>
+      )}
+      {!canManage && (
+        <div className="border-b border-border px-4 py-2 text-xs text-muted-foreground">
+          <span>{t("Estado de activación")}</span>
+          <ChatbotServingStatus
+            states={
+              serving.data
+                ? getChatbotServingStates(
+                    editor.flow.id,
+                    editor.flow.status,
+                    serving.data,
+                  )
+                : []
+            }
+            loading={serving.isPending}
+            error={serving.isError}
+            archived={editor.flow.status === "archived"}
+            translate={t}
+          />
+        </div>
+      )}
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {mobilePanel && (
           <button
@@ -1297,22 +1368,43 @@ function FlowEditorWorkspace({
           />
         )}
 
-        <NodeLibrary
-          open={mobilePanel === "library"}
-          onClose={() => setMobilePanel(null)}
-          onAddNode={addNode}
-          commands={settings.commands}
-          nodes={nodes}
-          onCommandsChange={(commands) => setSettings({ commands })}
-        />
+        {canManage && (
+          <NodeLibrary
+            open={mobilePanel === "library"}
+            onClose={() => setMobilePanel(null)}
+            onAddNode={addNode}
+            commands={settings.commands}
+            nodes={nodes}
+            onCommandsChange={(commands) => setSettings({ commands })}
+          />
+        )}
 
         <main className="relative min-w-0 flex-1 bg-muted/20">
           <ReactFlow
             nodes={nodes}
             edges={edges}
             nodeTypes={chatbotNodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            nodesDraggable={canManage}
+            nodesConnectable={canManage}
+            edgesReconnectable={canManage}
+            onNodesChange={(changes) =>
+              onNodesChange(
+                canManage
+                  ? changes
+                  : changes.filter(
+                      (change) =>
+                        change.type === "select" ||
+                        change.type === "dimensions",
+                    ),
+              )
+            }
+            onEdgesChange={(changes) =>
+              onEdgesChange(
+                canManage
+                  ? changes
+                  : changes.filter((change) => change.type === "select"),
+              )
+            }
             onConnect={onConnect}
             isValidConnection={(connection) =>
               isValidChatbotConnection(connection, nodes, edges)
@@ -1347,7 +1439,9 @@ function FlowEditorWorkspace({
               setSelectedNodeId(null);
               setValidationField(null);
             }}
-            onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
+            onMoveEnd={(_, nextViewport) => {
+              if (canManage) setViewport(nextViewport);
+            }}
             defaultViewport={graph.viewport}
             fitView={!graph.viewport && nodes.length > 0}
             minZoom={0.25}
@@ -1416,6 +1510,7 @@ function FlowEditorWorkspace({
           />
         ) : (
           <NodeInspector
+            readOnly={!canManage}
             node={selectedNode}
             apiRoutes={
               selectedNode?.data.node_type === "webhook" ? (
@@ -1453,6 +1548,7 @@ function FlowEditorWorkspace({
             creatingWebhookCredential={createWebhookCredential.isPending}
             onWebhookChange={updateWebhook}
             onCreateWebhookCredential={async (name, headers) => {
+              if (!canManage) throw new Error("Manage permission required");
               const result = await createWebhookCredential.mutateAsync({
                 name,
                 headers,
@@ -1490,7 +1586,7 @@ function FlowEditorWorkspace({
         onFocusIssue={focusValidationIssue}
       />
       <PublishChatbotDialog
-        open={publishDialogOpen}
+        open={canManage && publishDialogOpen}
         draftVersion={editor.draft.version}
         pending={publishDraft.isPending}
         onClose={() => setPublishDialogOpen(false)}
@@ -1511,7 +1607,7 @@ function FlowEditorWorkspace({
       />
       <ChatbotFlowDeploymentDialog
         flowId={editor.flow.id}
-        open={deploymentOpen}
+        open={canManage && deploymentOpen}
         deployments={deploymentsQuery.data ?? []}
         versions={versionsQuery.data ?? []}
         addresses={connectedWhatsAppAddresses}
@@ -1887,6 +1983,7 @@ function appendTemplateVariable(text: string, variable: string) {
 }
 
 function NodeInspector({
+  readOnly,
   node,
   validationField,
   open,
@@ -1912,6 +2009,7 @@ function NodeInspector({
   onDelete,
   apiRoutes,
 }: {
+  readOnly: boolean;
   node: ChatbotFlowNodeType | null;
   apiRoutes: ReactNode;
   validationField: string | null;
@@ -2010,7 +2108,10 @@ function NodeInspector({
         </button>
       </div>
       {node ? (
-        <div className="flex-1 space-y-[14px] overflow-y-auto p-[15px]">
+        <fieldset
+          disabled={readOnly}
+          className="min-w-0 flex-1 space-y-[14px] overflow-y-auto p-[15px]"
+        >
           <div>
             <label className="block">
               <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
@@ -2139,6 +2240,7 @@ function NodeInspector({
                 availableVariables={availableVariables}
                 onChange={(updates) => onWebhookChange(node.id, updates)}
                 onCreateCredential={onCreateWebhookCredential}
+                readOnly={readOnly}
               />
             ) : isCondition ? (
               <ConditionInspector
@@ -2167,7 +2269,7 @@ function NodeInspector({
               </p>
             )}
           </div>
-          {!isStart && (
+          {!readOnly && !isStart && (
             <div className="grid grid-cols-2 gap-[8px] border-t border-border pt-[14px]">
               <button
                 type="button"
@@ -2187,7 +2289,7 @@ function NodeInspector({
               </button>
             </div>
           )}
-        </div>
+        </fieldset>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center p-[24px] text-center">
           <MousePointer2 className="h-[24px] w-[24px] text-muted-foreground" />
@@ -2313,9 +2415,11 @@ function WebhookInspector({
   onChange,
   onCreateCredential,
   routes,
+  readOnly,
 }: {
   node: ChatbotFlowNodeType;
   routes: ReactNode;
+  readOnly: boolean;
   credentials: ChatbotWebhookCredential[];
   creatingCredential: boolean;
   availableVariables: string[];
@@ -2457,71 +2561,75 @@ function WebhookInspector({
             "La credencial guardada incluye cómo enviar la clave. Se agrega en el servidor y no se guarda en el flujo.",
           )}
         </p>
-        <details>
-          <summary className="cursor-pointer text-[10px] font-medium text-primary">
-            {t("Crear credencial")}
-          </summary>
-          <div className="mt-[7px] space-y-[5px]">
-            <input
-              value={credentialName}
-              aria-label={t("Nombre")}
-              onChange={(event) => setCredentialName(event.target.value)}
-              placeholder={t("Nombre")}
-              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-            />
-            <label className="block text-xs">
-              {t("Enviar credencial como")}
-              <select
-                value={credentialKind}
-                onChange={(event) =>
-                  setCredentialKind(event.target.value as CredentialKind)
-                }
-                className="mt-1 h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-              >
-                <option value="api_key">{t("Clave API")}</option>
-                <option value="bearer">{t("Token Bearer")}</option>
-                {(advanced || credentialKind === "custom") && (
-                  <option value="custom">
-                    {t("Encabezado personalizado")}
-                  </option>
-                )}
-              </select>
-            </label>
-            {credentialKind !== "bearer" && (
+        {!readOnly && (
+          <details>
+            <summary className="cursor-pointer text-[10px] font-medium text-primary">
+              {t("Crear credencial")}
+            </summary>
+            <div className="mt-[7px] space-y-[5px]">
+              <input
+                value={credentialName}
+                aria-label={t("Nombre")}
+                onChange={(event) => setCredentialName(event.target.value)}
+                placeholder={t("Nombre")}
+                className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+              />
               <label className="block text-xs">
-                {t("Nombre del encabezado")}
-                <input
-                  value={credentialHeader}
-                  onChange={(event) => setCredentialHeader(event.target.value)}
-                  placeholder="X-Api-Key"
+                {t("Enviar credencial como")}
+                <select
+                  value={credentialKind}
+                  onChange={(event) =>
+                    setCredentialKind(event.target.value as CredentialKind)
+                  }
                   className="mt-1 h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-                />
+                >
+                  <option value="api_key">{t("Clave API")}</option>
+                  <option value="bearer">{t("Token Bearer")}</option>
+                  {(advanced || credentialKind === "custom") && (
+                    <option value="custom">
+                      {t("Encabezado personalizado")}
+                    </option>
+                  )}
+                </select>
               </label>
-            )}
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={credentialValue}
-              aria-label={t("Valor secreto")}
-              onChange={(event) => setCredentialValue(event.target.value)}
-              placeholder={t("Valor secreto")}
-              className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-            />
-            <button
-              type="button"
-              disabled={creatingCredential}
-              onClick={() => void createCredential()}
-              className="h-[32px] w-full rounded-md bg-primary text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              {creatingCredential ? t("Guardando") : t("Guardar credencial")}
-            </button>
-            {credentialError && (
-              <p className="text-[9px] text-destructive">
-                {t("No se pudo guardar la credencial.")}
-              </p>
-            )}
-          </div>
-        </details>
+              {credentialKind !== "bearer" && (
+                <label className="block text-xs">
+                  {t("Nombre del encabezado")}
+                  <input
+                    value={credentialHeader}
+                    onChange={(event) =>
+                      setCredentialHeader(event.target.value)
+                    }
+                    placeholder="X-Api-Key"
+                    className="mt-1 h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+                  />
+                </label>
+              )}
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={credentialValue}
+                aria-label={t("Valor secreto")}
+                onChange={(event) => setCredentialValue(event.target.value)}
+                placeholder={t("Valor secreto")}
+                className="h-[32px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+              />
+              <button
+                type="button"
+                disabled={creatingCredential}
+                onClick={() => void createCredential()}
+                className="h-[32px] w-full rounded-md bg-primary text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
+              >
+                {creatingCredential ? t("Guardando") : t("Guardar credencial")}
+              </button>
+              {credentialError && (
+                <p className="text-[9px] text-destructive">
+                  {t("No se pudo guardar la credencial.")}
+                </p>
+              )}
+            </div>
+          </details>
+        )}
       </div>
 
       {advanced && (
