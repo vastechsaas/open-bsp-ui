@@ -67,6 +67,33 @@ test("read-only builder protects graph changes, inspector, shortcuts and managem
   assert.match(editor, /webhookMocks: createWebhookSimulationMocks\(nodes\)/);
 });
 
+void test("view-only users can open flows from desktop and mobile listing names", () => {
+  const listing = source("src/routes/_auth/chatbots/index.tsx");
+  for (const [start, end] of [
+    ["function FlowTableRow(", "function FlowCard("],
+    ["function FlowCard(", "type FlowActionsProps"],
+  ]) {
+    const row = listing.slice(listing.indexOf(start), listing.indexOf(end));
+    assert.match(row, /<button[^>]*onClick=\{onOpen\}[^>]*>\s*\{flow.name\}/);
+    assert.doesNotMatch(row, /\{canManage \?/);
+  }
+});
+
+void test("Open is available without Manage while duplicate and lifecycle actions stay restricted", () => {
+  const listing = source("src/routes/_auth/chatbots/index.tsx");
+  const actions = listing.slice(
+    listing.indexOf("function FlowActionButtons("),
+    listing.indexOf("function FlowVersions("),
+  );
+  assert.doesNotMatch(actions, /if \(!canManage\)/);
+  const managementGate = actions.indexOf("{canManage && (");
+  assert.ok(managementGate > actions.indexOf("onClick={onOpen}"));
+  assert.ok(actions.indexOf("onClick={onDuplicate}") > managementGate);
+  assert.ok(actions.indexOf("onClick={() => onLifecycle") > managementGate);
+  assert.match(actions, /<Eye /);
+  assert.match(actions, /canManage \? "hidden 2xl:inline" : undefined/);
+});
+
 test("Super Admin form has explicit save, revision checks, stable retry IDs and conflict handling", () => {
   const query = source("src/queries/useModulePermissions.ts");
   const form = source("src/components/platform/PlatformModulePermissions.tsx");
