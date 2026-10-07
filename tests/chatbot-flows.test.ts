@@ -194,11 +194,11 @@ void test("webhook response mappings are available only after the success route"
 
   assert.deepEqual(
     getAvailableChatbotVariables(success.id, [webhook, success, error], edges),
-    ["customer_phone", "customer_status"],
+    ["conversation_id", "customer_phone", "customer_status"],
   );
   assert.deepEqual(
     getAvailableChatbotVariables(error.id, [webhook, success, error], edges),
-    ["customer_phone"],
+    ["conversation_id", "customer_phone"],
   );
 });
 
@@ -451,7 +451,10 @@ void test("chatbot duplication uses a predictable editable name", () => {
 
 void test("chatbot activation offers only Node and defaults to Node", () => {
   const dialog = readFileSync(
-    new URL("../src/components/chatbots/ChatbotFlowDeployment.tsx", import.meta.url),
+    new URL(
+      "../src/components/chatbots/ChatbotFlowDeployment.tsx",
+      import.meta.url,
+    ),
     "utf8",
   );
   const queries = readFileSync(
@@ -1220,7 +1223,7 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "start-input", source: "start", target: "input" },
       { id: "input-condition", source: "input", target: "condition" },
     ]),
-    ["customer_city", "customer_phone"],
+    ["conversation_id", "customer_city", "customer_phone"],
   );
   assert.deepEqual(
     getAvailableChatbotVariables("condition", nodes, [
@@ -1229,7 +1232,7 @@ void test("conditions only expose variables collected on every incoming path", (
       { id: "start-message", source: "start", target: "message" },
       { id: "message-condition", source: "message", target: "condition" },
     ]),
-    ["customer_phone"],
+    ["conversation_id", "customer_phone"],
   );
 });
 

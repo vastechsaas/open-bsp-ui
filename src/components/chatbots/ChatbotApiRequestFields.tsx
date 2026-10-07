@@ -124,7 +124,9 @@ export function ChatbotApiRequestFields({
                     <option key={name} value={name}>
                       {name === "customer_phone"
                         ? t("Teléfono del cliente")
-                        : name}
+                        : name === "conversation_id"
+                          ? t("ID de la conversación")
+                          : name}
                     </option>
                   ))}
                 </select>
