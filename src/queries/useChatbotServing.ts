@@ -6,14 +6,21 @@ import {
   type ChatbotServingSnapshot,
 } from "@/utils/ChatbotServingUtils";
 import { queryKeys } from "./queryKeys";
+import { useChatbotPermissions } from "./useModulePermissions";
 
 export function useChatbotServing(flowIds: string[]) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const userId = useBoundStore((state) => state.ui.user?.id);
   const ids = [...new Set(flowIds)].sort();
+  const permissions = useChatbotPermissions();
   return useQuery<ChatbotServingSnapshot>({
     queryKey: queryKeys.chatbotFlows.serving(orgId, userId, ids),
-    enabled: !!orgId && !!userId && ids.length > 0,
+    enabled:
+      permissions.isSuccess &&
+      permissions.data.can_view &&
+      !!orgId &&
+      !!userId &&
+      ids.length > 0,
     staleTime: 0,
     refetchInterval: 10000,
     retry: 1,

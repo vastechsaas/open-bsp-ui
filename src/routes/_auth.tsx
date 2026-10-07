@@ -41,6 +41,10 @@ import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
 import { useOrganizations } from "@/queries/useOrganizations";
 import PendingInvitationGate from "@/components/PendingInvitationGate";
+import {
+  useChatbotPermissions,
+  useModulePermissionRefresh,
+} from "@/queries/useModulePermissions";
 import Spinner from "@/components/Spinner";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import {
@@ -62,6 +66,8 @@ export const Route = createFileRoute("/_auth")({
 const MIN_PANEL_WIDTH = 300;
 
 function AppLayout() {
+  useModulePermissionRefresh();
+  const chatbotPermissions = useChatbotPermissions();
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
@@ -88,7 +94,10 @@ function AppLayout() {
   const pathname = location.pathname;
   const currentRole = currentAgent?.extra?.role;
   const canAccessCurrentPath =
-    !activeOrgId || canAccessPath(currentRole, pathname);
+    !activeOrgId ||
+    (isChatbotWorkspacePath(pathname)
+      ? !chatbotPermissions.isSuccess || chatbotPermissions.data.can_view
+      : canAccessPath(currentRole, pathname));
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const menuWidth = getSidebarWidth(viewportWidth, sidebarCollapsed);
   const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);

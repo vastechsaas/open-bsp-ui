@@ -45,6 +45,11 @@ export default function PlatformOrganizationDetailLayout({
   const summary = tenant.data;
   const navigation = [
     {
+      label: t("Permisos de módulos"),
+      to: "/platform/$organizationId/module-permissions" as const,
+      active: location.pathname.endsWith("/module-permissions"),
+    },
+    {
       label: t("Vista general"),
       to: "/platform/$organizationId" as const,
       active:
