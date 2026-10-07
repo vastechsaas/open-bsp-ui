@@ -1632,5 +1632,19 @@
   "Tomar control del chat": "Take over chat",
   "Reintentar toma de control": "Retry takeover",
   "Toma el control del chat antes de responder al cliente": "Take over chat before replying to the customer",
-  "No se pudo actualizar la bandeja de soporte.": "Could not refresh the support inbox."
+  "No se pudo actualizar la bandeja de soporte.": "Could not refresh the support inbox.",
+  "Cargando permisos…": "Loading permissions…",
+  "No se pudieron cargar los permisos.": "Could not load permissions.",
+  "Permisos de módulos": "Module permissions",
+  "Definí quién puede ver o administrar el constructor de chatbots en esta organización.": "Choose who can view or manage the chatbot builder in this organization.",
+  "Constructor de chatbots": "Chatbot Builder",
+  "Administrar requiere Ver. Los cambios no detienen los chatbots activos.": "Manage requires View. Changes do not stop active chatbots.",
+  "Los permisos cambiaron. Recargá antes de guardar.": "Permissions changed. Reload before saving.",
+  "No se pudieron guardar los permisos. Reintentá.": "Could not save permissions. Retry.",
+  "Tenés cambios sin guardar. ¿Querés salir?": "You have unsaved changes. Do you want to leave?",
+  "No tenés acceso al constructor de chatbots.": "You do not have access to the chatbot builder.",
+  "Tu acceso cambió. Los cambios sin guardar no se guardaron.": "Your access changed. Unsaved changes were not saved.",
+  "Estado de activación": "Activation status",
+  "No se pudo cargar": "Could not load",
+  "Descartar cambios": "Discard changes"
 }

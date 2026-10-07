@@ -26,7 +26,7 @@ import {
 } from "@/utils/ChatbotServingUtils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCurrentAgent } from "@/queries/useAgents";
+import { useChatbotPermissions } from "@/queries/useModulePermissions";
 import {
   type ChatbotFlowListRow,
   useArchiveChatbotFlow,
@@ -66,10 +66,8 @@ function ChatbotFlowList() {
   const [lifecycleDialog, setLifecycleDialog] =
     useState<LifecycleDialogState | null>(null);
   const debouncedSearch = useDebouncedValue(search.trim());
-  const { data: currentAgent } = useCurrentAgent();
-  const canManage =
-    currentAgent?.extra?.role === "owner" ||
-    currentAgent?.extra?.role === "admin";
+  const permissions = useChatbotPermissions();
+  const canManage = permissions.isSuccess && permissions.data.can_manage;
   const {
     data: flowPage,
     isLoading,
@@ -103,7 +101,7 @@ function ChatbotFlowList() {
   useEffect(() => setPage(1), [debouncedSearch, statusFilter]);
 
   async function submitName(name: string) {
-    if (!nameDialog) return;
+    if (!canManage || !nameDialog) return;
 
     try {
       if (nameDialog.mode === "create") {
@@ -152,6 +150,22 @@ function ChatbotFlowList() {
       );
     }
   }
+
+  if (permissions.isPending)
+    return <p className="p-6">{t("Cargando permisos…")}</p>;
+  if (permissions.isError)
+    return (
+      <div className="p-6">
+        <p>{t("No se pudieron cargar los permisos.")}</p>
+        <button onClick={() => void permissions.refetch()}>
+          {t("Reintentar")}
+        </button>
+      </div>
+    );
+  if (!permissions.data.can_view)
+    return (
+      <p className="p-6">{t("No tenés acceso al constructor de chatbots.")}</p>
+    );
 
   return (
     <div className="h-full min-w-0 overflow-y-auto bg-background p-[16px] text-foreground md:p-[28px]">

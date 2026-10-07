@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
+import { useChatbotPermissions } from "./useModulePermissions";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { type Database, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
@@ -57,15 +58,23 @@ export type NodeChatbotBridge =
 
 export function useNodeChatbotBridges(flowId: string) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
   return useQuery({
-    queryKey: ["chatbot-node-bridges", orgId, flowId],
-    enabled: !!orgId && !!flowId,
-    queryFn: async () =>
+    queryKey: [orgId, "chatbot_flows", "node-bridges", flowId, userId],
+    enabled:
+      !!userId &&
+      permissions.isSuccess &&
+      permissions.data.can_view &&
+      !!orgId &&
+      !!flowId,
+    queryFn: async ({ signal }) =>
       (
         await invokeChatbotManagement<{ bridges: NodeChatbotBridge[] }>(
           `flows/${flowId}/node-bridges?organization_id=${encodeURIComponent(orgId!)}`,
           undefined,
           "GET",
+          signal,
         )
       ).bridges,
     refetchInterval: (query) =>
@@ -88,7 +97,9 @@ export function useRetryNodeChatbotBridge(flowId: string) {
         "POST",
       ),
     onSettled: async () => {
-      await client.invalidateQueries({ queryKey: ["chatbot-node-bridges"] });
+      await client.invalidateQueries({
+        queryKey: [orgId, "chatbot_flows", "node-bridges"],
+      });
       await client.invalidateQueries({
         queryKey: [orgId, "chatbot_flows", "serving"],
       });
@@ -405,22 +416,26 @@ async function invokeChatbotManagement<T>(
 
 export function useChatbotFlowDraft(flowId: string, enabled = true) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
 
   return useQuery<ChatbotFlowEditorData>({
-    queryKey: queryKeys.chatbotFlows.draft(orgId, flowId),
-    queryFn: async () => {
+    queryKey: [...queryKeys.chatbotFlows.draft(orgId, flowId), userId],
+    queryFn: async ({ signal }) => {
       const [flowResult, draft] = await Promise.all([
         supabase
           .from("chatbot_flows")
           .select("id, name, status")
           .eq("organization_id", orgId!)
           .eq("id", flowId)
+          .abortSignal(signal)
           .throwOnError()
           .single(),
         invokeChatbotManagement<ChatbotFlowDraft>(
           `flows/${flowId}/draft?organization_id=${encodeURIComponent(orgId!)}`,
           undefined,
           "GET",
+          signal,
         ),
       ]);
 
@@ -430,13 +445,20 @@ export function useChatbotFlowDraft(flowId: string, enabled = true) {
 
       return { flow: flowResult.data, draft };
     },
-    enabled: !!orgId && !!flowId && enabled,
+    enabled:
+      !!userId &&
+      permissions.isSuccess &&
+      permissions.data.can_view &&
+      !!orgId &&
+      !!flowId &&
+      enabled,
   });
 }
 
 export function useSaveChatbotFlowDraft() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
 
   return useMutation({
     mutationFn: async ({
@@ -459,7 +481,7 @@ export function useSaveChatbotFlowDraft() {
     },
     onSuccess: async (draft, variables) => {
       queryClient.setQueryData<ChatbotFlowEditorData>(
-        queryKeys.chatbotFlows.draft(orgId, variables.flowId),
+        [...queryKeys.chatbotFlows.draft(orgId, variables.flowId), userId],
         (current) => (current ? { ...current, draft } : current),
       );
       await queryClient.invalidateQueries({
@@ -520,19 +542,23 @@ export function useSimulateChatbotFlow() {
 
 export function useChatbotWebhookCredentials() {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
   return useQuery<ChatbotWebhookCredential[]>({
-    queryKey: queryKeys.chatbotFlows.webhookCredentials(orgId),
-    queryFn: async () => {
+    queryKey: [...queryKeys.chatbotFlows.webhookCredentials(orgId), userId],
+    queryFn: async ({ signal }) => {
       const response = await invokeChatbotManagement<{
         credentials: ChatbotWebhookCredential[];
       }>(
         `webhook-credentials?organization_id=${encodeURIComponent(orgId!)}`,
         undefined,
         "GET",
+        signal,
       );
       return response.credentials;
     },
-    enabled: !!orgId,
+    enabled:
+      !!userId && permissions.isSuccess && permissions.data.can_view && !!orgId,
   });
 }
 
@@ -586,7 +612,7 @@ export function usePublishChatbotFlow() {
     },
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: ["chatbot-node-bridges"],
+        queryKey: [orgId, "chatbot_flows", "node-bridges"],
       });
       await Promise.all([
         queryClient.invalidateQueries({
@@ -605,10 +631,12 @@ export function usePublishChatbotFlow() {
 
 export function useChatbotFlowVersions(flowId: string, enabled = true) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
 
   return useQuery<ChatbotFlowVersion[]>({
-    queryKey: queryKeys.chatbotFlows.versions(orgId, flowId),
-    queryFn: async () => {
+    queryKey: [...queryKeys.chatbotFlows.versions(orgId, flowId), userId],
+    queryFn: async ({ signal }) => {
       const result = await supabase
         .from("chatbot_flow_versions")
         .select(
@@ -617,20 +645,29 @@ export function useChatbotFlowVersions(flowId: string, enabled = true) {
         .eq("organization_id", orgId!)
         .eq("flow_id", flowId)
         .order("version", { ascending: false })
+        .abortSignal(signal)
         .throwOnError();
 
       return result.data;
     },
-    enabled: !!orgId && !!flowId && enabled,
+    enabled:
+      !!userId &&
+      permissions.isSuccess &&
+      permissions.data.can_view &&
+      !!orgId &&
+      !!flowId &&
+      enabled,
   });
 }
 
 export function useChatbotFlowDeployments(flowId: string, enabled = true) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
 
   return useQuery<ChatbotFlowDeployment[]>({
-    queryKey: queryKeys.chatbotFlows.deployments(orgId, flowId),
-    queryFn: async () => {
+    queryKey: [...queryKeys.chatbotFlows.deployments(orgId, flowId), userId],
+    queryFn: async ({ signal }) => {
       const response = await invokeChatbotManagement<{
         deployments: ChatbotFlowDeployment[];
       }>(
@@ -639,10 +676,17 @@ export function useChatbotFlowDeployments(flowId: string, enabled = true) {
         )}`,
         undefined,
         "GET",
+        signal,
       );
       return response.deployments;
     },
-    enabled: !!orgId && !!flowId && enabled,
+    enabled:
+      !!userId &&
+      permissions.isSuccess &&
+      permissions.data.can_view &&
+      !!orgId &&
+      !!flowId &&
+      enabled,
   });
 }
 
@@ -674,7 +718,7 @@ export function useActivateChatbotFlow() {
     },
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: ["chatbot-node-bridges"],
+        queryKey: [orgId, "chatbot_flows", "node-bridges"],
       });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
@@ -707,7 +751,7 @@ export function useDeactivateChatbotFlow() {
     },
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: ["chatbot-node-bridges"],
+        queryKey: [orgId, "chatbot_flows", "node-bridges"],
       });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.chatbotFlows.deployments(orgId, variables.flowId),
@@ -721,10 +765,12 @@ export function useDeactivateChatbotFlow() {
 
 export function useChatbotFlows(params: ChatbotFlowPageParams) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const permissions = useChatbotPermissions();
 
   return useQuery<DataTablePage<ChatbotFlowListRow>>({
-    queryKey: queryKeys.chatbotFlows.page(orgId, params),
-    queryFn: async () => {
+    queryKey: [...queryKeys.chatbotFlows.page(orgId, params), userId],
+    queryFn: async ({ signal }) => {
       const result = await supabase
         .rpc("list_chatbot_flows_page", {
           p_organization_id: orgId!,
@@ -733,6 +779,7 @@ export function useChatbotFlows(params: ChatbotFlowPageParams) {
           p_search: params.search || undefined,
           p_status: params.status,
         })
+        .abortSignal(signal)
         .throwOnError();
 
       const rows = result.data as ChatbotFlowListRow[];
@@ -741,7 +788,8 @@ export function useChatbotFlows(params: ChatbotFlowPageParams) {
         total: rows[0]?.total_count || 0,
       };
     },
-    enabled: !!orgId,
+    enabled:
+      !!userId && permissions.isSuccess && permissions.data.can_view && !!orgId,
   });
 }
 
@@ -814,4 +862,25 @@ export function useArchiveChatbotFlow() {
 
 export function useRestoreChatbotFlow() {
   return useChatbotFlowLifecycle("restore");
+}
+
+export function useChatbotBuilderOptions() {
+  const orgId = useBoundStore((s) => s.ui.activeOrgId);
+  const userId = useBoundStore((s) => s.ui.user?.id);
+  const permissions = useChatbotPermissions();
+  return useQuery({
+    queryKey: [orgId, "chatbot_flows", "options", userId],
+    enabled:
+      !!orgId && !!userId && permissions.isSuccess && permissions.data.can_view,
+    queryFn: ({ signal }) =>
+      invokeChatbotManagement<{
+        agents: { id: string; name: string }[];
+        queues: { id: string; name: string }[];
+      }>(
+        `builder-options?organization_id=${encodeURIComponent(orgId!)}`,
+        undefined,
+        "GET",
+        signal,
+      ),
+  });
 }

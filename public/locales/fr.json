@@ -1605,5 +1605,19 @@
   "Tomar control del chat": "Prendre en charge la discussion",
   "Reintentar toma de control": "Réessayer la prise en charge",
   "Toma el control del chat antes de responder al cliente": "Prenez en charge la discussion avant de répondre au client",
-  "No se pudo actualizar la bandeja de soporte.": "Impossible d’actualiser la boîte de réception du support."
+  "No se pudo actualizar la bandeja de soporte.": "Impossible d’actualiser la boîte de réception du support.",
+  "Cargando permisos…": "Chargement des autorisations…",
+  "No se pudieron cargar los permisos.": "Impossible de charger les autorisations.",
+  "Permisos de módulos": "Autorisations des modules",
+  "Definí quién puede ver o administrar el constructor de chatbots en esta organización.": "Choisissez qui peut consulter ou gérer le constructeur de chatbots de cette organisation.",
+  "Constructor de chatbots": "Constructeur de chatbots",
+  "Administrar requiere Ver. Los cambios no detienen los chatbots activos.": "Gérer nécessite Consulter. Les modifications n’arrêtent pas les chatbots actifs.",
+  "Los permisos cambiaron. Recargá antes de guardar.": "Les autorisations ont changé. Rechargez avant d’enregistrer.",
+  "No se pudieron guardar los permisos. Reintentá.": "Impossible d’enregistrer les autorisations. Réessayez.",
+  "Tenés cambios sin guardar. ¿Querés salir?": "Des modifications ne sont pas enregistrées. Voulez-vous quitter ?",
+  "No tenés acceso al constructor de chatbots.": "Vous n’avez pas accès au constructeur de chatbots.",
+  "Tu acceso cambió. Los cambios sin guardar no se guardaron.": "Votre accès a changé. Les modifications en attente n’ont pas été enregistrées.",
+  "Estado de activación": "État d’activation",
+  "No se pudo cargar": "Impossible de charger",
+  "Descartar cambios": "Ignorer les modifications"
 }
