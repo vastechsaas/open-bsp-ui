@@ -6,6 +6,7 @@ import {
   ArchiveRestore,
   Clock3,
   Copy,
+  Eye,
   GitBranch,
   PencilLine,
   Plus,
@@ -456,19 +457,13 @@ function FlowTableRow({
             <Workflow className="h-[18px] w-[18px] text-primary" />
           </div>
           <div className="min-w-0">
-            {canManage ? (
-              <button
-                type="button"
-                className="block max-w-[320px] truncate text-left text-[13px] font-medium hover:text-primary"
-                onClick={onOpen}
-              >
-                {flow.name}
-              </button>
-            ) : (
-              <div className="max-w-[320px] truncate text-[13px] font-medium">
-                {flow.name}
-              </div>
-            )}
+            <button
+              type="button"
+              className="block max-w-[320px] truncate text-left text-[13px] font-medium hover:text-primary"
+              onClick={onOpen}
+            >
+              {flow.name}
+            </button>
             <div className="mt-[2px] flex items-center gap-[5px] text-[11px] text-muted-foreground">
               <GitBranch className="h-[12px] w-[12px]" />
               {flow.has_unpublished_changes
@@ -541,17 +536,13 @@ function FlowCard({
           <Workflow className="h-[19px] w-[19px] text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          {canManage ? (
-            <button
-              type="button"
-              className="block max-w-full truncate text-left text-[14px] font-medium hover:text-primary"
-              onClick={onOpen}
-            >
-              {flow.name}
-            </button>
-          ) : (
-            <div className="truncate text-[14px] font-medium">{flow.name}</div>
-          )}
+          <button
+            type="button"
+            className="block max-w-full truncate text-left text-[14px] font-medium hover:text-primary"
+            onClick={onOpen}
+          >
+            {flow.name}
+          </button>
           <div className="mt-[3px] text-[11px] text-muted-foreground">
             {flow.has_unpublished_changes
               ? t("Cambios sin publicar")
@@ -627,14 +618,6 @@ function FlowActionButtons({
 }: FlowActionsProps & { flow: ChatbotFlowListRow }) {
   const { translate: t } = useTranslation();
 
-  if (!canManage) {
-    return (
-      <div className="text-right text-[11px] text-muted-foreground">
-        {t("Solo lectura")}
-      </div>
-    );
-  }
-
   const isArchived = flow.status === "archived";
   return (
     <div className="flex justify-end gap-[7px]">
@@ -645,41 +628,51 @@ function FlowActionButtons({
         className="flex h-[34px] items-center gap-[6px] rounded-lg border border-primary/35 px-[9px] text-[11px] text-primary hover:bg-primary/10"
         onClick={onOpen}
       >
-        <PencilLine className="h-[14px] w-[14px]" />
-        <span className="hidden 2xl:inline">{t("Abrir")}</span>
-      </button>
-      <button
-        type="button"
-        title={t("Duplicar")}
-        aria-label={`${t("Duplicar")} ${flow.name}`}
-        disabled={disabled}
-        className="flex h-[34px] items-center gap-[6px] rounded-lg border border-border px-[9px] text-[11px] hover:bg-muted disabled:opacity-50"
-        onClick={onDuplicate}
-      >
-        <Copy className="h-[14px] w-[14px]" />
-        <span className="hidden 2xl:inline">{t("Duplicar")}</span>
-      </button>
-      <button
-        type="button"
-        title={isArchived ? t("Restaurar") : t("Archivar")}
-        aria-label={`${isArchived ? t("Restaurar") : t("Archivar")} ${flow.name}`}
-        disabled={disabled}
-        className={`flex h-[34px] items-center gap-[6px] rounded-lg border px-[9px] text-[11px] disabled:opacity-50 ${
-          isArchived
-            ? "border-primary/40 text-primary hover:bg-primary/10"
-            : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        }`}
-        onClick={() => onLifecycle(isArchived ? "restore" : "archive")}
-      >
-        {isArchived ? (
-          <ArchiveRestore className="h-[14px] w-[14px]" />
+        {canManage ? (
+          <PencilLine className="h-[14px] w-[14px]" />
         ) : (
-          <Archive className="h-[14px] w-[14px]" />
+          <Eye className="h-[14px] w-[14px]" />
         )}
-        <span className="hidden 2xl:inline">
-          {isArchived ? t("Restaurar") : t("Archivar")}
+        <span className={canManage ? "hidden 2xl:inline" : undefined}>
+          {t("Abrir")}
         </span>
       </button>
+      {canManage && (
+        <>
+          <button
+            type="button"
+            title={t("Duplicar")}
+            aria-label={`${t("Duplicar")} ${flow.name}`}
+            disabled={disabled}
+            className="flex h-[34px] items-center gap-[6px] rounded-lg border border-border px-[9px] text-[11px] hover:bg-muted disabled:opacity-50"
+            onClick={onDuplicate}
+          >
+            <Copy className="h-[14px] w-[14px]" />
+            <span className="hidden 2xl:inline">{t("Duplicar")}</span>
+          </button>
+          <button
+            type="button"
+            title={isArchived ? t("Restaurar") : t("Archivar")}
+            aria-label={`${isArchived ? t("Restaurar") : t("Archivar")} ${flow.name}`}
+            disabled={disabled}
+            className={`flex h-[34px] items-center gap-[6px] rounded-lg border px-[9px] text-[11px] disabled:opacity-50 ${
+              isArchived
+                ? "border-primary/40 text-primary hover:bg-primary/10"
+                : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+            onClick={() => onLifecycle(isArchived ? "restore" : "archive")}
+          >
+            {isArchived ? (
+              <ArchiveRestore className="h-[14px] w-[14px]" />
+            ) : (
+              <Archive className="h-[14px] w-[14px]" />
+            )}
+            <span className="hidden 2xl:inline">
+              {isArchived ? t("Restaurar") : t("Archivar")}
+            </span>
+          </button>
+        </>
+      )}
     </div>
   );
 }
