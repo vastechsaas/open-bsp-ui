@@ -1,4 +1,8 @@
-import type { ConversationRow, MessageRow } from "@/supabase/client";
+import type {
+  ConversationRow,
+  MessageInsert,
+  MessageRow,
+} from "@/supabase/client";
 import type { AppState } from "./useBoundStore";
 import type { StateCreator } from "zustand";
 // @ts-expect-error no type declarations for the core-js-pure submodule
@@ -29,6 +33,7 @@ export type PrivateNoteDraft = {
 
 type MediaLoad = {
   blob?: Blob;
+  messageInsert?: MessageInsert;
   type: "upload" | "download";
   status: "pending" | "loading" | "done" | "error";
   error?: string;
