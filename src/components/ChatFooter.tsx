@@ -350,7 +350,12 @@ export default function ChatFooter() {
       agentId,
       file,
     );
-    setMediaLoad(record.id!, { type: "upload", status: "pending", blob: file });
+    setMediaLoad(record.id!, {
+      type: "upload",
+      status: "pending",
+      blob: file,
+      messageInsert: record,
+    });
     pushMessageToStore(record);
     setVoiceRecorderOpen(false);
   };

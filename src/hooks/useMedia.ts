@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { pushMessageToDb } from "@/utils/MessageUtils";
+import { mediaMessageInsert } from "@/utils/MediaMessageInsertUtils";
 import useBoundStore from "@/stores/useBoundStore";
-import {
-  type MessageInsert,
-  type MessageRow,
-  supabase,
-} from "@/supabase/client";
+import { type MessageRow, supabase } from "@/supabase/client";
 
 export function useMedia(message: MessageRow) {
   if (!(message.direction === "incoming" || message.direction === "outgoing")) {
@@ -68,7 +65,8 @@ export function useMedia(message: MessageRow) {
 
     setLoad(message.id, { ...load, status: "done" });
 
-    !error && (await pushMessageToDb(message as MessageInsert));
+    !error &&
+      (await pushMessageToDb(mediaMessageInsert(message, load.messageInsert)));
   };
 
   const downloadTask = async () => {

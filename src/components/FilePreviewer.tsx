@@ -182,6 +182,7 @@ const FilePreviewer = () => {
         type: "upload",
         status: "pending",
         blob: draft.file,
+        messageInsert: record,
       });
 
       pushMessageToStore(record);
