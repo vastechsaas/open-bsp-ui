@@ -56,6 +56,7 @@ import { Route as AuthStatsUsageRouteImport } from './routes/_auth/stats/usage'
 import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas'
 import { Route as AuthSettingsRoutingQueuesRouteImport } from './routes/_auth/settings/routing-queues'
 import { Route as AuthSettingsMediaManagementRouteImport } from './routes/_auth/settings/media-management'
+import { Route as AuthSettingsBusinessHoursRouteImport } from './routes/_auth/settings/business-hours'
 import { Route as AuthSettingsAutomationRouteImport } from './routes/_auth/settings/automation'
 import { Route as AuthSettingsAppearanceRouteImport } from './routes/_auth/settings/appearance'
 import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes/_auth/integrations/media-preprocessing'
@@ -346,6 +347,12 @@ const AuthSettingsMediaManagementRoute =
     path: '/media-management',
     getParentRoute: () => AuthSettingsRoute,
   } as any)
+const AuthSettingsBusinessHoursRoute =
+  AuthSettingsBusinessHoursRouteImport.update({
+    id: '/business-hours',
+    path: '/business-hours',
+    getParentRoute: () => AuthSettingsRoute,
+  } as any)
 const AuthSettingsAutomationRoute = AuthSettingsAutomationRouteImport.update({
   id: '/automation',
   path: '/automation',
@@ -629,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
+  '/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
@@ -717,6 +725,7 @@ export interface FileRoutesByTo {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/settings/automation': typeof AuthSettingsAutomationRoute
+  '/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
@@ -810,6 +819,7 @@ export interface FileRoutesById {
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/_auth/settings/appearance': typeof AuthSettingsAppearanceRoute
   '/_auth/settings/automation': typeof AuthSettingsAutomationRoute
+  '/_auth/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/_auth/settings/media-management': typeof AuthSettingsMediaManagementRoute
   '/_auth/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
@@ -904,6 +914,7 @@ export interface FileRouteTypes {
     | '/integrations/media-preprocessing'
     | '/settings/appearance'
     | '/settings/automation'
+    | '/settings/business-hours'
     | '/settings/media-management'
     | '/settings/routing-queues'
     | '/stats/quotas'
@@ -992,6 +1003,7 @@ export interface FileRouteTypes {
     | '/integrations/media-preprocessing'
     | '/settings/appearance'
     | '/settings/automation'
+    | '/settings/business-hours'
     | '/settings/media-management'
     | '/settings/routing-queues'
     | '/stats/quotas'
@@ -1084,6 +1096,7 @@ export interface FileRouteTypes {
     | '/_auth/integrations/media-preprocessing'
     | '/_auth/settings/appearance'
     | '/_auth/settings/automation'
+    | '/_auth/settings/business-hours'
     | '/_auth/settings/media-management'
     | '/_auth/settings/routing-queues'
     | '/_auth/stats/quotas'
@@ -1493,6 +1506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsMediaManagementRouteImport
       parentRoute: typeof AuthSettingsRoute
     }
+    '/_auth/settings/business-hours': {
+      id: '/_auth/settings/business-hours'
+      path: '/business-hours'
+      fullPath: '/settings/business-hours'
+      preLoaderRoute: typeof AuthSettingsBusinessHoursRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/settings/automation': {
       id: '/_auth/settings/automation'
       path: '/automation'
@@ -1807,6 +1827,7 @@ declare module '@tanstack/react-router' {
 interface AuthSettingsRouteChildren {
   AuthSettingsAppearanceRoute: typeof AuthSettingsAppearanceRoute
   AuthSettingsAutomationRoute: typeof AuthSettingsAutomationRoute
+  AuthSettingsBusinessHoursRoute: typeof AuthSettingsBusinessHoursRoute
   AuthSettingsMediaManagementRoute: typeof AuthSettingsMediaManagementRoute
   AuthSettingsRoutingQueuesRoute: typeof AuthSettingsRoutingQueuesRoute
   AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
@@ -1827,6 +1848,7 @@ interface AuthSettingsRouteChildren {
 const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
   AuthSettingsAppearanceRoute: AuthSettingsAppearanceRoute,
   AuthSettingsAutomationRoute: AuthSettingsAutomationRoute,
+  AuthSettingsBusinessHoursRoute: AuthSettingsBusinessHoursRoute,
   AuthSettingsMediaManagementRoute: AuthSettingsMediaManagementRoute,
   AuthSettingsRoutingQueuesRoute: AuthSettingsRoutingQueuesRoute,
   AuthSettingsIndexRoute: AuthSettingsIndexRoute,
