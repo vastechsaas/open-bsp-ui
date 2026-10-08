@@ -22,7 +22,39 @@ export type PreprocessingConfig = {
   extra_prompt?: string;
 };
 
+export type BusinessHoursDay =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+export type BusinessHoursTimeRange = { start_time: string; end_time: string };
+export type BusinessHoursSchedule = {
+  enabled?: boolean;
+  mode: "all_days" | "per_day";
+  timezone: string;
+  all_days: BusinessHoursTimeRange;
+  per_day: Record<
+    BusinessHoursDay,
+    BusinessHoursTimeRange & { enabled: boolean }
+  >;
+  holidays?: Array<{
+    date: string;
+    closed: boolean;
+    start_time?: string;
+    end_time?: string;
+  }>;
+};
+export type BusinessHoursSettings = BusinessHoursSchedule & {
+  queue_overrides?: Record<string, BusinessHoursSchedule | null>;
+  outside_hours_message?: string;
+  no_agents_message?: string;
+};
+
 export type OrganizationExtra = {
+  business_hours?: BusinessHoursSettings;
   response_delay_seconds?: number;
   welcome_message?: string;
   authorized_contacts_only?: boolean;

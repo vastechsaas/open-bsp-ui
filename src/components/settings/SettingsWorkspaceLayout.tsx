@@ -1,5 +1,6 @@
 import {
   Building2,
+  Clock3,
   HardDrive,
   KeyRound,
   Palette,
@@ -17,6 +18,12 @@ type SettingsWorkspaceLayoutProps = {
 };
 
 const settingsNavigation = [
+  {
+    to: "/settings/business-hours",
+    title: "Horario comercial",
+    description: "Horarios de tu organización para todos los días o por día.",
+    icon: Clock3,
+  },
   {
     to: "/settings/media-management",
     title: "Administración de medios",
@@ -83,7 +90,9 @@ export default function SettingsWorkspaceLayout({
           )
         : role === "member"
           ? settingsNavigation.filter(
-              (item) => item.to !== "/settings/appearance",
+              (item) =>
+                item.to !== "/settings/appearance" &&
+                item.to !== "/settings/business-hours",
             )
           : settingsNavigation;
 
