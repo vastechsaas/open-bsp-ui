@@ -79,6 +79,11 @@ void test("Preferences groups Notification Type toggles without adding a Notific
   );
   assert.doesNotMatch(workspace, /\/settings\/notifications/);
   assert.match(workspace, /title: "Preferencias generales"/);
+  assert.match(workspace, /t\("Preferencias"\)/);
+  assert.match(
+    source("../src/components/Menu.tsx"),
+    /title=\{t\("Preferencias"\)\}/,
+  );
   assert.match(panel, /t\("Preferencias generales"\)/);
   assert.match(panel, /t\("Tipo de notificación"\)/);
   assert.match(panel, /<Switch/);
@@ -127,5 +132,5 @@ void test("notification preference copy exists in every supported locale", () =>
   >;
   assert.equal(en["Tipo de notificación"], "Notification Type");
   assert.equal(en["Preferencias generales"], "Preferences");
-  assert.equal(en["Preferencias"], "Settings");
+  assert.equal(en["Preferencias"], "Preferences");
 });
