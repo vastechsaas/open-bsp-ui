@@ -49,6 +49,15 @@ export const BUSINESS_HOURS_TIMES = Array.from({ length: 96 }, (_, index) => {
   };
 });
 
+export function businessHoursTimezones(current: string, search = "") {
+  // Keep UTC and valid saved aliases even when Intl's canonical list omits them.
+  const query = search.trim().toLowerCase().replaceAll("_", " ");
+  return [...new Set(["UTC", current, ...Intl.supportedValuesOf("timeZone")])]
+    .filter(Boolean)
+    .sort()
+    .filter((zone) => zone.toLowerCase().replaceAll("_", " ").includes(query));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

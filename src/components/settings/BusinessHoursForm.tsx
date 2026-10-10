@@ -1,6 +1,8 @@
 import { useId, useState, type FormEvent } from "react";
 import { Clock3 } from "lucide-react";
 import Button from "@/components/Button";
+import Switch from "@/components/Switch";
+import BusinessHoursTimezoneSelect from "./BusinessHoursTimezoneSelect";
 import type {
   BusinessHoursSettings,
   BusinessHoursTimeRange,
@@ -134,39 +136,38 @@ export default function BusinessHoursForm({
               "Define los horarios de tu organización para todos los días o por día.",
             )}
           </p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            {t("Zona horaria")}: {settings.timezone}
-          </p>
         </div>
       </div>
 
       <fieldset disabled={saving} className="mt-6">
-        <label className="mb-4 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        <label className="mb-5 flex items-start gap-3 rounded-lg border border-border p-4 text-sm">
+          <Switch
+            className="mt-0.5 shrink-0"
+            role="switch"
             checked={settings.enabled !== false}
-            onChange={(event) =>
-              update({ ...settings, enabled: event.target.checked })
-            }
+            aria-describedby={`${id}-enabled-hint`}
+            onCheckedChange={(enabled) => update({ ...settings, enabled })}
           />
-          {t("Aplicar horario comercial")}
+          <span>
+            <span className="block font-medium">
+              {t("Activar horario comercial")}
+            </span>
+            <span
+              id={`${id}-enabled-hint`}
+              className="mt-1 block text-xs text-muted-foreground"
+            >
+              {t(
+                "Activado: aplica este horario al soporte humano. Desactivado: no restringe el soporte por horario. El chatbot sigue funcionando.",
+              )}
+            </span>
+          </span>
         </label>
-        <label className="mb-4 block text-sm">
-          {t("Zona horaria")}
-          <input
-            list={`${id}-timezones`}
-            value={settings.timezone}
-            onChange={(event) =>
-              update({ ...settings, timezone: event.target.value })
-            }
-            className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
-          />
-          <datalist id={`${id}-timezones`}>
-            {Intl.supportedValuesOf("timeZone").map((zone) => (
-              <option key={zone} value={zone} />
-            ))}
-          </datalist>
-        </label>
+        <BusinessHoursTimezoneSelect
+          value={settings.timezone}
+          onChange={(timezone) => update({ ...settings, timezone })}
+          disabled={saving}
+          translate={t}
+        />
         <legend className="sr-only">{t("Configuración del horario")}</legend>
         <div className="flex flex-wrap gap-x-6 gap-y-3">
           {(
@@ -353,30 +354,55 @@ export default function BusinessHoursForm({
           <legend className="mb-3 text-sm font-medium">
             {t("Mensajes de disponibilidad")}
           </legend>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              "Las solicitudes quedan en cola. Los chats ya atendidos permanecen abiertos.",
+            )}
+          </p>
           {(["outside_hours_message", "no_agents_message"] as const).map(
-            (field) => (
-              <label key={field} className="block text-sm">
-                {t(
-                  field === "outside_hours_message"
-                    ? "Fuera del horario comercial"
-                    : "Sin agentes disponibles",
-                )}
-                <textarea
-                  maxLength={4096}
-                  rows={3}
-                  value={
-                    settings[field] ||
-                    (field === "outside_hours_message"
-                      ? "Our support team is currently outside business hours. Your request is queued and will be reviewed when support is available."
-                      : "All support agents are currently unavailable. Your request is queued for the next available support agent.")
-                  }
-                  onChange={(event) =>
-                    update({ ...settings, [field]: event.target.value })
-                  }
-                  className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
-                />
-              </label>
-            ),
+            (field) => {
+              const message = (
+                <label key={field} className="block text-sm">
+                  {t(
+                    field === "outside_hours_message"
+                      ? "Fuera del horario comercial"
+                      : "Sin agentes disponibles",
+                  )}
+                  <textarea
+                    maxLength={4096}
+                    rows={3}
+                    value={
+                      settings[field] ||
+                      (field === "outside_hours_message"
+                        ? "Our support team is currently outside business hours. Your request is queued and will be reviewed when support is available."
+                        : "All support agents are currently unavailable. Your request is queued for the next available support agent.")
+                    }
+                    onChange={(event) =>
+                      update({ ...settings, [field]: event.target.value })
+                    }
+                    className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
+                  />
+                </label>
+              );
+              return field === "outside_hours_message" ? (
+                message
+              ) : (
+                <details
+                  key={field}
+                  className="rounded-lg border border-border p-3"
+                >
+                  <summary className="cursor-pointer text-sm font-medium">
+                    {t("Mensaje de respaldo durante el horario comercial")}
+                  </summary>
+                  <p className="my-3 text-xs text-muted-foreground">
+                    {t(
+                      "Solo se usa si no hay agentes disponibles durante el horario comercial, por ejemplo, si están desconectados. El horario no garantiza su disponibilidad.",
+                    )}
+                  </p>
+                  {message}
+                </details>
+              );
+            },
           )}
         </fieldset>
       )}

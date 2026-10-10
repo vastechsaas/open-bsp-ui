@@ -9,6 +9,7 @@ import {
   BUSINESS_HOURS_TIMES,
   businessHoursPatch,
   businessHoursRangeValid,
+  businessHoursTimezones,
   canManageBusinessHours,
   createBusinessHoursDefaults,
   invalidBusinessHoursRanges,
@@ -178,6 +179,7 @@ void test("route and persistence are organization/account scoped, and no runtime
 void test("all user-facing business-hour keys are translated in every supported locale", () => {
   const strings = [
     source("../src/components/settings/BusinessHoursForm.tsx"),
+    source("../src/components/settings/BusinessHoursTimezoneSelect.tsx"),
     source("../src/routes/_auth/settings/business-hours.tsx"),
   ];
   const labels = new Set([
@@ -301,4 +303,72 @@ void test("schedule form exposes editable timezone, exceptions and global custom
     source("../src/routes/_auth/settings/business-hours.tsx"),
     /get_business_hours_status/,
   );
+});
+
+void test("simplified settings keep the organization schedule primary and advanced controls collapsed", () => {
+  const route = source("../src/routes/_auth/settings/business-hours.tsx");
+  assert.match(
+    route,
+    /<details[^>]*>[\s\S]*Avanzado: horarios por equipo y disponibilidad/,
+  );
+  assert.doesNotMatch(route, /<details[^>]*\bopen[\s=>]/);
+  const html = render();
+  assert.match(html, /role="switch"/);
+  assert.match(html, /Activar horario comercial/);
+  assert.match(html, /El chatbot sigue funcionando/);
+  assert.doesNotMatch(html, /Aplicar horario comercial|<datalist/);
+  assert.match(html, /role="combobox"[^>]*aria-expanded="false"/);
+  assert.match(
+    html,
+    /<details[^>]*>[\s\S]*Mensaje de respaldo durante el horario comercial/,
+  );
+  assert.doesNotMatch(html, /<details[^>]*\bopen[\s=>]/);
+  assert.equal((html.match(/<textarea/g) || []).length, 2);
+});
+
+void test("simplification preserves disabled schedules, saved messages and hidden team overrides", () => {
+  const settings = defaults();
+  settings.enabled = false;
+  settings.outside_hours_message = "We are closed.";
+  settings.no_agents_message = "Please wait for support.";
+  settings.queue_overrides = {
+    "bb000000-0000-4000-8000-000000000001": {
+      ...defaults(),
+      timezone: "Europe/London",
+    },
+  };
+  const before = structuredClone(settings);
+  const html = render(settings, true);
+  assert.match(html, /We are closed\./);
+  assert.match(html, /Please wait for support\./);
+  assert.doesNotMatch(html, /role="switch"[^>]*checked/);
+  assert.deepEqual(settings, before);
+  assert.deepEqual(businessHoursPatch(settings).extra.business_hours, before);
+  const queueHtml = renderToStaticMarkup(
+    createElement(BusinessHoursForm, {
+      initialValue: defaults(),
+      configured: true,
+      queueOverride: true,
+      translate: (text) => text,
+      onSave: () => Promise.resolve(),
+    }),
+  );
+  assert.doesNotMatch(queueHtml, /<textarea/);
+});
+
+void test("timezone search handles cities, canonical regions, UTC and saved aliases without duplicates", () => {
+  assert.ok(
+    businessHoursTimezones("Asia/Karachi", "karachi").includes("Asia/Karachi"),
+  );
+  assert.ok(
+    businessHoursTimezones("UTC", "new york").includes("America/New_York"),
+  );
+  assert.ok(businessHoursTimezones("UTC", " UTC ").includes("UTC"));
+  assert.ok(
+    businessHoursTimezones("US/Eastern", "us/eastern").includes("US/Eastern"),
+  );
+  assert.deepEqual(businessHoursTimezones("UTC", "not a real timezone"), []);
+  const zones = businessHoursTimezones("Asia/Karachi");
+  assert.equal(zones.length, new Set(zones).size);
+  assert.deepEqual(zones, [...zones].sort());
 });
