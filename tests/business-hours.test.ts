@@ -326,6 +326,16 @@ void test("simplified settings keep the organization schedule primary and advanc
   assert.equal((html.match(/<textarea/g) || []).length, 2);
 });
 
+void test("advanced team schedule settings are temporarily hidden without removing their configuration", () => {
+  const route = source("../src/routes/_auth/settings/business-hours.tsx");
+  assert.match(
+    route,
+    /<div hidden[^>]*>[\s\S]*Avanzado: horarios por equipo y disponibilidad/,
+  );
+  assert.match(route, /queue_overrides: \{/);
+  assert.match(route, /<CampaignFilterSelect/);
+});
+
 void test("simplification preserves disabled schedules, saved messages and hidden team overrides", () => {
   const settings = defaults();
   settings.enabled = false;

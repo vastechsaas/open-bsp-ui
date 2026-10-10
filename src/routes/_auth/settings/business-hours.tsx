@@ -123,7 +123,8 @@ function BusinessHours() {
   };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 space-y-3 border-b border-border p-5">
+      {/* Temporarily hidden: retain team schedule editing and saved overrides. */}
+      <div hidden className="shrink-0 space-y-3 border-b border-border p-5">
         <details className="rounded-lg border border-border p-3">
           <summary className="cursor-pointer text-sm font-medium">
             {t("Avanzado: horarios por equipo y disponibilidad")}
