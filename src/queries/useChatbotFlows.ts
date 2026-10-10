@@ -151,36 +151,66 @@ export function useNodeConversationLifecycle(conversationId?: string) {
   const request = useRef<ConversationActionRequest | null>(null);
   const client = useQueryClient();
   const key = ["node-conversation-lifecycle", userId, orgId, conversationId];
-  const mapping = useQuery({
-    queryKey: ["node-conversation-mapping", userId, orgId, conversationId],
-    enabled: !!userId && !!orgId && !!conversationId,
-    refetchInterval: 5000,
-    queryFn: async ({ signal }) => {
-      const { data, error } = await supabase
-        .from("chatbot_node_conversations")
-        .select("human_owned,lifecycle_enabled,pending_request_id")
-        .eq("organization_id", orgId!)
-        .eq("conversation_id", conversationId!)
-        .abortSignal(signal)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-  const status = useQuery({
+  const status = useQuery<NodeConversationSnapshot>({
     queryKey: key,
-    enabled: !!userId && !!orgId && !!conversationId && !!mapping.data,
-    refetchInterval: 5000,
+    enabled: !!userId && !!orgId && !!conversationId,
+    refetchInterval: (query) =>
+      query.state.data?.enabled
+        ? query.state.data.pending_request_id || query.state.data.sync_pending
+          ? 2000
+          : 20000
+        : false,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
+    staleTime: 0,
     retry: 1,
-    queryFn: ({ signal }) =>
-      invokeChatbotManagement<NodeConversationSnapshot>(
+    queryFn: async ({ signal }) => {
+      const fresh = await invokeChatbotManagement<NodeConversationSnapshot>(
         `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}`,
         undefined,
         "GET",
         signal,
-      ),
+      );
+      const pending = client.getQueryData<NodeConversationSnapshot>(key);
+      // A poll or Realtime invalidation must not remove the shared sending
+      // fence while the POST (including its fresh preflight) is still running.
+      return client.isMutating({ mutationKey: key }) &&
+        pending?.optimistic_action
+        ? {
+            ...fresh,
+            pending_request_id: fresh.pending_request_id ?? "submitting",
+            optimistic_action: pending.optimistic_action,
+          }
+        : fresh;
+    },
   });
+  // One query owns the header/composer snapshot. This adapter keeps legacy
+  // callers compatible without a second, independently stale mapping read.
+  const mapping = {
+    data: status.data?.enabled
+      ? {
+          lifecycle_enabled: status.data.lifecycle_enabled ?? true,
+          human_owned:
+            status.data.human_owned ?? status.data.state === "human_owned",
+          pending_request_id: status.data.pending_request_id ?? null,
+          sync_pending: status.data.sync_pending || status.isError,
+        }
+      : null,
+  };
   const action = useMutation({
+    mutationKey: key,
+    onMutate: async (actionName) => {
+      await client.cancelQueries({ queryKey: key });
+      client.setQueryData<NodeConversationSnapshot>(key, (snapshot) =>
+        snapshot
+          ? {
+              ...snapshot,
+              pending_request_id: "submitting",
+              optimistic_action: actionName,
+            }
+          : snapshot,
+      );
+    },
     mutationFn: async (
       actionName: "resolve-and-close" | "resume" | "takeover",
     ) => {
@@ -211,7 +241,6 @@ export function useNodeConversationLifecycle(conversationId?: string) {
                 "GET",
               );
             ensureScope();
-            client.setQueryData(key, fresh);
             return fresh;
           },
           submit: (body) =>
@@ -225,47 +254,103 @@ export function useNodeConversationLifecycle(conversationId?: string) {
           throw new Error(result.last_error || "Conversation action failed");
         return result;
       }
-      const snapshot = status.data;
+      const snapshot = await invokeChatbotManagement<NodeConversationSnapshot>(
+        `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}`,
+        undefined,
+        "GET",
+      );
+      const current = useBoundStore.getState();
+      if (
+        current.ui.user?.id !== userId ||
+        current.ui.activeOrgId !== orgId ||
+        current.ui.activeConvId !== conversationId
+      )
+        throw new Error("Conversation changed. No action was submitted.");
       if (
         !snapshot?.enabled ||
         !snapshot.last_inbound_wamid ||
         !snapshot.revision
       )
         throw new Error("Refresh conversation state before continuing");
-      const requestKey = `${userId}:${orgId}:${conversationId}:${actionName}:${snapshot.revision}:${snapshot.last_inbound_wamid}`;
-      if (request.current?.key !== requestKey)
-        request.current = { key: requestKey, id: crypto.randomUUID() };
+      const requestKey = `${userId}:${orgId}:${conversationId}:${actionName}`;
+      if (
+        snapshot.operation?.request_id === request.current?.id &&
+        snapshot.operation?.status === "succeeded"
+      ) {
+        request.current = null;
+        return snapshot.operation;
+      }
       const retry = conversationRetry(snapshot, actionName);
+      if (
+        retry ||
+        request.current?.key !== requestKey ||
+        !request.current.body
+      ) {
+        const id = retry?.request_id ?? crypto.randomUUID();
+        request.current = {
+          key: requestKey,
+          id,
+          body: {
+            organization_id: orgId!,
+            request_id: id,
+            observed_last_inbound_wamid:
+              retry?.observed_last_inbound_wamid ?? snapshot.last_inbound_wamid,
+            expected_revision: retry?.expected_revision ?? snapshot.revision,
+          },
+        };
+      }
+      // Preserve the exact request and observations across ambiguous network
+      // failures; a retry must reconcile that operation, not invent another.
       const result = await invokeChatbotManagement<{
         request_id: string;
         status: string;
         last_error?: string;
       }>(
         `conversations/${conversationId}/${actionName}`,
-        {
-          organization_id: orgId,
-          request_id: retry?.request_id ?? request.current.id,
-          observed_last_inbound_wamid:
-            retry?.observed_last_inbound_wamid ?? snapshot.last_inbound_wamid,
-          expected_revision: retry?.expected_revision ?? snapshot.revision,
-        },
+        request.current.body,
         "POST",
       );
-      if (result.status === "failed")
+      if (result.status === "failed") {
+        request.current = null;
         throw new Error(result.last_error || "Conversation action failed");
+      }
+      if (result.status === "succeeded") request.current = null;
       return result;
     },
+    onError: (error) => {
+      // Only a definite reservation rejection permits a fresh request.
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : undefined;
+      if (
+        code &&
+        [
+          "OWNERSHIP_CHANGED",
+          "SUPPORT_STATE_CHANGED",
+          "HUMAN_SEND_PENDING",
+          "NEW_CUSTOMER_MESSAGE",
+          "CONVERSATION_ACTION_REJECTED",
+        ].includes(code)
+      )
+        request.current = null;
+    },
     onSettled: async () => {
+      client.setQueryData<NodeConversationSnapshot>(key, (snapshot) =>
+        snapshot
+          ? {
+              ...snapshot,
+              optimistic_action: undefined,
+              pending_request_id:
+                snapshot.pending_request_id === "submitting"
+                  ? null
+                  : snapshot.pending_request_id,
+              sync_pending: true,
+            }
+          : snapshot,
+      );
       await Promise.all([
         client.invalidateQueries({ queryKey: key }),
-        client.invalidateQueries({
-          queryKey: [
-            "node-conversation-mapping",
-            userId,
-            orgId,
-            conversationId,
-          ],
-        }),
         client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
         client.invalidateQueries({ queryKey: [orgId, "conversation_queues"] }),
         client.invalidateQueries({

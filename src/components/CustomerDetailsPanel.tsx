@@ -22,6 +22,7 @@ import Avatar from "./Avatar";
 import Button from "./Button";
 import FieldError from "./FieldError";
 import Spinner from "./Spinner";
+import PreviousChats from "./PreviousChats";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type CustomerDetailsUpdate,
@@ -181,6 +182,7 @@ export default function CustomerDetailsPanel({
         </button>
       </div>
 
+      {activeConvId && <PreviousChats conversationId={activeConvId} />}
       {isLoading ? (
         <div className="flex flex-1 items-center justify-center">
           <Spinner />

@@ -1739,5 +1739,11 @@
   "No se pudieron cargar las preferencias.": "Imeshindwa kupakia mapendeleo.",
   "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Imeshindwa kuhifadhi pendekezo. Angalia muunganisho au ruhusa zako.",
   "Preferencia guardada.": "Pendekezo limehifadhiwa.",
-  "Solo el propietario puede administrar las preferencias de notificación.": "Mmiliki pekee ndiye anayeweza kudhibiti mapendeleo ya arifa."
+  "Solo el propietario puede administrar las preferencias de notificación.": "Mmiliki pekee ndiye anayeweza kudhibiti mapendeleo ya arifa.",
+  "Chats anteriores": "Mazungumzo ya awali",
+  "Volver a la lista": "Rudi kwenye orodha",
+  "Historial de conversación": "Historia ya mazungumzo",
+  "No se pudieron cargar los chats anteriores": "Imeshindikana kupakia mazungumzo ya awali",
+  "No hay chats anteriores accesibles": "Hakuna mazungumzo ya awali yanayofikika",
+  "Esperando soporte · Chatbot pausado": "Inasubiri usaidizi · Chatbot imesitishwa"
 }

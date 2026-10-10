@@ -1739,5 +1739,11 @@
   "No se pudieron cargar las preferencias.": "Não foi possível carregar as preferências.",
   "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Não foi possível salvar a preferência. Verifique sua conexão ou permissões.",
   "Preferencia guardada.": "Preferência salva.",
-  "Solo el propietario puede administrar las preferencias de notificación.": "Somente o proprietário pode gerenciar as preferências de notificação."
+  "Solo el propietario puede administrar las preferencias de notificación.": "Somente o proprietário pode gerenciar as preferências de notificação.",
+  "Chats anteriores": "Chats anteriores",
+  "Volver a la lista": "Voltar à lista",
+  "Historial de conversación": "Histórico da conversa",
+  "No se pudieron cargar los chats anteriores": "Não foi possível carregar os chats anteriores",
+  "No hay chats anteriores accesibles": "Nenhum chat anterior acessível",
+  "Esperando soporte · Chatbot pausado": "Aguardando suporte · Chatbot pausado"
 }

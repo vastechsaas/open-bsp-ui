@@ -4,6 +4,12 @@ export type NodeConversationSnapshot = {
   state?: "human_owned" | "closed" | "bot_ready" | "bot_active";
   last_inbound_wamid?: string;
   pending_request_id?: string | null;
+  human_owned?: boolean;
+  lifecycle_enabled?: boolean;
+  episode_enabled?: boolean;
+  last_synced_at?: string | null;
+  sync_pending?: boolean;
+  optimistic_action?: "resolve-and-close" | "resume" | "takeover";
   can_resolve?: boolean;
   can_resume?: boolean;
   takeover_enabled?: boolean;
@@ -38,11 +44,14 @@ export function nodeHumanSendingBlocked(
     lifecycle_enabled: boolean;
     human_owned: boolean;
     pending_request_id: string | null;
+    sync_pending?: boolean;
   } | null,
 ) {
   return Boolean(
     mapping?.lifecycle_enabled &&
-      (!mapping.human_owned || mapping.pending_request_id),
+      (!mapping.human_owned ||
+        mapping.pending_request_id ||
+        mapping.sync_pending),
   );
 }
 

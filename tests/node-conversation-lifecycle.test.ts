@@ -223,7 +223,7 @@ test("takeover requires authorized waiting ownership and never follows assignmen
     controls,
     /mutate\(\s*waiting \? "takeover" : "resolve-and-close",?\s*\)/,
   );
-  assert.match(footer, /!privateNoteMode && nodeHumanSendingBlocked/);
+  assert.match(footer, /!privateNoteMode &&[\s\S]*?nodeHumanSendingBlocked/);
   assert.match(footer, /\{composerModeTabs\}/);
 });
 
@@ -266,8 +266,7 @@ void test("takeover and close controls keep a single compact row with accessible
   assert.match(action, /h-8 shrink-0/);
   assert.match(action, /whitespace-nowrap/);
   assert.match(action, /LoaderCircle/);
-  assert.match(action, /\{actionLabel\}/);
-  assert.doesNotMatch(action, /\{progressLabel\}\s*<\/button>/);
+  assert.match(action, /\{progressLabel\}/);
   assert.match(controls, /<Popover[\s\S]*?placement="bottomRight"/);
   assert.match(controls, /role="alert"[\s\S]*?max-w-72 break-words/);
   assert.match(controls, /<AlertCircle/);
