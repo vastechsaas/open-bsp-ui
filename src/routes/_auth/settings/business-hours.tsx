@@ -9,6 +9,7 @@ import type {
   BusinessHoursSchedule,
 } from "@/supabase/types/extra_types";
 import BusinessHoursForm from "@/components/settings/BusinessHoursForm";
+import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
@@ -123,108 +124,129 @@ function BusinessHours() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 space-y-3 border-b border-border p-5">
-        <p className="text-sm text-muted-foreground">
-          {t(
-            "Los horarios controlan la asignación y la toma de chats. Las solicitudes quedan en cola; los chats ya atendidos no se cierran.",
-          )}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {t(
-            "Los responsables pueden atender solicitudes fuera de horario. Las respuestas automáticas no prometen una hora de atención.",
-          )}
-        </p>
-        <label className="block text-sm">
-          {t("Horario de equipo")}
-          <select
-            value={queueId}
-            disabled={save.isPending || !parsed}
-            onChange={(event) =>
-              setSelection({ orgId, queueId: event.target.value })
-            }
-            className="ml-2 rounded-lg border border-border bg-background p-2 text-foreground"
-          >
-            <option value="">{t("Horario de la organización")}</option>
-            {(queues.data || []).map((queue) => (
-              <option key={queue.id} value={queue.id}>
-                {queue.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {queues.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {t("No se pudieron cargar las colas.")}
-            <button
-              type="button"
-              onClick={() => void queues.refetch()}
-              className="ml-2 underline"
-            >
-              {t("Reintentar")}
-            </button>
-          </p>
-        )}
-        {availability.data && (
-          <p role="status" className="text-sm">
-            {t(
-              availability.data.reason === "outside_hours"
-                ? "Fuera del horario comercial"
-                : availability.data.reason === "no_agents"
-                  ? "Sin agentes disponibles"
-                  : availability.data.reason === "suspended"
-                    ? "Organización suspendida"
-                    : "Abierto ahora",
-            )}
-            {" · "}
-            {t("Agentes disponibles")}: {availability.data.available_agents}
-          </p>
-        )}
-        {availability.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {t("No se pudo comprobar la disponibilidad.")}
-            <button
-              type="button"
-              onClick={() => void availability.refetch()}
-              className="ml-2 underline"
-            >
-              {t("Reintentar")}
-            </button>
-          </p>
-        )}
-        {queueId && (
-          <div className="flex items-center gap-3 text-sm">
-            <span>
+        <details className="rounded-lg border border-border p-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            {t("Avanzado: horarios por equipo y disponibilidad")}
+          </summary>
+          <div className="mt-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
               {t(
-                override
-                  ? "Horario personalizado"
-                  : "Usa el horario de la organización",
+                "Todos los equipos usan el horario de la organización salvo que configures un horario personalizado.",
               )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "Los responsables pueden atender solicitudes fuera de horario. Las respuestas automáticas no prometen una hora de atención.",
+              )}
+            </p>
+            <div className="max-w-lg">
+              <p className="mb-2 text-sm">{t("Horario de equipo")}</p>
+              <CampaignFilterSelect
+                ariaLabel={t("Horario de equipo")}
+                value={queueId}
+                disabled={save.isPending || !parsed}
+                onChange={(value) => setSelection({ orgId, queueId: value })}
+                options={[
+                  { value: "", label: t("Horario de la organización") },
+                  ...(queues.data || []).map((queue) => ({
+                    value: queue.id,
+                    label: queue.name,
+                  })),
+                ]}
+              />
+            </div>
+            {queues.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                {t("No se pudieron cargar las colas.")}
+                <button
+                  type="button"
+                  onClick={() => void queues.refetch()}
+                  className="ml-2 underline"
+                >
+                  {t("Reintentar")}
+                </button>
+              </p>
+            )}
+            {availability.data && (
+              <p role="status" className="text-sm">
+                {t(
+                  availability.data.reason === "outside_hours"
+                    ? "Fuera del horario comercial"
+                    : availability.data.reason === "no_agents"
+                      ? "Sin agentes disponibles"
+                      : availability.data.reason === "suspended"
+                        ? "Organización suspendida"
+                        : "Abierto ahora",
+                )}
+                {" · "}
+                {t("Agentes disponibles")}: {availability.data.available_agents}
+              </p>
+            )}
+            {availability.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                {t("No se pudo comprobar la disponibilidad.")}
+                <button
+                  type="button"
+                  onClick={() => void availability.refetch()}
+                  className="ml-2 underline"
+                >
+                  {t("Reintentar")}
+                </button>
+              </p>
+            )}
+            {queueId && (
+              <div className="flex items-center gap-3 text-sm">
+                <span>
+                  {t(
+                    override
+                      ? "Horario personalizado"
+                      : "Usa el horario de la organización",
+                  )}
+                </span>
+                <button
+                  type="button"
+                  disabled={save.isPending}
+                  className="text-primary underline"
+                  onClick={() =>
+                    void persist({
+                      ...root,
+                      queue_overrides: {
+                        ...root.queue_overrides,
+                        [queueId]: override ? null : scheduleOnly(root),
+                      },
+                    }).catch(() => undefined)
+                  }
+                >
+                  {t(
+                    override
+                      ? "Usar horario de la organización"
+                      : "Personalizar horario",
+                  )}
+                </button>
+              </div>
+            )}
+            {save.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                {t("No se pudo guardar el horario. Inténtalo de nuevo.")}
+              </p>
+            )}
+          </div>
+        </details>
+        {queueId && (
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span>
+              {t("Horario de equipo")}:{" "}
+              {queues.data?.find((queue) => queue.id === queueId)?.name}
             </span>
             <button
               type="button"
               disabled={save.isPending}
               className="text-primary underline"
-              onClick={() =>
-                void persist({
-                  ...root,
-                  queue_overrides: {
-                    ...root.queue_overrides,
-                    [queueId]: override ? null : scheduleOnly(root),
-                  },
-                }).catch(() => undefined)
-              }
+              onClick={() => setSelection({ orgId, queueId: "" })}
             >
-              {t(
-                override
-                  ? "Usar horario de la organización"
-                  : "Personalizar horario",
-              )}
+              {t("Volver al horario de la organización")}
             </button>
           </div>
-        )}
-        {save.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {t("No se pudo guardar el horario. Inténtalo de nuevo.")}
-          </p>
         )}
       </div>
       <BusinessHoursForm
