@@ -36,7 +36,7 @@ export default function NotificationTypePanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 border-b border-border px-5 py-5 sm:px-6">
-        <h2 className="text-xl font-semibold">{t("Preferencias")}</h2>
+        <h2 className="text-xl font-semibold">{t("Preferencias generales")}</h2>
         <p className="mt-1 text-[13px] text-muted-foreground">
           {t("Configuración general de tu organización.")}
         </p>
