@@ -191,5 +191,7 @@ export function businessHoursPatch(settings: BusinessHoursSettings) {
     throw new Error("Invalid business hours configuration");
   }
   // Send only the edited key; the existing database trigger merges other extras.
-  return { extra: { business_hours: structuredClone(settings) } };
+  return {
+    extra: { business_hours: { ...structuredClone(settings), enabled: true } },
+  };
 }
