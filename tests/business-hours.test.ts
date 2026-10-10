@@ -32,6 +32,7 @@ const source = (path: string) =>
 void test("defaults have one mode, seven independent day ranges and enforce saved schedules", () => {
   const settings = defaults();
   assert.equal(settings.mode, "all_days");
+  assert.equal(settings.enabled, true);
   assert.equal(settings.timezone, "Asia/Karachi");
   assert.equal(Object.keys(settings.per_day).length, 7);
   settings.per_day.monday.start_time = "10:00";
@@ -131,7 +132,7 @@ void test("All Days renders exactly two mutually exclusive radios and one start/
   assert.equal((html.match(/type="radio"/g) || []).length, 2);
   assert.equal((html.match(/type="radio"[^>]*checked=""/g) || []).length, 1);
   assert.equal((html.match(/<select/g) || []).length, 2);
-  assert.equal((html.match(/type="checkbox"/g) || []).length, 1);
+  assert.equal((html.match(/type="checkbox"/g) || []).length, 0);
   assert.match(html, /Todos los días/);
   assert.match(html, /Por día/);
   assert.match(html, /value="24:00"/);
@@ -146,7 +147,7 @@ void test("Per day renders all seven days, closed-day disabled inputs and access
   settings.per_day.sunday.enabled = false;
   settings.per_day.monday.end_time = "08:00";
   const html = render(settings);
-  assert.equal((html.match(/type="checkbox"/g) || []).length, 8);
+  assert.equal((html.match(/type="checkbox"/g) || []).length, 7);
   assert.equal((html.match(/<select/g) || []).length, 14);
   assert.equal((html.match(/<select[^>]*disabled=""/g) || []).length, 2);
   for (const { label } of BUSINESS_HOURS_DAYS) assert.ok(html.includes(label));
@@ -313,9 +314,10 @@ void test("simplified settings keep the organization schedule primary and advanc
   );
   assert.doesNotMatch(route, /<details[^>]*\bopen[\s=>]/);
   const html = render();
-  assert.match(html, /role="switch"/);
-  assert.match(html, /Activar horario comercial/);
-  assert.match(html, /El chatbot sigue funcionando/);
+  assert.doesNotMatch(
+    html,
+    /role="switch"|Activar horario comercial|El chatbot sigue funcionando/,
+  );
   assert.doesNotMatch(html, /Aplicar horario comercial|<datalist/);
   assert.match(html, /role="combobox"[^>]*aria-expanded="false"/);
   assert.match(
@@ -336,7 +338,7 @@ void test("advanced team schedule settings are temporarily hidden without removi
   assert.match(route, /<CampaignFilterSelect/);
 });
 
-void test("simplification preserves disabled schedules, saved messages and hidden team overrides", () => {
+void test("saving enables the schedule while preserving messages and hidden team overrides", () => {
   const settings = defaults();
   settings.enabled = false;
   settings.outside_hours_message = "We are closed.";
@@ -353,7 +355,17 @@ void test("simplification preserves disabled schedules, saved messages and hidde
   assert.match(html, /Please wait for support\./);
   assert.doesNotMatch(html, /role="switch"[^>]*checked/);
   assert.deepEqual(settings, before);
-  assert.deepEqual(businessHoursPatch(settings).extra.business_hours, before);
+  assert.deepEqual(businessHoursPatch(settings).extra.business_hours, {
+    ...before,
+    enabled: true,
+  });
+  // A previously disabled schedule must require Save, not stay silently disabled.
+  assert.doesNotMatch(html, /<button[^>]*disabled=""/);
+  assert.match(
+    source("../src/components/settings/BusinessHoursForm.tsx"),
+    /\.\.\.structuredClone\(initialValue\),\s*enabled: true/,
+  );
+  assert.equal(settings.enabled, false);
   const queueHtml = renderToStaticMarkup(
     createElement(BusinessHoursForm, {
       initialValue: defaults(),
