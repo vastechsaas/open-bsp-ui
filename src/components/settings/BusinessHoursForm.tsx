@@ -1,7 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { Clock3 } from "lucide-react";
 import Button from "@/components/Button";
-import Switch from "@/components/Switch";
 import BusinessHoursTimezoneSelect from "./BusinessHoursTimezoneSelect";
 import type {
   BusinessHoursSettings,
@@ -30,7 +29,11 @@ export default function BusinessHoursForm({
   queueOverride = false,
 }: Props) {
   const id = useId();
-  const [settings, setSettings] = useState(() => structuredClone(initialValue));
+  // The settings UI always saves an enabled schedule; no hidden off state.
+  const [settings, setSettings] = useState<BusinessHoursSettings>(() => ({
+    ...structuredClone(initialValue),
+    enabled: true,
+  }));
   const [saved, setSaved] = useState(
     configured ? JSON.stringify(initialValue) : "",
   );
@@ -140,28 +143,6 @@ export default function BusinessHoursForm({
       </div>
 
       <fieldset disabled={saving} className="mt-6">
-        <label className="mb-5 flex items-start gap-3 rounded-lg border border-border p-4 text-sm">
-          <Switch
-            className="mt-0.5 shrink-0"
-            role="switch"
-            checked={settings.enabled !== false}
-            aria-describedby={`${id}-enabled-hint`}
-            onCheckedChange={(enabled) => update({ ...settings, enabled })}
-          />
-          <span>
-            <span className="block font-medium">
-              {t("Activar horario comercial")}
-            </span>
-            <span
-              id={`${id}-enabled-hint`}
-              className="mt-1 block text-xs text-muted-foreground"
-            >
-              {t(
-                "Activado: aplica este horario al soporte humano. Desactivado: no restringe el soporte por horario. El chatbot sigue funcionando.",
-              )}
-            </span>
-          </span>
-        </label>
         <BusinessHoursTimezoneSelect
           value={settings.timezone}
           onChange={(timezone) => update({ ...settings, timezone })}
