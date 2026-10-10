@@ -5,6 +5,7 @@ import {
   KeyRound,
   Palette,
   Route,
+  SlidersHorizontal,
   Webhook,
   Zap,
 } from "lucide-react";
@@ -19,6 +20,12 @@ type SettingsWorkspaceLayoutProps = {
 };
 
 const settingsNavigation = [
+  {
+    to: "/settings/preferences",
+    title: "Preferencias",
+    description: "Notificaciones y preferencias generales de la organización.",
+    icon: SlidersHorizontal,
+  },
   {
     to: "/settings/business-hours",
     title: "Horario comercial",
@@ -80,13 +87,16 @@ export default function SettingsWorkspaceLayout({
   const location = useLocation();
   const { data: currentAgent } = useCurrentAgent();
   const role = currentAgent?.extra?.role;
+  const roleSettingsNavigation = visibleSettingsNavigation.filter(
+    (item) => item.to !== "/settings/preferences" || role === "owner",
+  );
   const navigation =
     role === "agent"
-      ? visibleSettingsNavigation.filter(
+      ? roleSettingsNavigation.filter(
           (item) => item.to === "/settings/media-management",
         )
       : role === "supervisor"
-        ? visibleSettingsNavigation.filter(
+        ? roleSettingsNavigation.filter(
             (item) =>
               item.to === "/settings/routing-queues" ||
               item.to === "/settings/automation" ||
@@ -94,12 +104,12 @@ export default function SettingsWorkspaceLayout({
               item.to === "/settings/media-management",
           )
         : role === "member"
-          ? visibleSettingsNavigation.filter(
+          ? roleSettingsNavigation.filter(
               (item) =>
                 item.to !== "/settings/appearance" &&
                 item.to !== "/settings/business-hours",
             )
-          : visibleSettingsNavigation;
+          : roleSettingsNavigation;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">
