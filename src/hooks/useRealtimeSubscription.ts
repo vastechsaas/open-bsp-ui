@@ -313,6 +313,9 @@ export const useRealtimeSubscription = () => {
               if (!signal || signal.organization_id !== activeOrgId) return;
 
               void reconcileConversation(signal.conversation_id);
+              void queryClient.invalidateQueries({
+                queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
+              });
             },
           );
 
@@ -325,6 +328,9 @@ export const useRealtimeSubscription = () => {
           if (queueSubscribed) {
             queueRetryAttempt = 0;
             void refreshConversationQueues();
+            void queryClient.invalidateQueries({
+              queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
+            });
             return;
           }
 
@@ -349,6 +355,9 @@ export const useRealtimeSubscription = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine) return;
 
       void refreshConversationQueues();
+      void queryClient.invalidateQueries({
+        queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
+      });
       void refreshQuickReplies();
       refreshContacts();
       void refreshNotifications();

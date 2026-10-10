@@ -39,7 +39,9 @@ export default function ResolveConversationControls({
   const canTakeOver = canTakeOverNodeConversation(snapshot);
   const takingOver =
     (lifecycle.action.variables === "takeover" && lifecycle.action.isPending) ||
-    (pending && snapshot?.operation?.action === "takeover");
+    (pending &&
+      (snapshot?.optimistic_action ?? snapshot?.operation?.action) ===
+        "takeover");
   const manager = isConversationManager(agent?.extra?.role);
   const canReturn =
     manager &&
@@ -57,7 +59,7 @@ export default function ResolveConversationControls({
       ? null
       : lifecycle.action.error?.message) ||
     lifecycle.status.error?.message ||
-    (snapshot?.operation?.status === "failed"
+    (snapshot?.operation && snapshot.operation.status !== "succeeded"
       ? snapshot.operation.last_error
       : null) ||
     legacy.resume.error?.message;
@@ -72,7 +74,9 @@ export default function ResolveConversationControls({
       ? t("Sincronizando solicitud de soporte…")
       : actionLabel;
   const supportStatus = waiting
-    ? t("Esperando soporte · Chatbot activo")
+    ? snapshot?.episode_enabled
+      ? t("Esperando soporte · Chatbot pausado")
+      : t("Esperando soporte · Chatbot activo")
     : snapshot?.support_request?.status === "handling"
       ? snapshot.support_request.handled_by_agent_id === agent?.id
         ? t("Estás atendiendo este chat · Chatbot pausado")
@@ -115,7 +119,7 @@ export default function ResolveConversationControls({
               aria-hidden
             />
           )}
-          {actionLabel}
+          {progressLabel}
         </button>
       )}
       {canReturn && (
