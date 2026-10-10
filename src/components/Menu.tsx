@@ -26,6 +26,7 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { useOrganizations } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { canAccessNavigation } from "@/utils/RoleAccess";
+import { isVisibleNavigationPath } from "@/utils/UiVisibility";
 import { useChatbotPermissions } from "@/queries/useModulePermissions";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
@@ -60,7 +61,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const chatbotPermissions = useChatbotPermissions();
   const showTools =
     canAccessNavigation(role, "integrations") ||
-    canAccessNavigation(role, "stats");
+    (isVisibleNavigationPath("/stats") && canAccessNavigation(role, "stats"));
   const navigationPadding = expanded ? "px-[12px]" : "px-[7px]";
 
   return (
@@ -229,16 +230,18 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                 <Unplug className="h-[21px] w-[21px] stroke-[2]" />
               </LinkButton>
 
-              <LinkButton
-                to="/stats"
-                access="stats"
-                role={role}
-                title={t("Estadísticas")}
-                isActive={pathname.startsWith("/stats")}
-                expanded={expanded}
-              >
-                <BarChart3 className="h-[21px] w-[21px] stroke-[2]" />
-              </LinkButton>
+              {isVisibleNavigationPath("/stats") && (
+                <LinkButton
+                  to="/stats"
+                  access="stats"
+                  role={role}
+                  title={t("Estadísticas")}
+                  isActive={pathname.startsWith("/stats")}
+                  expanded={expanded}
+                >
+                  <BarChart3 className="h-[21px] w-[21px] stroke-[2]" />
+                </LinkButton>
+              )}
             </div>
           </>
         )}
