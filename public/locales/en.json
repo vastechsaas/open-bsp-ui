@@ -1766,5 +1766,11 @@
   "No se pudieron cargar las preferencias.": "Could not load preferences.",
   "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Could not save the preference. Check your connection or permissions.",
   "Preferencia guardada.": "Preference saved.",
-  "Solo el propietario puede administrar las preferencias de notificación.": "Only the owner can manage notification preferences."
+  "Solo el propietario puede administrar las preferencias de notificación.": "Only the owner can manage notification preferences.",
+  "Chats anteriores": "Previous chats",
+  "Volver a la lista": "Back to list",
+  "Historial de conversación": "Conversation history",
+  "No se pudieron cargar los chats anteriores": "Could not load previous chats",
+  "No hay chats anteriores accesibles": "No accessible previous chats",
+  "Esperando soporte · Chatbot pausado": "Waiting for support · Chatbot paused"
 }

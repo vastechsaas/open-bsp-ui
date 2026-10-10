@@ -613,20 +613,29 @@ export default function ChatFooter() {
     );
   }
 
-  if (!privateNoteMode && nodeHumanSendingBlocked(nodeLifecycle.mapping.data)) {
+  if (
+    !privateNoteMode &&
+    (nodeLifecycle.status.isPending ||
+      nodeLifecycle.status.isError ||
+      nodeHumanSendingBlocked(nodeLifecycle.mapping.data))
+  ) {
     return (
       <div
         role="status"
         className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] text-muted-foreground"
       >
         {composerModeTabs}
-        {nodeLifecycle.mapping.data?.pending_request_id
-          ? nodeLifecycle.status.data?.operation?.action === "takeover"
-            ? t("Tomando control—sincronización pendiente")
-            : t("Cerrando—sincronización pendiente")
-          : nodeLifecycle.status.data?.support_request?.status === "waiting"
-            ? t("Toma el control del chat antes de responder al cliente")
-            : t("El chatbot está atendiendo esta conversación")}
+        {nodeLifecycle.status.isPending ||
+        nodeLifecycle.mapping.data?.sync_pending
+          ? t("Sincronizando solicitud de soporte…")
+          : nodeLifecycle.mapping.data?.pending_request_id
+            ? (nodeLifecycle.status.data?.optimistic_action ??
+                nodeLifecycle.status.data?.operation?.action) === "takeover"
+              ? t("Tomando control—sincronización pendiente")
+              : t("Cerrando—sincronización pendiente")
+            : nodeLifecycle.status.data?.support_request?.status === "waiting"
+              ? t("Toma el control del chat antes de responder al cliente")
+              : t("El chatbot está atendiendo esta conversación")}
       </div>
     );
   }
