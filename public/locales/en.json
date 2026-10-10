@@ -1748,5 +1748,22 @@
   "Cuerpo de solicitud": "Request body",
   "Mapeos de respuesta": "Response mappings",
   "Mensaje de respuesta inválida": "Invalid-answer message",
-  "Máximo de intentos": "Maximum attempts"
+  "Máximo de intentos": "Maximum attempts",
+  "Configuración general de tu organización.": "General settings for your organization.",
+  "Notificaciones y preferencias generales de la organización.": "Notifications and general organization preferences.",
+  "Tipo de notificación": "Notification Type",
+  "Conversación asignada": "Conversation assigned",
+  "Transferencia a un agente": "Transfer to an agent",
+  "Transferencia a una cola": "Transfer to a queue",
+  "Mención en una nota privada": "Private-note mention",
+  "Avisar al agente cuando se le asigna una conversación, manual o automáticamente.": "Notify the agent when a conversation is assigned manually or automatically.",
+  "Avisar al agente que recibe una conversación transferida.": "Notify the agent receiving a transferred conversation.",
+  "Avisar a los miembros de la cola de destino, excepto a quien realiza la transferencia.": "Notify destination queue members, excluding the person making the transfer.",
+  "Avisar a las personas mencionadas en una nota privada.": "Notify people mentioned in a private note.",
+  "Elegí qué notificaciones reciben los usuarios de esta organización. Los cambios se guardan automáticamente y solo afectan las notificaciones futuras.": "Choose which notifications users in this organization receive. Changes save automatically and only affect future notifications.",
+  "Cargando preferencias...": "Loading preferences...",
+  "No se pudieron cargar las preferencias.": "Could not load preferences.",
+  "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Could not save the preference. Check your connection or permissions.",
+  "Preferencia guardada.": "Preference saved.",
+  "Solo el propietario puede administrar las preferencias de notificación.": "Only the owner can manage notification preferences."
 }

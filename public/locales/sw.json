@@ -1721,5 +1721,22 @@
   "Cuerpo de solicitud": "Mwili wa ombi",
   "Mapeos de respuesta": "Ulinganishi wa majibu",
   "Mensaje de respuesta inválida": "Ujumbe wa jibu lisilo halali",
-  "Máximo de intentos": "Upeo wa majaribio"
+  "Máximo de intentos": "Upeo wa majaribio",
+  "Configuración general de tu organización.": "Mipangilio ya jumla ya shirika lako.",
+  "Notificaciones y preferencias generales de la organización.": "Arifa na mapendeleo ya jumla ya shirika.",
+  "Tipo de notificación": "Aina ya arifa",
+  "Conversación asignada": "Mazungumzo yaliyokabidhiwa",
+  "Transferencia a un agente": "Uhamisho kwa wakala",
+  "Transferencia a una cola": "Uhamisho kwenye foleni",
+  "Mención en una nota privada": "Kutajwa kwenye dokezo la faragha",
+  "Avisar al agente cuando se le asigna una conversación, manual o automáticamente.": "Mjulishe wakala mazungumzo yanapokabidhiwa kwake mwenyewe au kiotomatiki.",
+  "Avisar al agente que recibe una conversación transferida.": "Mjulishe wakala anayepokea mazungumzo yaliyohamishwa.",
+  "Avisar a los miembros de la cola de destino, excepto a quien realiza la transferencia.": "Wajulishe wanachama wa foleni lengwa, isipokuwa anayefanya uhamisho.",
+  "Avisar a las personas mencionadas en una nota privada.": "Wajulishe watu waliotajwa kwenye dokezo la faragha.",
+  "Elegí qué notificaciones reciben los usuarios de esta organización. Los cambios se guardan automáticamente y solo afectan las notificaciones futuras.": "Chagua arifa ambazo watumiaji wa shirika hili watapokea. Mabadiliko huhifadhiwa kiotomatiki na huathiri arifa zijazo pekee.",
+  "Cargando preferencias...": "Inapakia mapendeleo...",
+  "No se pudieron cargar las preferencias.": "Imeshindwa kupakia mapendeleo.",
+  "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Imeshindwa kuhifadhi pendekezo. Angalia muunganisho au ruhusa zako.",
+  "Preferencia guardada.": "Pendekezo limehifadhiwa.",
+  "Solo el propietario puede administrar las preferencias de notificación.": "Mmiliki pekee ndiye anayeweza kudhibiti mapendeleo ya arifa."
 }

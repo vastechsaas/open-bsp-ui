@@ -55,6 +55,7 @@ import { Route as AuthTemplatesTemplateIdRouteImport } from './routes/_auth/temp
 import { Route as AuthStatsUsageRouteImport } from './routes/_auth/stats/usage'
 import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas'
 import { Route as AuthSettingsRoutingQueuesRouteImport } from './routes/_auth/settings/routing-queues'
+import { Route as AuthSettingsPreferencesRouteImport } from './routes/_auth/settings/preferences'
 import { Route as AuthSettingsMediaManagementRouteImport } from './routes/_auth/settings/media-management'
 import { Route as AuthSettingsBusinessHoursRouteImport } from './routes/_auth/settings/business-hours'
 import { Route as AuthSettingsAutomationRouteImport } from './routes/_auth/settings/automation'
@@ -341,6 +342,11 @@ const AuthSettingsRoutingQueuesRoute =
     path: '/routing-queues',
     getParentRoute: () => AuthSettingsRoute,
   } as any)
+const AuthSettingsPreferencesRoute = AuthSettingsPreferencesRouteImport.update({
+  id: '/preferences',
+  path: '/preferences',
+  getParentRoute: () => AuthSettingsRoute,
+} as any)
 const AuthSettingsMediaManagementRoute =
   AuthSettingsMediaManagementRouteImport.update({
     id: '/media-management',
@@ -638,6 +644,7 @@ export interface FileRoutesByFullPath {
   '/settings/automation': typeof AuthSettingsAutomationRoute
   '/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
+  '/settings/preferences': typeof AuthSettingsPreferencesRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
@@ -727,6 +734,7 @@ export interface FileRoutesByTo {
   '/settings/automation': typeof AuthSettingsAutomationRoute
   '/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/settings/media-management': typeof AuthSettingsMediaManagementRoute
+  '/settings/preferences': typeof AuthSettingsPreferencesRoute
   '/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
@@ -821,6 +829,7 @@ export interface FileRoutesById {
   '/_auth/settings/automation': typeof AuthSettingsAutomationRoute
   '/_auth/settings/business-hours': typeof AuthSettingsBusinessHoursRoute
   '/_auth/settings/media-management': typeof AuthSettingsMediaManagementRoute
+  '/_auth/settings/preferences': typeof AuthSettingsPreferencesRoute
   '/_auth/settings/routing-queues': typeof AuthSettingsRoutingQueuesRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
   '/_auth/stats/usage': typeof AuthStatsUsageRoute
@@ -916,6 +925,7 @@ export interface FileRouteTypes {
     | '/settings/automation'
     | '/settings/business-hours'
     | '/settings/media-management'
+    | '/settings/preferences'
     | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
@@ -1005,6 +1015,7 @@ export interface FileRouteTypes {
     | '/settings/automation'
     | '/settings/business-hours'
     | '/settings/media-management'
+    | '/settings/preferences'
     | '/settings/routing-queues'
     | '/stats/quotas'
     | '/stats/usage'
@@ -1098,6 +1109,7 @@ export interface FileRouteTypes {
     | '/_auth/settings/automation'
     | '/_auth/settings/business-hours'
     | '/_auth/settings/media-management'
+    | '/_auth/settings/preferences'
     | '/_auth/settings/routing-queues'
     | '/_auth/stats/quotas'
     | '/_auth/stats/usage'
@@ -1499,6 +1511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsRoutingQueuesRouteImport
       parentRoute: typeof AuthSettingsRoute
     }
+    '/_auth/settings/preferences': {
+      id: '/_auth/settings/preferences'
+      path: '/preferences'
+      fullPath: '/settings/preferences'
+      preLoaderRoute: typeof AuthSettingsPreferencesRouteImport
+      parentRoute: typeof AuthSettingsRoute
+    }
     '/_auth/settings/media-management': {
       id: '/_auth/settings/media-management'
       path: '/media-management'
@@ -1829,6 +1848,7 @@ interface AuthSettingsRouteChildren {
   AuthSettingsAutomationRoute: typeof AuthSettingsAutomationRoute
   AuthSettingsBusinessHoursRoute: typeof AuthSettingsBusinessHoursRoute
   AuthSettingsMediaManagementRoute: typeof AuthSettingsMediaManagementRoute
+  AuthSettingsPreferencesRoute: typeof AuthSettingsPreferencesRoute
   AuthSettingsRoutingQueuesRoute: typeof AuthSettingsRoutingQueuesRoute
   AuthSettingsIndexRoute: typeof AuthSettingsIndexRoute
   AuthSettingsApiKeysApiKeyIdRoute: typeof AuthSettingsApiKeysApiKeyIdRoute
@@ -1850,6 +1870,7 @@ const AuthSettingsRouteChildren: AuthSettingsRouteChildren = {
   AuthSettingsAutomationRoute: AuthSettingsAutomationRoute,
   AuthSettingsBusinessHoursRoute: AuthSettingsBusinessHoursRoute,
   AuthSettingsMediaManagementRoute: AuthSettingsMediaManagementRoute,
+  AuthSettingsPreferencesRoute: AuthSettingsPreferencesRoute,
   AuthSettingsRoutingQueuesRoute: AuthSettingsRoutingQueuesRoute,
   AuthSettingsIndexRoute: AuthSettingsIndexRoute,
   AuthSettingsApiKeysApiKeyIdRoute: AuthSettingsApiKeysApiKeyIdRoute,

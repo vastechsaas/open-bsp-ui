@@ -1721,5 +1721,22 @@
   "Cuerpo de solicitud": "Corps de la requête",
   "Mapeos de respuesta": "Correspondances de réponse",
   "Mensaje de respuesta inválida": "Message de réponse invalide",
-  "Máximo de intentos": "Nombre maximal de tentatives"
+  "Máximo de intentos": "Nombre maximal de tentatives",
+  "Configuración general de tu organización.": "Paramètres généraux de votre organisation.",
+  "Notificaciones y preferencias generales de la organización.": "Notifications et préférences générales de l’organisation.",
+  "Tipo de notificación": "Type de notification",
+  "Conversación asignada": "Conversation attribuée",
+  "Transferencia a un agente": "Transfert à un agent",
+  "Transferencia a una cola": "Transfert à une file",
+  "Mención en una nota privada": "Mention dans une note privée",
+  "Avisar al agente cuando se le asigna una conversación, manual o automáticamente.": "Notifier l’agent lorsqu’une conversation lui est attribuée manuellement ou automatiquement.",
+  "Avisar al agente que recibe una conversación transferida.": "Notifier l’agent qui reçoit une conversation transférée.",
+  "Avisar a los miembros de la cola de destino, excepto a quien realiza la transferencia.": "Notifier les membres de la file de destination, sauf la personne effectuant le transfert.",
+  "Avisar a las personas mencionadas en una nota privada.": "Notifier les personnes mentionnées dans une note privée.",
+  "Elegí qué notificaciones reciben los usuarios de esta organización. Los cambios se guardan automáticamente y solo afectan las notificaciones futuras.": "Choisissez les notifications reçues par les utilisateurs de cette organisation. Les modifications sont enregistrées automatiquement et concernent uniquement les notifications futures.",
+  "Cargando preferencias...": "Chargement des préférences...",
+  "No se pudieron cargar las preferencias.": "Impossible de charger les préférences.",
+  "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Impossible d’enregistrer la préférence. Vérifiez votre connexion ou vos autorisations.",
+  "Preferencia guardada.": "Préférence enregistrée.",
+  "Solo el propietario puede administrar las preferencias de notificación.": "Seul le propriétaire peut gérer les préférences de notification."
 }

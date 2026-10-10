@@ -1721,5 +1721,22 @@
   "Cuerpo de solicitud": "Corpo da solicitação",
   "Mapeos de respuesta": "Mapeamentos de resposta",
   "Mensaje de respuesta inválida": "Mensagem de resposta inválida",
-  "Máximo de intentos": "Máximo de tentativas"
+  "Máximo de intentos": "Máximo de tentativas",
+  "Configuración general de tu organización.": "Configurações gerais da sua organização.",
+  "Notificaciones y preferencias generales de la organización.": "Notificações e preferências gerais da organização.",
+  "Tipo de notificación": "Tipo de notificação",
+  "Conversación asignada": "Conversa atribuída",
+  "Transferencia a un agente": "Transferência para um agente",
+  "Transferencia a una cola": "Transferência para uma fila",
+  "Mención en una nota privada": "Menção em nota privada",
+  "Avisar al agente cuando se le asigna una conversación, manual o automáticamente.": "Notificar o agente quando uma conversa for atribuída manual ou automaticamente.",
+  "Avisar al agente que recibe una conversación transferida.": "Notificar o agente que recebe uma conversa transferida.",
+  "Avisar a los miembros de la cola de destino, excepto a quien realiza la transferencia.": "Notificar os membros da fila de destino, exceto quem realiza a transferência.",
+  "Avisar a las personas mencionadas en una nota privada.": "Notificar as pessoas mencionadas em uma nota privada.",
+  "Elegí qué notificaciones reciben los usuarios de esta organización. Los cambios se guardan automáticamente y solo afectan las notificaciones futuras.": "Escolha quais notificações os usuários desta organização recebem. As alterações são salvas automaticamente e afetam apenas notificações futuras.",
+  "Cargando preferencias...": "Carregando preferências...",
+  "No se pudieron cargar las preferencias.": "Não foi possível carregar as preferências.",
+  "No se pudo guardar la preferencia. Revisá la conexión o tus permisos.": "Não foi possível salvar a preferência. Verifique sua conexão ou permissões.",
+  "Preferencia guardada.": "Preferência salva.",
+  "Solo el propietario puede administrar las preferencias de notificación.": "Somente o proprietário pode gerenciar as preferências de notificação."
 }
