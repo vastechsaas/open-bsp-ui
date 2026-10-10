@@ -22,7 +22,7 @@ type SettingsWorkspaceLayoutProps = {
 const settingsNavigation = [
   {
     to: "/settings/preferences",
-    title: "Preferencias",
+    title: "Preferencias generales",
     description: "Notificaciones y preferencias generales de la organización.",
     icon: SlidersHorizontal,
   },

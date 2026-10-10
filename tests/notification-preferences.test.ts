@@ -78,6 +78,8 @@ void test("Preferences groups Notification Type toggles without adding a Notific
     /item\.to !== "\/settings\/preferences" \|\| role === "owner"/,
   );
   assert.doesNotMatch(workspace, /\/settings\/notifications/);
+  assert.match(workspace, /title: "Preferencias generales"/);
+  assert.match(panel, /t\("Preferencias generales"\)/);
   assert.match(panel, /t\("Tipo de notificación"\)/);
   assert.match(panel, /<Switch/);
   assert.match(panel, /role="switch"/);
@@ -98,6 +100,7 @@ void test("direct Preferences URLs are guarded and organization changes reset mu
 
 void test("notification preference copy exists in every supported locale", () => {
   const keys = [
+    "Preferencias generales",
     "Tipo de notificación",
     "Configuración general de tu organización.",
     "Notificaciones y preferencias generales de la organización.",
@@ -123,4 +126,6 @@ void test("notification preference copy exists in every supported locale", () =>
     string
   >;
   assert.equal(en["Tipo de notificación"], "Notification Type");
+  assert.equal(en["Preferencias generales"], "Preferences");
+  assert.equal(en["Preferencias"], "Settings");
 });
