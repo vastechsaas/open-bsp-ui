@@ -1,3 +1,5 @@
+import { isVisibleMemberRole } from "./UiVisibility";
+
 export type OrganizationProvisioningRole =
   | "owner"
   | "admin"
@@ -36,7 +38,7 @@ export type OrganizationProvisioningPayload = {
   auto_assign: boolean;
 };
 
-export const ORGANIZATION_PROVISIONING_ROLES: ReadonlyArray<{
+const organizationProvisioningRoles: ReadonlyArray<{
   value: OrganizationProvisioningRole;
   label: string;
 }> = [
@@ -46,6 +48,11 @@ export const ORGANIZATION_PROVISIONING_ROLES: ReadonlyArray<{
   { value: "member", label: "Miembro" },
   { value: "agent", label: "Agente" },
 ];
+
+export const ORGANIZATION_PROVISIONING_ROLES =
+  organizationProvisioningRoles.filter((role) =>
+    isVisibleMemberRole(role.value),
+  );
 
 export function createOrganizationProvisioningDraft(): OrganizationProvisioningDraft {
   return {

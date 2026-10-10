@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useBlocker } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
+import { isVisibleMemberRole } from "@/utils/UiVisibility";
 import {
   usePlatformModulePermissions,
   useSavePlatformModulePermissions,
@@ -46,6 +47,7 @@ function MatrixForm({
 }) {
   const { translate: t } = useTranslation();
   const [rows, setRows] = useState(initial.permissions);
+  const visibleRows = rows.filter((row) => isVisibleMemberRole(row.role));
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const save = useSavePlatformModulePermissions(organizationId);
   const dirty = JSON.stringify(rows) !== JSON.stringify(initial.permissions);
@@ -86,7 +88,7 @@ function MatrixForm({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <tr
                 key={row.role}
                 className="border-b border-border last:border-0"

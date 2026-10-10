@@ -31,6 +31,7 @@ import {
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
+import { isVisibleMemberRole } from "@/utils/UiVisibility";
 import {
   getInvitableTeamMemberRoles,
   getTeamMemberPermissions,
@@ -122,7 +123,6 @@ function TeamMembersWorkspace() {
                 { value: "all", label: t("Todos los roles") },
                 { value: "agent", label: t("Agente") },
                 { value: "owner", label: t("Propietario") },
-                { value: "admin", label: t("Administrador") },
                 { value: "supervisor", label: t("Supervisor") },
                 { value: "member", label: t("Miembro") },
               ]}
@@ -806,13 +806,19 @@ function RoleField({
       <span className="mb-[6px] block text-[12px] text-muted-foreground">
         {t("Rol")}
       </span>
-      <CampaignFilterSelect
-        ariaLabel={t("Rol")}
-        value={role}
-        onChange={onChange}
-        disabled={disabled}
-        options={roles.map((value) => ({ value, label: labels[value] }))}
-      />
+      {!isVisibleMemberRole(role) ? (
+        <p className="text-[14px] text-muted-foreground">{labels[role]}</p>
+      ) : (
+        <CampaignFilterSelect
+          ariaLabel={t("Rol")}
+          value={role}
+          onChange={onChange}
+          disabled={disabled}
+          options={roles
+            .filter(isVisibleMemberRole)
+            .map((value) => ({ value, label: labels[value] }))}
+        />
+      )}
     </label>
   );
 }

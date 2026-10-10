@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { isVisibleNavigationPath } from "@/utils/UiVisibility";
 
 type SettingsWorkspaceLayoutProps = {
   children: ReactNode;
@@ -61,6 +62,10 @@ const settingsNavigation = [
   },
 ] as const;
 
+const visibleSettingsNavigation = settingsNavigation.filter((item) =>
+  isVisibleNavigationPath(item.to),
+);
+
 export default function SettingsWorkspaceLayout({
   children,
 }: SettingsWorkspaceLayoutProps) {
@@ -70,11 +75,11 @@ export default function SettingsWorkspaceLayout({
   const role = currentAgent?.extra?.role;
   const navigation =
     role === "agent"
-      ? settingsNavigation.filter(
+      ? visibleSettingsNavigation.filter(
           (item) => item.to === "/settings/media-management",
         )
       : role === "supervisor"
-        ? settingsNavigation.filter(
+        ? visibleSettingsNavigation.filter(
             (item) =>
               item.to === "/settings/routing-queues" ||
               item.to === "/settings/automation" ||
@@ -82,10 +87,10 @@ export default function SettingsWorkspaceLayout({
               item.to === "/settings/media-management",
           )
         : role === "member"
-          ? settingsNavigation.filter(
+          ? visibleSettingsNavigation.filter(
               (item) => item.to !== "/settings/appearance",
             )
-          : settingsNavigation;
+          : visibleSettingsNavigation;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">
