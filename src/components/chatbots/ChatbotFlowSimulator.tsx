@@ -11,6 +11,10 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  formatChatbotValidationIssue,
+  chatbotValidationIssueKey,
+} from "@/utils/ChatbotFlowUtils";
 import type {
   ChatbotSimulationOption,
   ChatbotSimulationSession,
@@ -134,16 +138,16 @@ export function ChatbotFlowSimulator({
                 {t("Corregí el flujo antes de simularlo.")}
               </div>
             </div>
-            {session.issues.map((issue, index) => (
+            {session.issues.map((issue) => (
               <div
-                key={`${issue.code}:${index}`}
+                key={chatbotValidationIssueKey(issue)}
                 className="rounded-lg border border-border bg-background/45 p-[10px]"
               >
                 <div className="text-[10px] font-semibold text-destructive">
                   {issue.code}
                 </div>
                 <div className="mt-[3px] text-[11px] leading-relaxed">
-                  {issue.message}
+                  {formatChatbotValidationIssue(issue, t)}
                 </div>
               </div>
             ))}

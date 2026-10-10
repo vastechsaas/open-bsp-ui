@@ -76,6 +76,11 @@ import { ChatbotResponseMappings } from "@/components/chatbots/ChatbotResponseMa
 import { ChatbotApiRequestFields } from "@/components/chatbots/ChatbotApiRequestFields";
 import { ChatbotApiRoutes } from "@/components/chatbots/ChatbotApiRoutes";
 import {
+  ChatbotValidationField,
+  ChatbotValidationFields,
+  ChatbotValidationMessages,
+} from "@/components/chatbots/ChatbotValidationField";
+import {
   readApiRequestFields,
   buildApiCredentialHeaders,
   updateApiOutcomeRoute,
@@ -120,7 +125,6 @@ import {
   CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH,
   CHATBOT_LIST_MAX_ROWS,
   CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH,
-  CHATBOT_LIST_ROW_TITLE_MAX_LENGTH,
   CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH,
   CHATBOT_MESSAGE_MAX_LENGTH,
   CHATBOT_NODE_LABEL_MAX_LENGTH,
@@ -143,6 +147,9 @@ import {
   getChatbotEditorGraphFingerprint,
   getChatbotEditorShortcut,
   getChatbotEditorValidationFingerprint,
+  findChatbotValidationField,
+  getChatbotValidationFieldPath,
+  getChatbotListRowTitleLimit,
   getChatbotNodeOptionIds,
   isValidChatbotConnection,
   insertChatbotTemplateVariable,
@@ -375,6 +382,9 @@ function FlowEditorWorkspace({
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [validationField, setValidationField] = useState<string | null>(null);
+  const [validationFieldFingerprint, setValidationFieldFingerprint] = useState<
+    string | null
+  >(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [pendingProtectedAction, setPendingProtectedAction] = useState<
     "back" | "reload" | null
@@ -507,13 +517,7 @@ function FlowEditorWorkspace({
     disabled: !dirty,
     withResolver: true,
   });
-  const validationResult =
-    publishDraft.error instanceof ChatbotPublishValidationError
-      ? {
-          valid: false as const,
-          issues: publishDraft.error.issues,
-        }
-      : (validationSnapshot?.result ?? null);
+  const validationResult = validationSnapshot?.result ?? null;
   const validationIsStale =
     validationSnapshot !== null &&
     validationSnapshot.fingerprint !== currentValidationFingerprint;
@@ -569,6 +573,8 @@ function FlowEditorWorkspace({
   };
 
   const focusValidationIssue = (issue: ChatbotFlowValidationIssue) => {
+    const fieldPath = getChatbotValidationFieldPath(issue);
+    setValidationFieldFingerprint(currentValidationFingerprint);
     const target = getChatbotValidationFocusTarget(issue);
     if (target.kind === "node") {
       const node = nodes.find((candidate) => candidate.id === target.id);
@@ -577,7 +583,13 @@ function FlowEditorWorkspace({
         current.map((edge) => ({ ...edge, selected: false })),
       );
       setSelectedNodeId(target.id);
-      setValidationField(target.field ?? null);
+      setValidationField(
+        validationIsStale
+          ? null
+          : fieldPath.length
+            ? JSON.stringify(fieldPath)
+            : (target.field ?? null),
+      );
       setMobilePanel("inspector");
       void setCenter(node.position.x + 110, node.position.y + 48, {
         zoom: 1.15,
@@ -1509,60 +1521,76 @@ function FlowEditorWorkspace({
             onClose={() => setSimulatorOpen(false)}
           />
         ) : (
-          <NodeInspector
-            readOnly={!canManage}
-            node={selectedNode}
-            apiRoutes={
-              selectedNode?.data.node_type === "webhook" ? (
-                <ChatbotApiRoutes
-                  nodeId={selectedNode.id}
-                  nodes={nodes}
-                  edges={edges}
-                  onChange={(outcome, target) =>
-                    setEdges((current) =>
-                      updateApiOutcomeRoute(
-                        nodes,
-                        current,
-                        selectedNode.id,
-                        outcome,
-                        target,
-                        `edge-${crypto.randomUUID()}`,
-                      ),
-                    )
-                  }
-                />
-              ) : null
+          <ChatbotValidationFields
+            translate={t}
+            issues={
+              !validationIsStale && validationResult && !validationResult.valid
+                ? validationResult.issues.filter(
+                    (issue) => issue.node_id === selectedNodeId,
+                  )
+                : []
             }
-            validationField={validationField}
-            open={mobilePanel === "inspector"}
-            onClose={() => setMobilePanel(null)}
-            onNodeLabelChange={updateNodeLabel}
-            onMessageTextChange={updateMessageText}
-            onCollectInputChange={updateCollectInput}
-            onTextMenuChange={updateTextMenu}
-            onInteractiveChange={updateInteractive}
-            handoffAgents={handoffAgents}
-            routingQueues={routingQueues}
-            onHandoffQueueChange={updateHandoffQueue}
-            webhookCredentials={webhookCredentials}
-            creatingWebhookCredential={createWebhookCredential.isPending}
-            onWebhookChange={updateWebhook}
-            onCreateWebhookCredential={async (name, headers) => {
-              if (!canManage) throw new Error("Manage permission required");
-              const result = await createWebhookCredential.mutateAsync({
-                name,
-                headers,
-              });
-              return result.credential;
-            }}
-            availableVariables={availableVariables}
-            onConditionVariableChange={updateConditionVariable}
-            onConditionBranchAdd={addConditionBranch}
-            onConditionBranchChange={updateConditionBranch}
-            onConditionBranchRemove={removeConditionBranch}
-            onDuplicate={duplicateNode}
-            onDelete={deleteNode}
-          />
+          >
+            <NodeInspector
+              readOnly={!canManage}
+              node={selectedNode}
+              apiRoutes={
+                selectedNode?.data.node_type === "webhook" ? (
+                  <ChatbotApiRoutes
+                    nodeId={selectedNode.id}
+                    nodes={nodes}
+                    edges={edges}
+                    onChange={(outcome, target) =>
+                      setEdges((current) =>
+                        updateApiOutcomeRoute(
+                          nodes,
+                          current,
+                          selectedNode.id,
+                          outcome,
+                          target,
+                          `edge-${crypto.randomUUID()}`,
+                        ),
+                      )
+                    }
+                  />
+                ) : null
+              }
+              validationField={
+                validationIsStale ||
+                validationFieldFingerprint !== currentValidationFingerprint
+                  ? null
+                  : validationField
+              }
+              open={mobilePanel === "inspector"}
+              onClose={() => setMobilePanel(null)}
+              onNodeLabelChange={updateNodeLabel}
+              onMessageTextChange={updateMessageText}
+              onCollectInputChange={updateCollectInput}
+              onTextMenuChange={updateTextMenu}
+              onInteractiveChange={updateInteractive}
+              handoffAgents={handoffAgents}
+              routingQueues={routingQueues}
+              onHandoffQueueChange={updateHandoffQueue}
+              webhookCredentials={webhookCredentials}
+              creatingWebhookCredential={createWebhookCredential.isPending}
+              onWebhookChange={updateWebhook}
+              onCreateWebhookCredential={async (name, headers) => {
+                if (!canManage) throw new Error("Manage permission required");
+                const result = await createWebhookCredential.mutateAsync({
+                  name,
+                  headers,
+                });
+                return result.credential;
+              }}
+              availableVariables={availableVariables}
+              onConditionVariableChange={updateConditionVariable}
+              onConditionBranchAdd={addConditionBranch}
+              onConditionBranchChange={updateConditionBranch}
+              onConditionBranchRemove={removeConditionBranch}
+              onDuplicate={duplicateNode}
+              onDelete={deleteNode}
+            />
+          </ChatbotValidationFields>
         )}
       </div>
       <UnsavedChangesDialog
@@ -2074,17 +2102,17 @@ function NodeInspector({
   useEffect(() => {
     if (!node || !validationField) return;
     const timer = window.setTimeout(() => {
-      const field = [
-        ...document.querySelectorAll<HTMLElement>("[data-validation-field]"),
-      ].find(
-        (element) =>
-          element.dataset.validationField === validationField &&
-          element.closest("aside"),
-      );
+      const elements = [
+        ...document.querySelectorAll<HTMLElement>(
+          "aside [data-validation-path], aside [data-validation-field]",
+        ),
+      ];
+      const field = findChatbotValidationField(elements, validationField);
       field?.scrollIntoView({ behavior: "smooth", block: "center" });
-      field
-        ?.querySelector<HTMLElement>("input, textarea, select, button")
-        ?.focus();
+      (
+        field?.querySelector<HTMLElement>("input, textarea, select, button") ??
+        field
+      )?.focus();
     }, 50);
     return () => window.clearTimeout(timer);
   }, [node, validationField]);
@@ -2142,34 +2170,31 @@ function NodeInspector({
               </dd>
             </div>
           </dl>
-          <div
-            data-validation-field={validationField ?? undefined}
-            className={
-              validationField
-                ? "rounded-lg ring-2 ring-destructive/70 ring-offset-4 ring-offset-card"
-                : undefined
-            }
-          >
+          <div>
             {isMessage ? (
               <label className="block" data-validation-field="text">
                 <span className="text-[11px] font-medium">
                   {t("Texto del mensaje")}
                 </span>
-                <textarea
-                  value={messageText}
-                  maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
-                  rows={7}
-                  aria-invalid={messageIsEmpty}
-                  onChange={(event) =>
-                    onMessageTextChange(node.id, event.target.value)
-                  }
-                  placeholder={t("Escribí el mensaje que recibirá el contacto")}
-                  className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] leading-relaxed outline-none transition focus:ring-2 focus:ring-primary/20 ${
-                    messageIsEmpty
-                      ? "border-destructive"
-                      : "border-border focus:border-primary"
-                  }`}
-                />
+                <ChatbotValidationField path={["text"]}>
+                  <textarea
+                    value={messageText}
+                    maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+                    rows={7}
+                    aria-invalid={messageIsEmpty}
+                    onChange={(event) =>
+                      onMessageTextChange(node.id, event.target.value)
+                    }
+                    placeholder={t(
+                      "Escribí el mensaje que recibirá el contacto",
+                    )}
+                    className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] leading-relaxed outline-none transition focus:ring-2 focus:ring-primary/20 ${
+                      messageIsEmpty
+                        ? "border-destructive"
+                        : "border-border focus:border-primary"
+                    }`}
+                  />
+                </ChatbotValidationField>
                 <TemplateVariableControls
                   availableVariables={availableVariables}
                   onInsert={(variable) =>
@@ -2337,23 +2362,25 @@ function HumanHandoffInspector({
     <div className="space-y-[8px]">
       <label className="block">
         <span className="text-[11px] font-medium">{t("Cola de destino")}</span>
-        <select
-          value={selectedQueueAvailable ? routingQueueId : ""}
-          aria-invalid={!selectedQueueAvailable}
-          onChange={(event) => onQueueChange(event.target.value)}
-          className={`mt-[6px] h-[38px] w-full rounded-lg border bg-background px-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20 ${
-            selectedQueueAvailable
-              ? "border-border focus:border-primary"
-              : "border-destructive"
-          }`}
-        >
-          <option value="">{t("Seleccioná una cola")}</option>
-          {queues.map((queue) => (
-            <option key={queue.id} value={queue.id}>
-              {queue.name}
-            </option>
-          ))}
-        </select>
+        <ChatbotValidationField path={["routing_queue_id"]} counter>
+          <select
+            value={selectedQueueAvailable ? routingQueueId : ""}
+            aria-invalid={!selectedQueueAvailable}
+            onChange={(event) => onQueueChange(event.target.value)}
+            className={`mt-[6px] h-[38px] w-full rounded-lg border bg-background px-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20 ${
+              selectedQueueAvailable
+                ? "border-border focus:border-primary"
+                : "border-destructive"
+            }`}
+          >
+            <option value="">{t("Seleccioná una cola")}</option>
+            {queues.map((queue) => (
+              <option key={queue.id} value={queue.id}>
+                {queue.name}
+              </option>
+            ))}
+          </select>
+        </ChatbotValidationField>
       </label>
       {agentId && (
         <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 p-[9px] text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">
@@ -2365,19 +2392,21 @@ function HumanHandoffInspector({
         <span className="text-[11px] font-medium">
           {t("Confirmación al cliente (opcional)")}
         </span>
-        <textarea
-          value={node.data.config.acknowledgment_text ?? ""}
-          maxLength={4096}
-          rows={3}
-          onChange={(event) =>
-            onChange({
-              acknowledgment_text: event.target.value.trim()
-                ? event.target.value
-                : undefined,
-            })
-          }
-          className="mt-[6px] w-full rounded-lg border border-border bg-background p-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20"
-        />
+        <ChatbotValidationField path={["acknowledgment_text"]} counter>
+          <textarea
+            value={node.data.config.acknowledgment_text ?? ""}
+            maxLength={4096}
+            rows={3}
+            onChange={(event) =>
+              onChange({
+                acknowledgment_text: event.target.value.trim()
+                  ? event.target.value
+                  : undefined,
+              })
+            }
+            className="mt-[6px] w-full rounded-lg border border-border bg-background p-[9px] text-[11px] outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </ChatbotValidationField>
         <span className="block text-[10px] text-muted-foreground">
           {t(
             "Se envía una vez antes de entregar la conversación al equipo de soporte.",
@@ -2502,29 +2531,33 @@ function WebhookInspector({
       <div className="grid grid-cols-[90px_1fr] gap-[8px]">
         <label>
           <span className="text-[10px] font-medium">{t("Método")}</span>
-          <select
-            value={config.method ?? "POST"}
-            onChange={(event) =>
-              onChange({
-                method: event.target.value as ChatbotNodeConfig["method"],
-              })
-            }
-            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-          >
-            {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => (
-              <option key={method}>{method}</option>
-            ))}
-          </select>
+          <ChatbotValidationField path={["method"]}>
+            <select
+              value={config.method ?? "POST"}
+              onChange={(event) =>
+                onChange({
+                  method: event.target.value as ChatbotNodeConfig["method"],
+                })
+              }
+              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+            >
+              {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => (
+                <option key={method}>{method}</option>
+              ))}
+            </select>
+          </ChatbotValidationField>
         </label>
         <label>
           <span className="text-[10px] font-medium">{t("URL HTTPS")}</span>
-          <input
-            value={config.url ?? ""}
-            maxLength={2048}
-            onChange={(event) => onChange({ url: event.target.value })}
-            placeholder="https://api.example.com/..."
-            className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-          />
+          <ChatbotValidationField path={["url"]}>
+            <input
+              value={config.url ?? ""}
+              maxLength={2048}
+              onChange={(event) => onChange({ url: event.target.value })}
+              placeholder="https://api.example.com/..."
+              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+            />
+          </ChatbotValidationField>
         </label>
       </div>
       <TemplateVariableControls
@@ -2541,20 +2574,22 @@ function WebhookInspector({
           <span className="text-[10px] font-medium">
             {t("Credencial protegida")}
           </span>
-          <select
-            value={config.secret_id ?? ""}
-            onChange={(event) =>
-              onChange({ secret_id: event.target.value || undefined })
-            }
-            className="mt-[5px] h-[34px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
-          >
-            <option value="">{t("Sin credencial")}</option>
-            {credentials.map((credential) => (
-              <option key={credential.id} value={credential.id}>
-                {credential.name}
-              </option>
-            ))}
-          </select>
+          <ChatbotValidationField path={["secret_id"]}>
+            <select
+              value={config.secret_id ?? ""}
+              onChange={(event) =>
+                onChange({ secret_id: event.target.value || undefined })
+              }
+              className="mt-[5px] h-[34px] w-full rounded-md border border-border bg-background px-[7px] text-[10px]"
+            >
+              <option value="">{t("Sin credencial")}</option>
+              {credentials.map((credential) => (
+                <option key={credential.id} value={credential.id}>
+                  {credential.name}
+                </option>
+              ))}
+            </select>
+          </ChatbotValidationField>
         </label>
         <p className="text-[11px] text-muted-foreground">
           {t(
@@ -2638,35 +2673,39 @@ function WebhookInspector({
             <span className="text-[10px] font-medium">
               {t("Tiempo límite")}
             </span>
-            <select
-              value={config.timeout_ms ?? 3000}
-              onChange={(event) =>
-                onChange({ timeout_ms: Number(event.target.value) })
-              }
-              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-            >
-              {[1000, 3000, 5000, 10000].map((timeout) => (
-                <option key={timeout} value={timeout}>
-                  {timeout / 1000}s
-                </option>
-              ))}
-            </select>
+            <ChatbotValidationField path={["timeout_ms"]}>
+              <select
+                value={config.timeout_ms ?? 3000}
+                onChange={(event) =>
+                  onChange({ timeout_ms: Number(event.target.value) })
+                }
+                className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+              >
+                {[1000, 3000, 5000, 10000].map((timeout) => (
+                  <option key={timeout} value={timeout}>
+                    {timeout / 1000}s
+                  </option>
+                ))}
+              </select>
+            </ChatbotValidationField>
           </label>
           <label>
             <span className="text-[10px] font-medium">{t("Reintentos")}</span>
-            <select
-              value={config.retry_count ?? 0}
-              onChange={(event) =>
-                onChange({ retry_count: Number(event.target.value) })
-              }
-              className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
-            >
-              {[0, 1, 2].map((retry) => (
-                <option key={retry} value={retry}>
-                  {retry}
-                </option>
-              ))}
-            </select>
+            <ChatbotValidationField path={["retry_count"]}>
+              <select
+                value={config.retry_count ?? 0}
+                onChange={(event) =>
+                  onChange({ retry_count: Number(event.target.value) })
+                }
+                className="mt-[5px] h-[36px] w-full rounded-lg border border-border bg-background px-[8px] text-[11px]"
+              >
+                {[0, 1, 2].map((retry) => (
+                  <option key={retry} value={retry}>
+                    {retry}
+                  </option>
+                ))}
+              </select>
+            </ChatbotValidationField>
           </label>
         </div>
       )}
@@ -2675,15 +2714,17 @@ function WebhookInspector({
         (advanced ? (
           <label className="block">
             <span className="text-[10px] font-medium">{t("Cuerpo JSON")}</span>
-            <textarea
-              value={config.body_template ?? ""}
-              rows={4}
-              maxLength={16384}
-              onChange={(event) =>
-                onChange({ body_template: event.target.value })
-              }
-              className="mt-[5px] w-full rounded-lg border border-border bg-background px-[8px] py-[7px] font-mono text-[10px]"
-            />
+            <ChatbotValidationField path={["body_template"]} counter>
+              <textarea
+                value={config.body_template ?? ""}
+                rows={4}
+                maxLength={16384}
+                onChange={(event) =>
+                  onChange({ body_template: event.target.value })
+                }
+                className="mt-[5px] w-full rounded-lg border border-border bg-background px-[8px] py-[7px] font-mono text-[10px]"
+              />
+            </ChatbotValidationField>
             <TemplateVariableControls
               availableVariables={availableVariables}
               onInsert={(variable) =>
@@ -2727,33 +2768,37 @@ function WebhookInspector({
               key={`${index}-${header.name}`}
               className="grid grid-cols-2 gap-[5px]"
             >
-              <input
-                value={header.name}
-                onChange={(event) =>
-                  onChange({
-                    headers: headers.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, name: event.target.value }
-                        : item,
-                    ),
-                  })
-                }
-                className="h-[32px] rounded-md border border-border bg-background px-[7px] text-[10px]"
-              />
-              <div className="flex gap-[4px]">
+              <ChatbotValidationField path={["headers", index, "name"]}>
                 <input
-                  value={header.value}
+                  value={header.name}
                   onChange={(event) =>
                     onChange({
                       headers: headers.map((item, itemIndex) =>
                         itemIndex === index
-                          ? { ...item, value: event.target.value }
+                          ? { ...item, name: event.target.value }
                           : item,
                       ),
                     })
                   }
-                  className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] text-[10px]"
+                  className="h-[32px] rounded-md border border-border bg-background px-[7px] text-[10px]"
                 />
+              </ChatbotValidationField>
+              <div className="flex gap-[4px]">
+                <ChatbotValidationField path={["headers", index, "value"]}>
+                  <input
+                    value={header.value}
+                    onChange={(event) =>
+                      onChange({
+                        headers: headers.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, value: event.target.value }
+                            : item,
+                        ),
+                      })
+                    }
+                    className="h-[32px] min-w-0 flex-1 rounded-md border border-border bg-background px-[7px] text-[10px]"
+                  />
+                </ChatbotValidationField>
                 <button
                   type="button"
                   aria-label={t("Eliminar")}
@@ -2833,19 +2878,21 @@ function InteractiveButtonsInspector({
         <span className="text-[11px] font-medium">
           {t("Texto del mensaje")}
         </span>
-        <textarea
-          value={body}
-          rows={4}
-          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
-          aria-invalid={!body.trim()}
-          onChange={(event) => onChange({ body: event.target.value })}
-          placeholder={t("Elegí una opción para continuar")}
-          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed outline-none ${
-            body.trim()
-              ? "border-border focus:border-primary"
-              : "border-destructive"
-          }`}
-        />
+        <ChatbotValidationField path={["body"]}>
+          <textarea
+            value={body}
+            rows={4}
+            maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+            aria-invalid={!body.trim()}
+            onChange={(event) => onChange({ body: event.target.value })}
+            placeholder={t("Elegí una opción para continuar")}
+            className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed outline-none ${
+              body.trim()
+                ? "border-border focus:border-primary"
+                : "border-destructive"
+            }`}
+          />
+        </ChatbotValidationField>
         <TemplateVariableControls
           availableVariables={availableVariables}
           onInsert={(variable) =>
@@ -2870,24 +2917,35 @@ function InteractiveButtonsInspector({
           </span>
         </div>
         <div className="mt-[7px] space-y-[8px]">
+          <ChatbotValidationMessages path={["buttons"]} />
           {buttons.map((button, index) => (
             <div
               key={button.id}
               className="rounded-lg border border-border bg-background/45 p-[8px]"
             >
               <div className="flex gap-[6px]">
-                <input
-                  value={button.title}
-                  maxLength={CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
-                  aria-invalid={!button.title.trim()}
-                  placeholder={`${t("Botón")} ${index + 1}`}
-                  onChange={(event) =>
-                    updateButton(button.id, { title: event.target.value })
-                  }
-                  className={`h-[34px] min-w-0 flex-1 rounded-lg border bg-background px-[9px] text-[11px] ${
-                    button.title.trim() ? "border-border" : "border-destructive"
-                  }`}
-                />
+                <ChatbotValidationField path={["buttons", index, "title"]}>
+                  <input
+                    value={button.title}
+                    maxLength={CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
+                    aria-invalid={
+                      !button.title.trim() ||
+                      button.title.length >
+                        CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH
+                    }
+                    placeholder={`${t("Botón")} ${index + 1}`}
+                    onChange={(event) =>
+                      updateButton(button.id, { title: event.target.value })
+                    }
+                    className={`h-[34px] min-w-0 flex-1 rounded-lg border bg-background px-[9px] text-[11px] ${
+                      button.title.trim() &&
+                      button.title.length <=
+                        CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH
+                        ? "border-border"
+                        : "border-destructive"
+                    }`}
+                  />
+                </ChatbotValidationField>
                 <button
                   type="button"
                   title={t("Eliminar botón")}
@@ -2908,6 +2966,7 @@ function InteractiveButtonsInspector({
               <div className="mt-[3px] text-right text-[9px] text-muted-foreground">
                 {button.title.length}/{CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH}
               </div>
+              <ChatbotValidationMessages path={["buttons", index, "id"]} />
             </div>
           ))}
         </div>
@@ -2949,6 +3008,9 @@ function ListMessageInspector({
       ? node.data.config.button_text
       : "";
   const sections = node.data.config.sections ?? [];
+  const rowTitleLimit = getChatbotListRowTitleLimit(
+    node.data.config.render_as_buttons,
+  );
   const rowCount = sections.reduce(
     (total, section) => total + section.rows.length,
     0,
@@ -2972,17 +3034,19 @@ function ListMessageInspector({
         <span className="text-[11px] font-medium">
           {t("Texto del mensaje")}
         </span>
-        <textarea
-          value={body}
-          rows={4}
-          maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
-          aria-invalid={!body.trim()}
-          onChange={(event) => onChange({ body: event.target.value })}
-          placeholder={t("Elegí una opción de la lista")}
-          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed ${
-            body.trim() ? "border-border" : "border-destructive"
-          }`}
-        />
+        <ChatbotValidationField path={["body"]}>
+          <textarea
+            value={body}
+            rows={4}
+            maxLength={CHATBOT_INTERACTIVE_BODY_MAX_LENGTH}
+            aria-invalid={!body.trim()}
+            onChange={(event) => onChange({ body: event.target.value })}
+            placeholder={t("Elegí una opción de la lista")}
+            className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[11px] leading-relaxed ${
+              body.trim() ? "border-border" : "border-destructive"
+            }`}
+          />
+        </ChatbotValidationField>
         <TemplateVariableControls
           availableVariables={availableVariables}
           onInsert={(variable) =>
@@ -2994,20 +3058,38 @@ function ListMessageInspector({
         </span>
       </label>
 
+      <label className="flex items-center gap-2 text-[11px]">
+        <input
+          type="checkbox"
+          checked={node.data.config.render_as_buttons === true}
+          onChange={(event) =>
+            onChange({ render_as_buttons: event.target.checked })
+          }
+        />
+        {t("Mostrar como botones")}
+      </label>
+
       <label className="block">
         <span className="text-[11px] font-medium">
           {t("Texto del botón para abrir la lista")}
         </span>
-        <input
-          value={buttonText}
-          maxLength={CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
-          aria-invalid={!buttonText.trim()}
-          onChange={(event) => onChange({ button_text: event.target.value })}
-          placeholder={t("Ver opciones")}
-          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
-            buttonText.trim() ? "border-border" : "border-destructive"
-          }`}
-        />
+        <span className="mb-2 block text-[10px] text-muted-foreground">
+          {t(
+            "Títulos: 20 caracteres como botones; 24 en una lista normal. El texto existente nunca se acorta automáticamente.",
+          )}
+        </span>
+        <ChatbotValidationField path={["button_text"]}>
+          <input
+            value={buttonText}
+            maxLength={CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
+            aria-invalid={!buttonText.trim()}
+            onChange={(event) => onChange({ button_text: event.target.value })}
+            placeholder={t("Ver opciones")}
+            className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
+              buttonText.trim() ? "border-border" : "border-destructive"
+            }`}
+          />
+        </ChatbotValidationField>
         <span className="mt-[3px] block text-right text-[9px] text-muted-foreground">
           {buttonText.length}/{CHATBOT_LIST_BUTTON_TEXT_MAX_LENGTH}
         </span>
@@ -3023,29 +3105,35 @@ function ListMessageInspector({
           </span>
         </div>
         <div className="mt-[7px] space-y-[9px]">
+          <ChatbotValidationMessages path={["sections"]} />
           {sections.map((section, sectionIndex) => (
             <div
               key={section.id}
               className="rounded-lg border border-border bg-background/45 p-[8px]"
             >
               <div className="flex gap-[6px]">
-                <input
-                  value={section.title}
-                  maxLength={CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH}
-                  aria-invalid={!section.title.trim()}
-                  placeholder={`${t("Sección")} ${sectionIndex + 1}`}
-                  onChange={(event) =>
-                    updateSection(section.id, (current) => ({
-                      ...current,
-                      title: event.target.value,
-                    }))
-                  }
-                  className={`h-[32px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] font-medium ${
-                    section.title.trim()
-                      ? "border-border"
-                      : "border-destructive"
-                  }`}
-                />
+                <ChatbotValidationField
+                  path={["sections", sectionIndex, "title"]}
+                  counter
+                >
+                  <input
+                    value={section.title}
+                    maxLength={CHATBOT_LIST_SECTION_TITLE_MAX_LENGTH}
+                    aria-invalid={!section.title.trim()}
+                    placeholder={`${t("Sección")} ${sectionIndex + 1}`}
+                    onChange={(event) =>
+                      updateSection(section.id, (current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    className={`h-[32px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] font-medium ${
+                      section.title.trim()
+                        ? "border-border"
+                        : "border-destructive"
+                    }`}
+                  />
+                </ChatbotValidationField>
                 <button
                   type="button"
                   title={t("Eliminar sección")}
@@ -3065,33 +3153,50 @@ function ListMessageInspector({
               </div>
 
               <div className="mt-[7px] space-y-[7px]">
+                <ChatbotValidationMessages
+                  path={["sections", sectionIndex, "rows"]}
+                />
                 {section.rows.map((row, rowIndex) => (
                   <div
                     key={row.id}
                     className="rounded-md border border-dashed border-border p-[7px]"
                   >
                     <div className="flex gap-[5px]">
-                      <input
-                        value={row.title}
-                        maxLength={CHATBOT_LIST_ROW_TITLE_MAX_LENGTH}
-                        aria-invalid={!row.title.trim()}
-                        placeholder={`${t("Opción")} ${rowIndex + 1}`}
-                        onChange={(event) =>
-                          updateSection(section.id, (current) => ({
-                            ...current,
-                            rows: current.rows.map((candidate) =>
-                              candidate.id === row.id
-                                ? { ...candidate, title: event.target.value }
-                                : candidate,
-                            ),
-                          }))
-                        }
-                        className={`h-[31px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] ${
-                          row.title.trim()
-                            ? "border-border"
-                            : "border-destructive"
-                        }`}
-                      />
+                      <ChatbotValidationField
+                        path={[
+                          "sections",
+                          sectionIndex,
+                          "rows",
+                          rowIndex,
+                          "title",
+                        ]}
+                      >
+                        <input
+                          value={row.title}
+                          maxLength={rowTitleLimit}
+                          aria-invalid={
+                            !row.title.trim() ||
+                            row.title.length > rowTitleLimit
+                          }
+                          placeholder={`${t("Opción")} ${rowIndex + 1}`}
+                          onChange={(event) =>
+                            updateSection(section.id, (current) => ({
+                              ...current,
+                              rows: current.rows.map((candidate) =>
+                                candidate.id === row.id
+                                  ? { ...candidate, title: event.target.value }
+                                  : candidate,
+                              ),
+                            }))
+                          }
+                          className={`h-[31px] min-w-0 flex-1 rounded-md border bg-background px-[8px] text-[10px] ${
+                            row.title.trim() &&
+                            row.title.length <= rowTitleLimit
+                              ? "border-border"
+                              : "border-destructive"
+                          }`}
+                        />
+                      </ChatbotValidationField>
                       <button
                         type="button"
                         title={t("Eliminar opción")}
@@ -3118,25 +3223,44 @@ function ListMessageInspector({
                         <Trash2 className="h-[12px] w-[12px]" />
                       </button>
                     </div>
-                    <input
-                      value={row.description ?? ""}
-                      maxLength={CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH}
-                      placeholder={t("Descripción opcional")}
-                      onChange={(event) =>
-                        updateSection(section.id, (current) => ({
-                          ...current,
-                          rows: current.rows.map((candidate) =>
-                            candidate.id === row.id
-                              ? {
-                                  ...candidate,
-                                  description: event.target.value,
-                                }
-                              : candidate,
-                          ),
-                        }))
-                      }
-                      className="mt-[5px] h-[29px] w-full rounded-md border border-border bg-background px-[8px] text-[9px]"
+                    <ChatbotValidationMessages
+                      path={["sections", sectionIndex, "rows", rowIndex, "id"]}
                     />
+                    <span
+                      className={`mt-1 block text-right text-[9px] ${row.title.length > rowTitleLimit ? "text-destructive" : "text-muted-foreground"}`}
+                    >
+                      {row.title.length}/{rowTitleLimit}
+                    </span>
+                    <ChatbotValidationField
+                      path={[
+                        "sections",
+                        sectionIndex,
+                        "rows",
+                        rowIndex,
+                        "description",
+                      ]}
+                      counter
+                    >
+                      <input
+                        value={row.description ?? ""}
+                        maxLength={CHATBOT_LIST_ROW_DESCRIPTION_MAX_LENGTH}
+                        placeholder={t("Descripción opcional")}
+                        onChange={(event) =>
+                          updateSection(section.id, (current) => ({
+                            ...current,
+                            rows: current.rows.map((candidate) =>
+                              candidate.id === row.id
+                                ? {
+                                    ...candidate,
+                                    description: event.target.value,
+                                  }
+                                : candidate,
+                            ),
+                          }))
+                        }
+                        className="mt-[5px] h-[29px] w-full rounded-md border border-border bg-background px-[8px] text-[9px]"
+                      />
+                    </ChatbotValidationField>
                   </div>
                 ))}
               </div>
@@ -3201,14 +3325,16 @@ function TextMenuInspector({
         <span className="text-[11px] font-medium">
           {t("Pregunta y opciones")}
         </span>
-        <textarea
-          value={prompt}
-          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
-          rows={5}
-          onChange={(event) => onChange({ prompt: event.target.value })}
-          placeholder={t("Ejemplo: Escribí 1 para pagos o 2 para soporte")}
-          className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
-        />
+        <ChatbotValidationField path={["prompt"]}>
+          <textarea
+            value={prompt}
+            maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+            rows={5}
+            onChange={(event) => onChange({ prompt: event.target.value })}
+            placeholder={t("Ejemplo: Escribí 1 para pagos o 2 para soporte")}
+            className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </ChatbotValidationField>
         <TemplateVariableControls
           availableVariables={availableVariables}
           onInsert={(name) =>
@@ -3220,13 +3346,15 @@ function TextMenuInspector({
         <span className="text-[11px] font-medium">
           {t("Guardar en variable")}
         </span>
-        <input
-          value={variable}
-          maxLength={64}
-          onChange={(event) => onChange({ variable: event.target.value })}
-          placeholder="menu_choice"
-          className="mt-[6px] h-[36px] w-full rounded-lg border border-border bg-background px-[10px] font-mono text-[12px]"
-        />
+        <ChatbotValidationField path={["variable"]}>
+          <input
+            value={variable}
+            maxLength={64}
+            onChange={(event) => onChange({ variable: event.target.value })}
+            placeholder="menu_choice"
+            className="mt-[6px] h-[36px] w-full rounded-lg border border-border bg-background px-[10px] font-mono text-[12px]"
+          />
+        </ChatbotValidationField>
       </label>
       <div>
         <div className="flex items-center justify-between">
@@ -3236,42 +3364,53 @@ function TextMenuInspector({
           </span>
         </div>
         <div className="mt-[6px] space-y-[6px]">
+          <ChatbotValidationMessages path={["options"]} />
           {options.map((option, index) => (
             <div
               key={option.id}
               className="grid grid-cols-[52px_1fr_28px] gap-[5px]"
             >
-              <input
-                value={option.value}
-                maxLength={32}
-                aria-label={t("Valor")}
-                onChange={(event) =>
-                  updateOptions(
-                    options.map((item) =>
-                      item.id === option.id
-                        ? { ...item, value: event.target.value }
-                        : item,
-                    ),
-                  )
-                }
-                className="h-[32px] rounded border border-border bg-background px-[6px] font-mono text-[10px]"
-              />
-              <input
-                value={option.label}
-                maxLength={128}
-                aria-label={t("Etiqueta")}
-                onChange={(event) =>
-                  updateOptions(
-                    options.map((item) =>
-                      item.id === option.id
-                        ? { ...item, label: event.target.value }
-                        : item,
-                    ),
-                  )
-                }
-                placeholder={`${t("Opción")} ${index + 1}`}
-                className="h-[32px] rounded border border-border bg-background px-[7px] text-[10px]"
-              />
+              <ChatbotValidationField
+                path={["options", index, "value"]}
+                counter
+              >
+                <input
+                  value={option.value}
+                  maxLength={32}
+                  aria-label={t("Valor")}
+                  onChange={(event) =>
+                    updateOptions(
+                      options.map((item) =>
+                        item.id === option.id
+                          ? { ...item, value: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                  className="h-[32px] rounded border border-border bg-background px-[6px] font-mono text-[10px]"
+                />
+              </ChatbotValidationField>
+              <ChatbotValidationField
+                path={["options", index, "label"]}
+                counter
+              >
+                <input
+                  value={option.label}
+                  maxLength={128}
+                  aria-label={t("Etiqueta")}
+                  onChange={(event) =>
+                    updateOptions(
+                      options.map((item) =>
+                        item.id === option.id
+                          ? { ...item, label: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                  placeholder={`${t("Opción")} ${index + 1}`}
+                  className="h-[32px] rounded border border-border bg-background px-[7px] text-[10px]"
+                />
+              </ChatbotValidationField>
               <button
                 type="button"
                 aria-label={t("Eliminar opción")}
@@ -3283,6 +3422,7 @@ function TextMenuInspector({
               >
                 <Trash2 className="mx-auto h-[12px] w-[12px]" />
               </button>
+              <ChatbotValidationMessages path={["options", index, "id"]} />
             </div>
           ))}
         </div>
@@ -3304,15 +3444,17 @@ function TextMenuInspector({
         <span className="text-[11px] font-medium">
           {t("Respuesta inválida")}
         </span>
-        <textarea
-          value={invalidResponse}
-          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
-          rows={3}
-          onChange={(event) =>
-            onChange({ invalid_response: event.target.value, max_retries: 3 })
-          }
-          className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[8px] text-[11px]"
-        />
+        <ChatbotValidationField path={["invalid_response"]}>
+          <textarea
+            value={invalidResponse}
+            maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+            rows={3}
+            onChange={(event) =>
+              onChange({ invalid_response: event.target.value, max_retries: 3 })
+            }
+            className="mt-[6px] w-full resize-y rounded-lg border border-border bg-background px-[10px] py-[8px] text-[11px]"
+          />
+        </ChatbotValidationField>
         <span className="mt-[4px] block text-[9px] text-muted-foreground">
           {t("Después de 3 intentos inválidos, el chat se cierra.")}
         </span>
@@ -3356,17 +3498,19 @@ function CollectInputInspector({
     <div className="space-y-[13px]">
       <label className="block">
         <span className="text-[11px] font-medium">{t("Pregunta")}</span>
-        <textarea
-          value={prompt}
-          maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
-          rows={4}
-          aria-invalid={!prompt.trim()}
-          onChange={(event) => onChange({ prompt: event.target.value })}
-          placeholder={t("Escribí la pregunta que recibirá el contacto")}
-          className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
-            prompt.trim() ? "border-border" : "border-destructive"
-          }`}
-        />
+        <ChatbotValidationField path={["prompt"]}>
+          <textarea
+            value={prompt}
+            maxLength={CHATBOT_MESSAGE_MAX_LENGTH}
+            rows={4}
+            aria-invalid={!prompt.trim()}
+            onChange={(event) => onChange({ prompt: event.target.value })}
+            placeholder={t("Escribí la pregunta que recibirá el contacto")}
+            className={`mt-[6px] w-full resize-y rounded-lg border bg-background px-[10px] py-[9px] text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
+              prompt.trim() ? "border-border" : "border-destructive"
+            }`}
+          />
+        </ChatbotValidationField>
         <TemplateVariableControls
           availableVariables={availableVariables}
           onInsert={(templateVariable) =>
@@ -3387,16 +3531,18 @@ function CollectInputInspector({
           <Braces className="h-[12px] w-[12px] text-amber-500" />
           {t("Guardar en variable")}
         </span>
-        <input
-          value={variable}
-          maxLength={64}
-          aria-invalid={!variableIsValid}
-          onChange={(event) => onChange({ variable: event.target.value })}
-          placeholder="customer_name"
-          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[10px] font-mono text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
-            variableIsValid ? "border-border" : "border-destructive"
-          }`}
-        />
+        <ChatbotValidationField path={["variable"]}>
+          <input
+            value={variable}
+            maxLength={64}
+            aria-invalid={!variableIsValid}
+            onChange={(event) => onChange({ variable: event.target.value })}
+            placeholder="customer_name"
+            className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[10px] font-mono text-[12px] outline-none focus:ring-2 focus:ring-primary/20 ${
+              variableIsValid ? "border-border" : "border-destructive"
+            }`}
+          />
+        </ChatbotValidationField>
         {!variableIsValid && (
           <span className="mt-[4px] block text-[10px] leading-relaxed text-destructive">
             {t(
@@ -3432,41 +3578,45 @@ function CollectInputInspector({
             <span className="text-[10px] text-muted-foreground">
               {t("Mínima")}
             </span>
-            <input
-              type="number"
-              min={0}
-              max={CHATBOT_INPUT_MAX_LENGTH}
-              value={minLength ?? ""}
-              onChange={(event) =>
-                onChange({
-                  min_length:
-                    event.target.value === ""
-                      ? undefined
-                      : Number(event.target.value),
-                })
-              }
-              className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
-            />
+            <ChatbotValidationField path={["min_length"]}>
+              <input
+                type="number"
+                min={0}
+                max={CHATBOT_INPUT_MAX_LENGTH}
+                value={minLength ?? ""}
+                onChange={(event) =>
+                  onChange({
+                    min_length:
+                      event.target.value === ""
+                        ? undefined
+                        : Number(event.target.value),
+                  })
+                }
+                className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
+              />
+            </ChatbotValidationField>
           </label>
           <label>
             <span className="text-[10px] text-muted-foreground">
               {t("Máxima")}
             </span>
-            <input
-              type="number"
-              min={0}
-              max={CHATBOT_INPUT_MAX_LENGTH}
-              value={maxLength ?? ""}
-              onChange={(event) =>
-                onChange({
-                  max_length:
-                    event.target.value === ""
-                      ? undefined
-                      : Number(event.target.value),
-                })
-              }
-              className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
-            />
+            <ChatbotValidationField path={["max_length"]}>
+              <input
+                type="number"
+                min={0}
+                max={CHATBOT_INPUT_MAX_LENGTH}
+                value={maxLength ?? ""}
+                onChange={(event) =>
+                  onChange({
+                    max_length:
+                      event.target.value === ""
+                        ? undefined
+                        : Number(event.target.value),
+                  })
+                }
+                className="mt-[4px] h-[34px] w-full rounded-lg border border-border bg-background px-[9px] text-[11px]"
+              />
+            </ChatbotValidationField>
           </label>
         </div>
         {!lengthsAreValid && (
@@ -3511,24 +3661,26 @@ function ConditionInspector({
         <span className="text-[11px] font-medium">
           {t("Variable a evaluar")}
         </span>
-        <select
-          value={variableIsAvailable ? variable : ""}
-          onChange={(event) => onVariableChange(event.target.value)}
-          className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
-            variableIsAvailable ? "border-border" : "border-destructive"
-          }`}
-        >
-          <option value="">
-            {availableVariables.length > 0
-              ? t("Seleccioná una variable")
-              : t("Conectá primero un nodo Recopilar respuesta")}
-          </option>
-          {availableVariables.map((availableVariable) => (
-            <option key={availableVariable} value={availableVariable}>
-              {availableVariable}
+        <ChatbotValidationField path={["variable"]}>
+          <select
+            value={variableIsAvailable ? variable : ""}
+            onChange={(event) => onVariableChange(event.target.value)}
+            className={`mt-[6px] h-[36px] w-full rounded-lg border bg-background px-[9px] text-[11px] ${
+              variableIsAvailable ? "border-border" : "border-destructive"
+            }`}
+          >
+            <option value="">
+              {availableVariables.length > 0
+                ? t("Seleccioná una variable")
+                : t("Conectá primero un nodo Recopilar respuesta")}
             </option>
-          ))}
-        </select>
+            {availableVariables.map((availableVariable) => (
+              <option key={availableVariable} value={availableVariable}>
+                {availableVariable}
+              </option>
+            ))}
+          </select>
+        </ChatbotValidationField>
         {!variableIsAvailable && (
           <span className="mt-[4px] block text-[10px] leading-relaxed text-destructive">
             {t(

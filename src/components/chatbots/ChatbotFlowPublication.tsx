@@ -24,7 +24,9 @@ import type { ChatbotFlowVersion } from "@/queries/useChatbotFlows";
 import {
   type ChatbotFlowValidationIssue,
   type ChatbotFlowValidationResult,
-  getChatbotValidationMessageKey,
+  formatChatbotValidationIssue,
+  getChatbotValidationFieldLabel,
+  chatbotValidationIssueKey,
   groupChatbotValidationIssues,
   normalizeChatbotEditorGraph,
 } from "@/utils/ChatbotFlowUtils";
@@ -108,7 +110,7 @@ export function ValidationResultsDialog({
               {group.issues.map((issue, index) => (
                 <button
                   type="button"
-                  key={`${issue.code}:${issue.node_id ?? issue.edge_id ?? index}:${issue.field ?? ""}`}
+                  key={chatbotValidationIssueKey(issue)}
                   disabled={!issue.node_id && !issue.edge_id}
                   onClick={() => {
                     if (!issue.node_id && !issue.edge_id) return;
@@ -130,11 +132,11 @@ export function ValidationResultsDialog({
                     )}
                   </div>
                   <div className="mt-[4px] text-[12px] leading-relaxed">
-                    {t(getChatbotValidationMessageKey(issue))}
+                    {formatChatbotValidationIssue(issue, t)}
                   </div>
                   {issue.field && (
                     <div className="mt-[5px] text-[10px] text-muted-foreground">
-                      {t("Campo")}: {issue.field}
+                      {t("Campo")}: {getChatbotValidationFieldLabel(issue, t)}
                     </div>
                   )}
                 </button>
