@@ -1,5 +1,6 @@
 export type NodeConversationSnapshot = {
   enabled: boolean;
+  awaiting_mapping?: boolean;
   revision?: string;
   state?: "human_owned" | "closed" | "bot_ready" | "bot_active";
   last_inbound_wamid?: string;
@@ -34,6 +35,38 @@ export type NodeConversationSnapshot = {
     actor_is_current?: boolean;
   } | null;
 };
+
+export function lifecyclePollInterval(
+  snapshot?: NodeConversationSnapshot,
+): number | false {
+  if (snapshot?.awaiting_mapping) return 2000;
+  if (!snapshot?.enabled) return false;
+  return snapshot.pending_request_id ||
+    snapshot.sync_pending ||
+    snapshot.support_request?.status === "waiting"
+    ? 2000
+    : 20000;
+}
+
+// A stale GET must not erase a locally accepted operation's sending fence.
+export function reconcileLifecycleRead(
+  previous: NodeConversationSnapshot | undefined,
+  fresh: NodeConversationSnapshot,
+  submitting: boolean,
+): NodeConversationSnapshot {
+  if (!previous?.optimistic_action) return fresh;
+  const id = previous.pending_request_id;
+  const terminal =
+    id &&
+    fresh.operation?.request_id === id &&
+    ["succeeded", "failed"].includes(fresh.operation.status);
+  if (terminal || (!submitting && id === "submitting")) return fresh;
+  return {
+    ...fresh,
+    pending_request_id: fresh.pending_request_id ?? id ?? "submitting",
+    optimistic_action: previous.optimistic_action,
+  };
+}
 
 export function isConversationManager(role?: string) {
   return role === "owner" || role === "admin" || role === "supervisor";

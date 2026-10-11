@@ -61,6 +61,9 @@ export const useRealtimeSubscription = () => {
       await queryClient.cancelQueries({ queryKey });
       if (!isCurrentScope()) return;
       await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({
+        queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
+      });
     };
 
     const reconcileConversation = async (conversationId: string) => {
@@ -369,9 +372,6 @@ export const useRealtimeSubscription = () => {
 
               void refreshInboxVisibility();
               void reconcileConversation(signal.conversation_id);
-              void queryClient.invalidateQueries({
-                queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-              });
             },
           );
 
@@ -384,9 +384,6 @@ export const useRealtimeSubscription = () => {
           if (queueSubscribed) {
             queueRetryAttempt = 0;
             void refreshConversationQueues();
-            void queryClient.invalidateQueries({
-              queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-            });
             return;
           }
 
@@ -411,9 +408,7 @@ export const useRealtimeSubscription = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine) return;
 
       void refreshConversationQueues();
-      void queryClient.invalidateQueries({
-        queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-      });
+      void refreshInboxVisibility();
       void refreshQuickReplies();
       refreshContacts();
       void refreshNotifications();
