@@ -47,8 +47,15 @@ test("previous histories are independent, authenticated, paginated, read-only an
   assert.match(source, /list_previous_conversations_page/);
   assert.match(source, /p_page: page/);
   assert.match(source, /conversation-history|previous-chat-history/);
-  assert.match(source, /olderMessagesFilter/);
-  assert.match(source, /eq\("organization_id", orgId\)/);
+  assert.match(source, /list_previous_conversation_messages/);
+  assert.match(source, /p_organization_id: orgId/);
+  assert.match(source, /p_conversation_id: conversationId/);
+  assert.match(source, /p_previous_conversation_id: selected!/);
+  assert.match(source, /p_before_timestamp: pageParam\?\.timestamp/);
+  assert.match(source, /p_before_id: pageParam\?\.id/);
+  assert.match(source, /p_page_size: HISTORY_PAGE_SIZE/);
+  assert.match(source, /\.abortSignal\(signal\)/);
+  assert.doesNotMatch(source, /\.from\("(?:messages|conversations)"\)/);
   assert.match(source, /gcTime: 0/);
   assert.match(source, /!history.isError &&/);
   assert.doesNotMatch(

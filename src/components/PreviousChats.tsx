@@ -8,7 +8,6 @@ import { supabase, type MessageRow } from "@/supabase/client";
 import {
   HISTORY_PAGE_SIZE,
   nextHistoryCursor,
-  olderMessagesFilter,
   type HistoryCursor,
 } from "@/utils/ConversationHistoryUtils";
 import Message from "./Message/Message";
@@ -70,33 +69,29 @@ function PreviousChatsDialog({
     },
   });
   const history = useInfiniteQuery({
-    queryKey: ["previous-chat-history", userId, orgId, selected],
+    queryKey: [
+      "previous-chat-history",
+      userId,
+      orgId,
+      conversationId,
+      selected,
+    ],
     enabled: open && !!selected,
     refetchInterval: open ? 30_000 : false,
     gcTime: 0,
     retry: false,
     initialPageParam: undefined as HistoryCursor | undefined,
     queryFn: async ({ signal, pageParam }) => {
-      const { data: allowed, error: accessError } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("organization_id", orgId)
-        .eq("id", selected!)
-        .abortSignal(signal)
-        .maybeSingle();
-      if (accessError) throw accessError;
-      if (!allowed) throw new Error("Conversation is no longer accessible");
-      let query = supabase
-        .from("messages")
-        .select()
-        .eq("organization_id", orgId)
-        .eq("conversation_id", selected!)
-        .order("timestamp", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(HISTORY_PAGE_SIZE)
+      const { data, error } = await supabase
+        .rpc("list_previous_conversation_messages", {
+          p_organization_id: orgId,
+          p_conversation_id: conversationId,
+          p_previous_conversation_id: selected!,
+          p_page_size: HISTORY_PAGE_SIZE,
+          p_before_timestamp: pageParam?.timestamp,
+          p_before_id: pageParam?.id,
+        })
         .abortSignal(signal);
-      if (pageParam) query = query.or(olderMessagesFilter(pageParam));
-      const { data, error } = await query;
       if (error) throw error;
       return data as MessageRow[];
     },
