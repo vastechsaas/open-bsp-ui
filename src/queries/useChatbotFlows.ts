@@ -18,6 +18,8 @@ import type {
 import { queryKeys } from "./queryKeys";
 import {
   conversationRetry,
+  lifecyclePollInterval,
+  reconcileLifecycleRead,
   type NodeConversationSnapshot,
 } from "@/utils/NodeConversationUtils";
 import {
@@ -154,12 +156,7 @@ export function useNodeConversationLifecycle(conversationId?: string) {
   const status = useQuery<NodeConversationSnapshot>({
     queryKey: key,
     enabled: !!userId && !!orgId && !!conversationId,
-    refetchInterval: (query) =>
-      query.state.data?.enabled
-        ? query.state.data.pending_request_id || query.state.data.sync_pending
-          ? 2000
-          : 20000
-        : false,
+    refetchInterval: (query) => lifecyclePollInterval(query.state.data),
     refetchOnWindowFocus: "always",
     refetchOnReconnect: "always",
     staleTime: 0,
@@ -174,28 +171,29 @@ export function useNodeConversationLifecycle(conversationId?: string) {
       const pending = client.getQueryData<NodeConversationSnapshot>(key);
       // A poll or Realtime invalidation must not remove the shared sending
       // fence while the POST (including its fresh preflight) is still running.
-      return client.isMutating({ mutationKey: key }) &&
-        pending?.optimistic_action
-        ? {
-            ...fresh,
-            pending_request_id: fresh.pending_request_id ?? "submitting",
-            optimistic_action: pending.optimistic_action,
-          }
-        : fresh;
+      return reconcileLifecycleRead(
+        pending,
+        fresh,
+        !!client.isMutating({ mutationKey: key }),
+      );
     },
   });
   // One query owns the header/composer snapshot. This adapter keeps legacy
   // callers compatible without a second, independently stale mapping read.
   const mapping = {
-    data: status.data?.enabled
-      ? {
-          lifecycle_enabled: status.data.lifecycle_enabled ?? true,
-          human_owned:
-            status.data.human_owned ?? status.data.state === "human_owned",
-          pending_request_id: status.data.pending_request_id ?? null,
-          sync_pending: status.data.sync_pending || status.isError,
-        }
-      : null,
+    data:
+      status.data?.enabled || status.data?.awaiting_mapping
+        ? {
+            lifecycle_enabled: status.data.lifecycle_enabled ?? true,
+            human_owned:
+              status.data.human_owned ?? status.data.state === "human_owned",
+            pending_request_id: status.data.pending_request_id ?? null,
+            sync_pending:
+              status.data.awaiting_mapping ||
+              status.data.sync_pending ||
+              status.isError,
+          }
+        : null,
   };
   const action = useMutation({
     mutationKey: key,
@@ -236,7 +234,7 @@ export function useNodeConversationLifecycle(conversationId?: string) {
           snapshot: async () => {
             const fresh =
               await invokeChatbotManagement<NodeConversationSnapshot>(
-                `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId)}`,
+                `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId)}&refresh=1`,
                 undefined,
                 "GET",
               );
@@ -255,7 +253,7 @@ export function useNodeConversationLifecycle(conversationId?: string) {
         return result;
       }
       const snapshot = await invokeChatbotManagement<NodeConversationSnapshot>(
-        `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}`,
+        `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}&refresh=1`,
         undefined,
         "GET",
       );
@@ -272,6 +270,17 @@ export function useNodeConversationLifecycle(conversationId?: string) {
         !snapshot.revision
       )
         throw new Error("Refresh conversation state before continuing");
+      const rendered = current.chat.messages.get(conversationId!);
+      if (
+        ![...(rendered?.values() ?? [])].some(
+          (message) =>
+            message.direction === "incoming" &&
+            message.external_id === snapshot.last_inbound_wamid,
+        )
+      )
+        throw new Error(
+          "A new customer message arrived—review it before closing.",
+        );
       const requestKey = `${userId}:${orgId}:${conversationId}:${actionName}`;
       if (
         snapshot.operation?.request_id === request.current?.id &&
@@ -317,6 +326,17 @@ export function useNodeConversationLifecycle(conversationId?: string) {
       if (result.status === "succeeded") request.current = null;
       return result;
     },
+    onSuccess: (result, actionName) => {
+      client.setQueryData<NodeConversationSnapshot>(key, (snapshot) =>
+        snapshot
+          ? {
+              ...snapshot,
+              pending_request_id: result.request_id,
+              optimistic_action: actionName,
+            }
+          : snapshot,
+      );
+    },
     onError: (error) => {
       // Only a definite reservation rejection permits a fresh request.
       const code =
@@ -340,7 +360,10 @@ export function useNodeConversationLifecycle(conversationId?: string) {
         snapshot
           ? {
               ...snapshot,
-              optimistic_action: undefined,
+              optimistic_action:
+                snapshot.pending_request_id === "submitting"
+                  ? undefined
+                  : snapshot.optimistic_action,
               pending_request_id:
                 snapshot.pending_request_id === "submitting"
                   ? null

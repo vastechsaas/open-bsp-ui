@@ -221,7 +221,7 @@ test("takeover requires authorized waiting ownership and never follows assignmen
   assert.match(controls, /handled_by_agent_id === agent\?\.id/);
   assert.match(
     controls,
-    /mutate\(\s*waiting \? "takeover" : "resolve-and-close",?\s*\)/,
+    /mutate\(\s*waiting \? "takeover" : "resolve-and-close",/,
   );
   assert.match(footer, /!privateNoteMode &&[\s\S]*?nodeHumanSendingBlocked/);
   assert.match(footer, /\{composerModeTabs\}/);

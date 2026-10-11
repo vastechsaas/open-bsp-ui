@@ -10,7 +10,7 @@ import {
   isConversationManager,
 } from "@/utils/NodeConversationUtils";
 import useBoundStore from "@/stores/useBoundStore";
-import { Dropdown, Popover } from "antd";
+import { Dropdown, Popover, message } from "antd";
 import { AlertCircle, LoaderCircle, MoreHorizontal } from "lucide-react";
 
 export default function ResolveConversationControls({
@@ -35,7 +35,8 @@ export default function ResolveConversationControls({
   const canResolve = canResolveNodeConversation(snapshot, visibleInbound);
   const waiting = snapshot?.support_request?.status === "waiting";
   const syncingSupport =
-    !!snapshot?.takeover_enabled && !!snapshot.takeover_sync_pending;
+    !!snapshot?.awaiting_mapping ||
+    (!!snapshot?.takeover_enabled && !!snapshot.takeover_sync_pending);
   const canTakeOver = canTakeOverNodeConversation(snapshot);
   const takingOver =
     (lifecycle.action.variables === "takeover" && lifecycle.action.isPending) ||
@@ -52,7 +53,13 @@ export default function ResolveConversationControls({
         !!snapshot.last_inbound_wamid &&
         visibleInbound.includes(snapshot.last_inbound_wamid)
       : !!legacy.mapping.data);
-  if (!pending && !snapshot?.enabled && !canReturn) return null;
+  if (
+    !pending &&
+    !snapshot?.enabled &&
+    !snapshot?.awaiting_mapping &&
+    !canReturn
+  )
+    return null;
   const error =
     (lifecycle.action.variables === "takeover" &&
     snapshot?.state === "human_owned"
@@ -74,9 +81,7 @@ export default function ResolveConversationControls({
       ? t("Sincronizando solicitud de soporte…")
       : actionLabel;
   const supportStatus = waiting
-    ? snapshot?.episode_enabled
-      ? t("Esperando soporte · Chatbot pausado")
-      : t("Esperando soporte · Chatbot activo")
+    ? t("Esperando soporte · Chatbot activo")
     : snapshot?.support_request?.status === "handling"
       ? snapshot.support_request.handled_by_agent_id === agent?.id
         ? t("Estás atendiendo este chat · Chatbot pausado")
@@ -95,7 +100,10 @@ export default function ResolveConversationControls({
       <span role="status" className="sr-only" aria-live="polite">
         {pending || syncingSupport ? progressLabel : supportStatus}
       </span>
-      {(pending || waiting || snapshot?.state === "human_owned") && (
+      {(pending ||
+        waiting ||
+        snapshot?.awaiting_mapping ||
+        snapshot?.state === "human_owned") && (
         <button
           type="button"
           className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-muted/70 px-3 text-xs font-medium leading-none text-foreground transition-colors enabled:hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
@@ -107,10 +115,18 @@ export default function ResolveConversationControls({
               : supportHint || actionLabel
           }
           disabled={
-            pending || syncingSupport || (waiting ? !canTakeOver : !canResolve)
+            pending ||
+            syncingSupport ||
+            snapshot?.awaiting_mapping ||
+            (waiting ? !canTakeOver : !canResolve)
           }
           onClick={() =>
-            lifecycle.action.mutate(waiting ? "takeover" : "resolve-and-close")
+            lifecycle.action.mutate(
+              waiting ? "takeover" : "resolve-and-close",
+              {
+                onError: (error) => void message.error(error.message),
+              },
+            )
           }
         >
           {(pending || syncingSupport) && (

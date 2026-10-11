@@ -10,6 +10,11 @@ import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { queryKeys } from "@/queries/queryKeys";
+import { supportInboxKey } from "@/queries/useSupportInboxVisibility";
+import {
+  isInboxChange,
+  inboxMembershipChanged,
+} from "@/utils/SupportInboxUtils";
 import {
   getInaccessibleConversationIds,
   getRealtimeRetryDelayMs,
@@ -43,15 +48,33 @@ export const useRealtimeSubscription = () => {
     if (!activeOrgId || !userId) return;
 
     const filter = `organization_id=eq.${activeOrgId}`;
+    let cancelled = false;
+    const isCurrentScope = () =>
+      !cancelled &&
+      useBoundStore.getState().ui.activeOrgId === activeOrgId &&
+      useBoundStore.getState().ui.user?.id === userId;
 
     let recoveryPromise: Promise<void> | undefined;
+    const refreshInboxVisibility = async () => {
+      if (!isCurrentScope()) return;
+      const queryKey = supportInboxKey(activeOrgId, userId);
+      await queryClient.cancelQueries({ queryKey });
+      if (!isCurrentScope()) return;
+      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({
+        queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
+      });
+    };
 
     const reconcileConversation = async (conversationId: string) => {
+      if (!isCurrentScope()) return;
       const { data, error } = await supabase
         .from("conversations")
         .select()
+        .eq("organization_id", activeOrgId)
         .eq("id", conversationId)
         .maybeSingle();
+      if (!isCurrentScope()) return;
 
       if (error) {
         console.error("Could not reconcile conversation queue state", error);
@@ -68,6 +91,7 @@ export const useRealtimeSubscription = () => {
           .eq("conversation_id", conversationId)
           .order("timestamp", { ascending: false })
           .limit(100);
+        if (!isCurrentScope()) return;
 
         if (messagesError) {
           console.error(
@@ -84,6 +108,7 @@ export const useRealtimeSubscription = () => {
     };
 
     const refreshConversationQueues = () => {
+      if (!isCurrentScope()) return;
       if (recoveryPromise) return recoveryPromise;
 
       recoveryPromise = (async () => {
@@ -96,6 +121,7 @@ export const useRealtimeSubscription = () => {
             .eq("organization_id", activeOrgId)
             .order("id", { ascending: true })
             .range(from, from + CONVERSATION_PAGE_SIZE - 1);
+          if (!isCurrentScope()) return;
 
           if (error) throw error;
 
@@ -125,8 +151,10 @@ export const useRealtimeSubscription = () => {
         if (error) throw error;
 
         const initialData = data as unknown as InitDataResponse;
+        if (!isCurrentScope()) return;
         pushConversations(initialData.conversations);
         pushMessages(initialData.messages);
+        await refreshInboxVisibility();
         await queryClient.invalidateQueries({
           queryKey:
             queryKeys.privateNotes.mentionedConversationsRoot(activeOrgId),
@@ -161,7 +189,6 @@ export const useRealtimeSubscription = () => {
         queryKey: queryKeys.notifications.root(activeOrgId),
       });
 
-    let cancelled = false;
     let dataChannel: ReturnType<typeof supabase.channel> | undefined;
     let queueChannel: ReturnType<typeof supabase.channel> | undefined;
     let dataRetryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -190,11 +217,16 @@ export const useRealtimeSubscription = () => {
           },
           (payload) => {
             // TODO: https://github.com/supabase/supabase/issues/32817
-            if (payload.table !== "conversations") return;
+            if (!isCurrentScope() || payload.table !== "conversations") return;
 
             const conversation = payload.new as ConversationRow;
+            const changed = inboxMembershipChanged(
+              useBoundStore.getState().chat.conversations.get(conversation.id),
+              conversation,
+            );
 
             pushConversations([conversation]);
+            if (changed) void refreshInboxVisibility();
           },
         )
         .on(
@@ -207,7 +239,7 @@ export const useRealtimeSubscription = () => {
           },
           (payload) => {
             // TODO: https://github.com/supabase/supabase/issues/32817
-            if (payload.table !== "messages") return;
+            if (!isCurrentScope() || payload.table !== "messages") return;
 
             const message = payload.new as MessageRow;
 
@@ -308,15 +340,38 @@ export const useRealtimeSubscription = () => {
           })
           .on(
             "broadcast",
+            { event: "conversation_inbox_changed" },
+            (payload) => {
+              if (
+                !isCurrentScope() ||
+                !isInboxChange(payload.payload, activeOrgId)
+              )
+                return;
+              void refreshInboxVisibility();
+              const signal = toConversationStateSignal(payload.payload);
+              if (signal) void reconcileConversation(signal.conversation_id);
+              void queryClient.invalidateQueries({
+                queryKey:
+                  queryKeys.privateNotes.mentionedConversationsRoot(
+                    activeOrgId,
+                  ),
+              });
+            },
+          )
+          .on(
+            "broadcast",
             { event: "conversation_state_changed" },
             (payload) => {
               const signal = toConversationStateSignal(payload.payload);
-              if (!signal || signal.organization_id !== activeOrgId) return;
+              if (
+                !isCurrentScope() ||
+                !signal ||
+                signal.organization_id !== activeOrgId
+              )
+                return;
 
+              void refreshInboxVisibility();
               void reconcileConversation(signal.conversation_id);
-              void queryClient.invalidateQueries({
-                queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-              });
             },
           );
 
@@ -329,9 +384,6 @@ export const useRealtimeSubscription = () => {
           if (queueSubscribed) {
             queueRetryAttempt = 0;
             void refreshConversationQueues();
-            void queryClient.invalidateQueries({
-              queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-            });
             return;
           }
 
@@ -356,9 +408,7 @@ export const useRealtimeSubscription = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine) return;
 
       void refreshConversationQueues();
-      void queryClient.invalidateQueries({
-        queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
-      });
+      void refreshInboxVisibility();
       void refreshQuickReplies();
       refreshContacts();
       void refreshNotifications();
