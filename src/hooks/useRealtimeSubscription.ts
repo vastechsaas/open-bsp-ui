@@ -26,6 +26,7 @@ type InitDataResponse = {
 
 export const useRealtimeSubscription = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
 
   const pushConversations = useBoundStore(
     (state) => state.chat.pushConversations,
@@ -39,7 +40,7 @@ export const useRealtimeSubscription = () => {
   const currentAgentId = currentAgent?.id;
 
   useEffect(() => {
-    if (!activeOrgId) return;
+    if (!activeOrgId || !userId) return;
 
     const filter = `organization_id=eq.${activeOrgId}`;
 
@@ -382,6 +383,7 @@ export const useRealtimeSubscription = () => {
     };
   }, [
     activeOrgId,
+    userId,
     currentAgentId,
     pushConversations,
     pushMessages,

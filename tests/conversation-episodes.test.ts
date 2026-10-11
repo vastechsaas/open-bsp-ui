@@ -33,6 +33,11 @@ test("one account-scoped lifecycle query drives pending UI with two-second fallb
     realtime,
     /queryKey: \["node-conversation-lifecycle", userId, activeOrgId\]/,
   );
+  assert.match(
+    realtime,
+    /const userId = useBoundStore\(\(state\) => state\.ui\.user\?\.id\)/,
+  );
+  assert.match(realtime, /if \(!activeOrgId \|\| !userId\) return/);
 });
 test("previous histories are independent, authenticated, paginated, read-only and scoped across account changes", () => {
   const source = readFileSync(
