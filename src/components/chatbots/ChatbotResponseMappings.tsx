@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChatbotValidationField } from "./ChatbotValidationField";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { ChatbotWebhookResponseMapping } from "@/utils/ChatbotFlowUtils";
@@ -131,14 +132,18 @@ export function ChatbotResponseMappings({
                 {guided
                   ? t("Información de la respuesta")
                   : t("Ruta de respuesta")}
-                <input
-                  className={inputClass}
-                  value={mapping.path}
-                  placeholder="data.items"
-                  onChange={(event) =>
-                    update(index, { path: event.target.value })
-                  }
-                />
+                <ChatbotValidationField
+                  path={["response_mappings", index, "path"]}
+                >
+                  <input
+                    className={inputClass}
+                    value={mapping.path}
+                    placeholder="data.items"
+                    onChange={(event) =>
+                      update(index, { path: event.target.value })
+                    }
+                  />
+                </ChatbotValidationField>
                 {responsePaths.length > 0 && (
                   <select
                     className={inputClass}
@@ -162,14 +167,18 @@ export function ChatbotResponseMappings({
               </label>
               <label className="min-w-0 flex-1 text-xs">
                 {guided ? t("Guardar como variable") : t("Variable de salida")}
-                <input
-                  className={inputClass}
-                  value={mapping.variable}
-                  placeholder="items_text"
-                  onChange={(event) =>
-                    update(index, { variable: event.target.value })
-                  }
-                />
+                <ChatbotValidationField
+                  path={["response_mappings", index, "variable"]}
+                >
+                  <input
+                    className={inputClass}
+                    value={mapping.variable}
+                    placeholder="items_text"
+                    onChange={(event) =>
+                      update(index, { variable: event.target.value })
+                    }
+                  />
+                </ChatbotValidationField>
               </label>
               <button
                 type="button"
@@ -184,34 +193,49 @@ export function ChatbotResponseMappings({
             </div>
             <label className="block text-xs">
               {t("Formato de respuesta")}
-              <select
-                className={inputClass}
-                value={mapping.format ? "list" : "value"}
-                onChange={(event) =>
-                  update(index, {
-                    format:
-                      event.target.value === "list"
-                        ? defaultFormat()
-                        : undefined,
-                  })
-                }
+              <ChatbotValidationField
+                path={["response_mappings", index, "format"]}
               >
-                <option value="value">{t("Valor simple")}</option>
-                <option value="list">{t("Lista formateada")}</option>
-              </select>
+                <select
+                  className={inputClass}
+                  value={mapping.format ? "list" : "value"}
+                  onChange={(event) =>
+                    update(index, {
+                      format:
+                        event.target.value === "list"
+                          ? defaultFormat()
+                          : undefined,
+                    })
+                  }
+                >
+                  <option value="value">{t("Valor simple")}</option>
+                  <option value="list">{t("Lista formateada")}</option>
+                </select>
+              </ChatbotValidationField>
             </label>
             {mapping.format && (
               <>
                 <label className="block text-xs">
                   {t("Plantilla por elemento")}
-                  <textarea
-                    className={`${inputClass} min-h-24 font-mono`}
-                    maxLength={2000}
-                    value={mapping.format.item_template}
-                    onChange={(event) =>
-                      updateFormat(index, { item_template: event.target.value })
-                    }
-                  />
+                  <ChatbotValidationField
+                    path={[
+                      "response_mappings",
+                      index,
+                      "format",
+                      "item_template",
+                    ]}
+                  >
+                    <textarea
+                      className={`${inputClass} min-h-24 font-mono`}
+                      maxLength={2000}
+                      value={mapping.format.item_template}
+                      onChange={(event) =>
+                        updateFormat(index, {
+                          item_template: event.target.value,
+                        })
+                      }
+                    />
+                  </ChatbotValidationField>
                 </label>
                 {guided && itemPaths.length > 0 && (
                   <div
@@ -252,68 +276,106 @@ export function ChatbotResponseMappings({
                     <div className="grid grid-cols-2 gap-2">
                       <label className="text-xs">
                         {t("Separador entre elementos")}
-                        <select
-                          className={inputClass}
-                          value={mapping.format.separator}
-                          onChange={(event) =>
-                            updateFormat(index, {
-                              separator: event.target.value,
-                            })
-                          }
+                        <ChatbotValidationField
+                          path={[
+                            "response_mappings",
+                            index,
+                            "format",
+                            "separator",
+                          ]}
                         >
-                          <option value={"\n\n"}>{t("Línea en blanco")}</option>
-                          <option value={"\n"}>{t("Salto de línea")}</option>
-                          <option value=", ">{t("Coma")}</option>
-                          {!["\n\n", "\n", ", "].includes(
-                            mapping.format.separator,
-                          ) && (
-                            <option value={mapping.format.separator}>
-                              {t("Personalizado")}
+                          <select
+                            className={inputClass}
+                            value={mapping.format.separator}
+                            onChange={(event) =>
+                              updateFormat(index, {
+                                separator: event.target.value,
+                              })
+                            }
+                          >
+                            <option value={"\n\n"}>
+                              {t("Línea en blanco")}
                             </option>
-                          )}
-                        </select>
+                            <option value={"\n"}>{t("Salto de línea")}</option>
+                            <option value=", ">{t("Coma")}</option>
+                            {!["\n\n", "\n", ", "].includes(
+                              mapping.format.separator,
+                            ) && (
+                              <option value={mapping.format.separator}>
+                                {t("Personalizado")}
+                              </option>
+                            )}
+                          </select>
+                        </ChatbotValidationField>
                       </label>
                       <label className="text-xs">
                         {t("Separador de valores")}
-                        <input
-                          className={inputClass}
-                          maxLength={32}
-                          value={mapping.format.array_separator}
-                          onChange={(event) =>
-                            updateFormat(index, {
-                              array_separator: event.target.value,
-                            })
-                          }
-                        />
+                        <ChatbotValidationField
+                          path={[
+                            "response_mappings",
+                            index,
+                            "format",
+                            "array_separator",
+                          ]}
+                        >
+                          <input
+                            className={inputClass}
+                            maxLength={32}
+                            value={mapping.format.array_separator}
+                            onChange={(event) =>
+                              updateFormat(index, {
+                                array_separator: event.target.value,
+                              })
+                            }
+                          />
+                        </ChatbotValidationField>
                       </label>
                     </div>
                     <label className="block text-xs">
                       {t("Texto si la lista está vacía")}
-                      <input
-                        className={inputClass}
-                        maxLength={500}
-                        value={mapping.format.empty_text}
-                        onChange={(event) =>
-                          updateFormat(index, {
-                            empty_text: event.target.value,
-                          })
-                        }
-                      />
+                      <ChatbotValidationField
+                        path={[
+                          "response_mappings",
+                          index,
+                          "format",
+                          "empty_text",
+                        ]}
+                      >
+                        <input
+                          className={inputClass}
+                          maxLength={500}
+                          value={mapping.format.empty_text}
+                          onChange={(event) =>
+                            updateFormat(index, {
+                              empty_text: event.target.value,
+                            })
+                          }
+                        />
+                      </ChatbotValidationField>
                     </label>
                     <label className="block text-xs">
                       {t("Máximo de elementos")}
-                      <input
-                        className={inputClass}
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={mapping.format.max_items}
-                        onChange={(event) =>
-                          updateFormat(index, {
-                            max_items: Number(event.target.value),
-                          })
-                        }
-                      />
+                      <ChatbotValidationField
+                        path={[
+                          "response_mappings",
+                          index,
+                          "format",
+                          "max_items",
+                        ]}
+                      >
+                        <input
+                          className={inputClass}
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={mapping.format.max_items}
+                          onChange={(event) =>
+                            updateFormat(index, {
+                              max_items: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </ChatbotValidationField>
                     </label>
                   </div>
                 </details>

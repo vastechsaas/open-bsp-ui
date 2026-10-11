@@ -198,6 +198,8 @@ export type ChatbotFlowValidationIssue = {
   node_id?: string;
   edge_id?: string;
   field?: string;
+  field_path?: Array<string | number>;
+  params?: Record<string, number>;
   category?: "configuration" | "connection" | "flow" | "reference";
 };
 
@@ -209,6 +211,31 @@ export type ChatbotValidationIssueGroup = {
 };
 
 const validationMessageKeys: Record<string, string> = {
+  button_title_too_long:
+    "Opción {option}: el título del botón supera {limit} caracteres (actualmente {actual}).",
+  list_title_too_long:
+    "Opción {option}: el título de la lista supera {limit} caracteres (actualmente {actual}).",
+  option_title_required: "Opción {option}: ingresá un título.",
+  option_title_invalid: "Opción {option}: el título debe ser texto.",
+  option_id_invalid: "Opción {option}: ingresá un ID válido.",
+  option_id_duplicate: "Opción {option}: este ID ya está en uso.",
+  option_value_required: "Opción {option}: ingresá un valor de respuesta.",
+  option_value_invalid:
+    "Opción {option}: el valor de respuesta debe ser texto.",
+  option_value_duplicate:
+    "Opción {option}: este valor de respuesta ya está en uso.",
+  options_invalid: "Las opciones deben ser una lista de elementos válidos.",
+  option_count_exceeded: "Máximo {limit} elementos (actualmente {actual}).",
+  field_too_long: "Máximo {limit} caracteres (actualmente {actual}).",
+  field_above_maximum: "El valor debe ser como máximo {limit}.",
+  field_below_minimum: "El valor debe ser como mínimo {limit}.",
+  field_required: "Este campo es obligatorio.",
+  field_invalid: "Revisá el valor y el formato de este campo.",
+  input_length_range_invalid:
+    "La longitud máxima debe ser igual o mayor que la mínima.",
+  condition_variable_invalid: "Ingresá una variable de condición válida.",
+  handoff_queue_invalid: "Seleccioná una cola de destino válida.",
+  webhook_credential_invalid: "Seleccioná una credencial de webhook válida.",
   system_variable_read_only: "Las variables del sistema son de solo lectura.",
   handoff_queue_required: "Seleccioná una cola de destino.",
   handoff_acknowledgment_invalid:
@@ -241,6 +268,109 @@ export function getChatbotValidationMessageKey(
   return validationMessageKeys[issue.code] ?? issue.message;
 }
 
+export function formatChatbotValidationIssue(
+  issue: ChatbotFlowValidationIssue,
+  translate: (text: string) => string,
+): string {
+  return translate(getChatbotValidationMessageKey(issue)).replace(
+    /\{(option|limit|actual)\}/g,
+    (_match, key: string) => {
+      const value = issue.params?.[key];
+      return typeof value === "number" && Number.isFinite(value)
+        ? String(value)
+        : "—";
+    },
+  );
+}
+
+export function getChatbotValidationFieldPath(
+  issue: ChatbotFlowValidationIssue,
+): Array<string | number> {
+  if (issue.field_path?.length) return issue.field_path;
+  const config = issue.path.indexOf("config");
+  return config >= 0 && config < issue.path.length - 1
+    ? issue.path.slice(config + 1)
+    : issue.field
+      ? [issue.field]
+      : [];
+}
+
+export function chatbotValidationIssueKey(
+  issue: ChatbotFlowValidationIssue,
+): string {
+  return JSON.stringify([
+    issue.code,
+    issue.node_id,
+    issue.edge_id,
+    issue.path,
+    issue.field_path,
+  ]);
+}
+
+export function findChatbotValidationField<
+  T extends { dataset: { validationPath?: string; validationField?: string } },
+>(elements: T[], field: string): T | undefined {
+  return (
+    elements.find((element) => element.dataset.validationPath === field) ??
+    elements.find(
+      (element) => element.dataset.validationPath === JSON.stringify([field]),
+    ) ??
+    elements.find((element) => element.dataset.validationField === field)
+  );
+}
+
+export function getChatbotListRowTitleLimit(renderAsButtons: unknown): number {
+  return renderAsButtons === true
+    ? CHATBOT_REPLY_BUTTON_TITLE_MAX_LENGTH
+    : CHATBOT_LIST_ROW_TITLE_MAX_LENGTH;
+}
+
+const validationFieldLabels: Record<string, string> = {
+  sections: "Secciones y opciones",
+  rows: "Opciones",
+  buttons: "Botones",
+  options: "Opciones",
+  title: "Título",
+  label: "Etiqueta",
+  value: "Valor de respuesta",
+  id: "ID de opción",
+  body: "Texto del mensaje",
+  text: "Texto del mensaje",
+  prompt: "Pregunta de entrada",
+  variable: "Variable",
+  button_text: "Texto del botón de lista",
+  description: "Descripción",
+  render_as_buttons: "Mostrar como botones",
+  min_length: "Longitud mínima",
+  max_length: "Longitud máxima",
+  required: "Respuesta obligatoria",
+  routing_queue_id: "Cola de destino",
+  agent_id: "Agente de destino",
+  acknowledgment_text: "Confirmación al cliente",
+  url: "URL de API",
+  method: "Método HTTP",
+  headers: "Encabezados de solicitud",
+  name: "Nombre del encabezado",
+  secret_id: "Credencial protegida",
+  timeout_ms: "Tiempo de espera (ms)",
+  retry_count: "Cantidad de reintentos",
+  body_template: "Cuerpo de solicitud",
+  response_mappings: "Mapeos de respuesta",
+  path: "Ruta de respuesta",
+  format: "Formato de respuesta",
+  invalid_response: "Mensaje de respuesta inválida",
+  max_retries: "Máximo de intentos",
+};
+
+export function getChatbotValidationFieldLabel(
+  issue: ChatbotFlowValidationIssue,
+  translate: (text: string) => string,
+): string {
+  const path = getChatbotValidationFieldPath(issue);
+  const leaf = [...path].reverse().find((part) => typeof part === "string");
+  return translate(validationFieldLabels[String(leaf)] ?? "Configuración");
+}
+
 export function groupChatbotValidationIssues(
   issues: ChatbotFlowValidationIssue[],
   nodeLabels: Readonly<Record<string, string>>,
@@ -265,7 +395,12 @@ export function groupChatbotValidationIssues(
 export function getChatbotValidationFocusTarget(
   issue: ChatbotFlowValidationIssue,
 ):
-  | { kind: "node"; id: string; field?: string }
+  | {
+      kind: "node";
+      id: string;
+      field?: string;
+      field_path?: Array<string | number>;
+    }
   | { kind: "edge"; id: string }
   | { kind: "flow" } {
   if (issue.node_id) {
@@ -273,6 +408,7 @@ export function getChatbotValidationFocusTarget(
       kind: "node",
       id: issue.node_id,
       ...(issue.field ? { field: issue.field } : {}),
+      ...(issue.field_path ? { field_path: issue.field_path } : {}),
     };
   }
   if (issue.edge_id) return { kind: "edge", id: issue.edge_id };
@@ -327,6 +463,21 @@ function isChatbotFlowValidationIssue(
     (value.node_id === undefined || typeof value.node_id === "string") &&
     (value.edge_id === undefined || typeof value.edge_id === "string") &&
     (value.field === undefined || typeof value.field === "string") &&
+    (value.field_path === undefined ||
+      (Array.isArray(value.field_path) &&
+        value.field_path.every(
+          (part) =>
+            typeof part === "string" ||
+            (typeof part === "number" && Number.isInteger(part)),
+        ))) &&
+    (value.params === undefined ||
+      (isRecord(value.params) &&
+        Object.entries(value.params).every(
+          ([key, parameter]) =>
+            ["option", "limit", "actual"].includes(key) &&
+            typeof parameter === "number" &&
+            Number.isFinite(parameter),
+        ))) &&
     (value.category === undefined ||
       (typeof value.category === "string" &&
         ["configuration", "connection", "flow", "reference"].includes(
