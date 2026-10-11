@@ -45,7 +45,7 @@ export const useRealtimeSubscription = () => {
   const currentAgentId = currentAgent?.id;
 
   useEffect(() => {
-    if (!activeOrgId) return;
+    if (!activeOrgId || !userId) return;
 
     const filter = `organization_id=eq.${activeOrgId}`;
     let cancelled = false;
