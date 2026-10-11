@@ -265,7 +265,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
           to="/settings"
           access="settings"
           role={role}
-          title={t("Preferencias")}
+          title={t("Ajustes")}
           isActive={pathname.startsWith("/settings")}
           expanded={expanded}
         >
