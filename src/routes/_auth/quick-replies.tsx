@@ -76,24 +76,28 @@ function QuickRepliesWorkspace() {
             <h1 className="text-[24px] font-semibold">
               {t("Respuestas rápidas")}
             </h1>
-            <p className="mt-[4px] text-[13px] text-muted-foreground">
-              {t("Administrá los mensajes reutilizables de tu organización.")}
-            </p>
+            {canManage && (
+              <p className="mt-[4px] text-[13px] text-muted-foreground">
+                {t("Administrá los mensajes reutilizables de tu organización.")}
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px] sm:ml-auto disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!canManage || total >= 50}
-            title={
-              total >= 50
-                ? t("Se alcanzó el límite de 50 respuestas rápidas")
-                : undefined
-            }
-            onClick={() => setDialog({ type: "create" })}
-          >
-            <Plus className="h-[17px] w-[17px]" />
-            {t("Nueva respuesta")}
-          </button>
+          {canManage && (
+            <button
+              type="button"
+              className="primary flex items-center justify-center gap-[8px] px-[18px] py-[10px] sm:ml-auto disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!canManage || total >= 50}
+              title={
+                total >= 50
+                  ? t("Se alcanzó el límite de 50 respuestas rápidas")
+                  : undefined
+              }
+              onClick={() => setDialog({ type: "create" })}
+            >
+              <Plus className="h-[17px] w-[17px]" />
+              {t("Nueva respuesta")}
+            </button>
+          )}
         </div>
 
         <div className="overflow-hidden rounded-xl border border-border bg-background">
@@ -131,7 +135,9 @@ function QuickRepliesWorkspace() {
               description={
                 hasSearch
                   ? t("Probá con otro atajo o contenido.")
-                  : t("Creá la primera respuesta reutilizable.")
+                  : canManage
+                    ? t("Creá la primera respuesta reutilizable.")
+                    : ""
               }
             />
           ) : (
@@ -145,9 +151,11 @@ function QuickRepliesWorkspace() {
                       <th className="px-[16px] py-[12px]">
                         {t("Actualizada")}
                       </th>
-                      <th className="px-[16px] py-[12px] text-right">
-                        {t("Acciones")}
-                      </th>
+                      {canManage && (
+                        <th className="px-[16px] py-[12px] text-right">
+                          {t("Acciones")}
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -162,15 +170,17 @@ function QuickRepliesWorkspace() {
                         <td className="whitespace-nowrap px-[16px] py-[14px] text-[13px] text-muted-foreground">
                           {new Date(reply.updated_at).toLocaleDateString()}
                         </td>
-                        <td className="px-[16px] py-[14px]">
-                          <QuickReplyActions
-                            reply={reply}
-                            onEdit={() => setDialog({ type: "edit", reply })}
-                            onDelete={() =>
-                              setDialog({ type: "delete", reply })
-                            }
-                          />
-                        </td>
+                        {canManage && (
+                          <td className="px-[16px] py-[14px]">
+                            <QuickReplyActions
+                              reply={reply}
+                              onEdit={() => setDialog({ type: "edit", reply })}
+                              onDelete={() =>
+                                setDialog({ type: "delete", reply })
+                              }
+                            />
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -189,11 +199,13 @@ function QuickRepliesWorkspace() {
                           {reply.content}
                         </div>
                       </div>
-                      <QuickReplyActions
-                        reply={reply}
-                        onEdit={() => setDialog({ type: "edit", reply })}
-                        onDelete={() => setDialog({ type: "delete", reply })}
-                      />
+                      {canManage && (
+                        <QuickReplyActions
+                          reply={reply}
+                          onEdit={() => setDialog({ type: "edit", reply })}
+                          onDelete={() => setDialog({ type: "delete", reply })}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -220,7 +232,7 @@ function QuickRepliesWorkspace() {
         </div>
       </div>
 
-      {(dialog?.type === "create" || dialog?.type === "edit") && (
+      {canManage && (dialog?.type === "create" || dialog?.type === "edit") && (
         <QuickReplyEditor
           key={dialog.type === "edit" ? dialog.reply.id : "create"}
           reply={dialog.type === "edit" ? dialog.reply : undefined}
@@ -228,7 +240,7 @@ function QuickRepliesWorkspace() {
         />
       )}
 
-      {dialog?.type === "delete" && (
+      {canManage && dialog?.type === "delete" && (
         <QuickReplyDialogShell
           title={t("Eliminar respuesta rápida")}
           onClose={() => setDialog(null)}

@@ -1,4 +1,4 @@
-import { isVisibleMemberRole } from "./UiVisibility";
+import { isVisibleInvitationRole } from "./UiVisibility";
 
 export type OrganizationProvisioningRole =
   | "owner"
@@ -51,7 +51,7 @@ const organizationProvisioningRoles: ReadonlyArray<{
 
 export const ORGANIZATION_PROVISIONING_ROLES =
   organizationProvisioningRoles.filter((role) =>
-    isVisibleMemberRole(role.value),
+    isVisibleInvitationRole(role.value),
   );
 
 export function createOrganizationProvisioningDraft(): OrganizationProvisioningDraft {

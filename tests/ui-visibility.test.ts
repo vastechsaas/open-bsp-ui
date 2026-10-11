@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  isVisibleInvitationRole,
   isVisibleMemberRole,
   isVisibleNavigationPath,
 } from "../src/utils/UiVisibility.ts";
@@ -55,7 +56,7 @@ void test("Administrator is hidden from tenant and platform role choices", () =>
   }
   assert.deepEqual(
     ORGANIZATION_PROVISIONING_ROLES.map((role) => role.value),
-    ["owner", "supervisor", "member", "agent"],
+    ["owner", "supervisor", "agent"],
   );
   const members = source("src/routes/_auth/team-members/index.tsx");
   assert.match(members, /roles\s*\.filter\(isVisibleMemberRole\)/);
@@ -104,8 +105,47 @@ void test("revised onboarding guidance is translated in every locale", () => {
     ) as Record<string, string>;
     assert.ok(
       translations[
-        "Agregá supervisores, miembros o agentes. También podés hacerlo después."
+        "Agregá supervisores o agentes. También podés hacerlo después."
       ],
     );
   }
+});
+
+void test("invitation choices hide Member without removing existing member support", () => {
+  for (const role of ["member", "admin"]) {
+    assert.equal(isVisibleInvitationRole(role), false);
+  }
+  for (const role of ["owner", "supervisor", "agent"]) {
+    assert.equal(isVisibleInvitationRole(role), true);
+  }
+  assert.equal(isVisibleMemberRole("member"), true);
+  const members = source("src/routes/_auth/team-members/index.tsx");
+  assert.match(
+    members,
+    /getInvitableTeamMemberRoles\(currentRole\).filter\(\s*isVisibleInvitationRole/,
+  );
+  assert.match(members, /useState<TeamMemberRole>\("agent"\)/);
+  assert.match(members, /useState<TeamMemberRole>\(member.role\)/);
+  const draft = createOrganizationProvisioningDraft();
+  draft.members = [
+    {
+      id: "existing",
+      name: "Existing member",
+      email: "member@example.com",
+      role: "member",
+    },
+  ];
+  assert.equal(
+    buildOrganizationProvisioningPayload(draft, "request-id").members[0].role,
+    "member",
+  );
+});
+
+void test("profile menu hides the language selector but preserves translations and logout", () => {
+  const menu = source("src/components/Menu.tsx");
+  assert.doesNotMatch(menu, /key: "lang"|setCurrentLanguage|<Languages/);
+  assert.match(menu, /useTranslation/);
+  assert.match(menu, /key: "logout"/);
+  assert.match(menu, /key: "orgs"/);
+  assert.match(source("src/hooks/useTranslation.tsx"), /setCurrentLanguage/);
 });

@@ -31,7 +31,10 @@ import {
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import useBoundStore from "@/stores/useBoundStore";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
-import { isVisibleMemberRole } from "@/utils/UiVisibility";
+import {
+  isVisibleInvitationRole,
+  isVisibleMemberRole,
+} from "@/utils/UiVisibility";
 import {
   getInvitableTeamMemberRoles,
   getTeamMemberPermissions,
@@ -63,7 +66,9 @@ function TeamMembersWorkspace() {
   const { data: currentMember } = useCurrentAgent();
   const currentRole = (currentMember?.extra?.role ||
     null) as TeamMemberRole | null;
-  const invitableRoles = getInvitableTeamMemberRoles(currentRole);
+  const invitableRoles = getInvitableTeamMemberRoles(currentRole).filter(
+    isVisibleInvitationRole,
+  );
   const canInvite = invitableRoles.length > 0;
   const { data, isLoading, isError } = useMembersPage({
     page,
@@ -470,7 +475,7 @@ function InviteMemberDialog({
   const createMember = useCreateAgent();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<TeamMemberRole>("member");
+  const [role, setRole] = useState<TeamMemberRole>("agent");
   const [error, setError] = useState("");
 
   const submit = (event: FormEvent) => {

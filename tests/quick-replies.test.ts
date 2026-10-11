@@ -74,18 +74,25 @@ void test("picker keyboard navigation wraps, selects, and dismisses", () => {
   });
 });
 
-void test("only managers can open the organization quick reply workspace", () => {
+void test("agents can read the quick reply workspace without manager permissions", () => {
   for (const role of ["owner", "admin", "supervisor"] as const) {
     assert.equal(canManageQuickReplies(role), true);
     assert.equal(canAccessNavigation(role, "quickReplies"), true);
     assert.equal(canAccessPath(role, "/quick-replies"), true);
   }
-  for (const role of ["member", "agent"] as const) {
+  assert.equal(canManageQuickReplies("agent"), false);
+  assert.equal(canAccessNavigation("agent", "quickReplies"), true);
+  assert.equal(canAccessPath("agent", "/quick-replies"), true);
+  for (const role of ["member"] as const) {
     assert.equal(canManageQuickReplies(role), false);
     assert.equal(canAccessNavigation(role, "quickReplies"), false);
     assert.equal(canAccessPath(role, "/quick-replies"), false);
   }
   assert.equal(isQuickRepliesWorkspacePath("/quick-replies"), true);
+  const route = readSource("src/routes/_auth/quick-replies.tsx");
+  assert.match(route, /canManage && \([\s\S]*?<QuickReplyActions/);
+  assert.match(route, /canManage && dialog\?\.type === "delete"/);
+  assert.match(route, /canManage && \(dialog\?\.type === "create"/);
 });
 
 void test("management uses backend pagination and authoritative mutation RPCs", () => {
