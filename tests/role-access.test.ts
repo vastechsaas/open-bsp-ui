@@ -62,7 +62,7 @@ void test("Supervisor route guard permits inbox oversight and denies management 
   }
 });
 
-void test("Agent navigation includes read-only Quick Replies and media settings", () => {
+void test("Agent navigation includes Quick Replies and read-only media settings", () => {
   assert.deepEqual(roleAccess.agent, [
     "conversations",
     "quickReplies",

@@ -74,15 +74,14 @@ void test("picker keyboard navigation wraps, selects, and dismisses", () => {
   });
 });
 
-void test("agents can read the quick reply workspace without manager permissions", () => {
-  for (const role of ["owner", "admin", "supervisor"] as const) {
+void test("accepted agents and managers can manage shared organization quick replies", () => {
+  for (const role of ["owner", "admin", "supervisor", "agent"] as const) {
     assert.equal(canManageQuickReplies(role), true);
     assert.equal(canAccessNavigation(role, "quickReplies"), true);
     assert.equal(canAccessPath(role, "/quick-replies"), true);
   }
-  assert.equal(canManageQuickReplies("agent"), false);
-  assert.equal(canAccessNavigation("agent", "quickReplies"), true);
-  assert.equal(canAccessPath("agent", "/quick-replies"), true);
+  assert.equal(canManageQuickReplies(undefined), false);
+  assert.equal(canManageQuickReplies(null), false);
   for (const role of ["member"] as const) {
     assert.equal(canManageQuickReplies(role), false);
     assert.equal(canAccessNavigation(role, "quickReplies"), false);

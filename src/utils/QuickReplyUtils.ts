@@ -15,7 +15,12 @@ export type QuickReplyKeyboardAction =
 export function canManageQuickReplies(
   role: OrganizationRole | null | undefined,
 ) {
-  return role === "owner" || role === "admin" || role === "supervisor";
+  return (
+    role === "owner" ||
+    role === "admin" ||
+    role === "supervisor" ||
+    role === "agent"
+  );
 }
 
 export function isQuickRepliesWorkspacePath(pathname: string) {
