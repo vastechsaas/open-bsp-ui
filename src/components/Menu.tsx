@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronDown,
-  Languages,
   LayoutTemplate,
   LayoutDashboard,
   LogOut,
@@ -44,11 +43,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const { data: organizations } = useOrganizations();
-  const {
-    translate: t,
-    currentLanguage,
-    setCurrentLanguage,
-  } = useTranslation();
+  const { translate: t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -310,29 +305,6 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
                       ]
                     : []),
                 ],
-              },
-              { type: "divider" },
-              {
-                key: "lang",
-                label: t("Idioma"),
-                icon: <Languages className="h-[16px] w-[16px]" />,
-                children: (["es", "en", "pt", "sw", "fr"] as const).map(
-                  (language) => ({
-                    key: language,
-                    label: {
-                      es: "Español",
-                      en: "English",
-                      pt: "Português",
-                      sw: "Kiswahili",
-                      fr: "Français",
-                    }[language],
-                    className:
-                      language === currentLanguage
-                        ? "ant-dropdown-menu-item-selected"
-                        : "",
-                    onClick: () => setCurrentLanguage(language),
-                  }),
-                ),
               },
               { type: "divider" },
               {

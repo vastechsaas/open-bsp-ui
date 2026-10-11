@@ -29,7 +29,7 @@ export default function AssignmentAvailabilityToggle({
       disabled={disabled}
       onClick={onToggle}
       title={label}
-      className={`assignment-availability-control relative flex h-8 min-w-[112px] shrink-0 items-center rounded-full px-3 text-xs font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 ${
+      className={`assignment-availability-control relative flex h-[26px] min-w-[96px] shrink-0 items-center rounded-full px-2 text-[11px] font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 ${
         available === null
           ? "bg-muted text-muted-foreground"
           : available
@@ -39,13 +39,13 @@ export default function AssignmentAvailabilityToggle({
     >
       <span
         aria-hidden="true"
-        className={`assignment-availability-label flex-1 whitespace-nowrap ${available ? "pr-6" : "pl-6"}`}
+        className={`assignment-availability-label flex-1 whitespace-nowrap ${available ? "pr-5" : "pl-5"}`}
       >
         {label}
       </span>
       <span
         aria-hidden="true"
-        className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm ${available ? "right-1" : "left-1"}`}
+        className={`absolute top-1 h-[18px] w-[18px] rounded-full bg-white shadow-sm ${available ? "right-1" : "left-1"}`}
       />
     </button>
   );

@@ -39,6 +39,9 @@ void test("Available has green pill and right thumb; Away has red pill and left 
   assert.match(available, /role="switch"/);
   assert.match(available, /aria-checked="true"/);
   assert.match(available, /bg-green-700 text-white/);
+  assert.match(available, /h-\[26px\] min-w-\[96px\]/);
+  assert.match(available, /h-\[18px\] w-\[18px\]/);
+  assert.doesNotMatch(available, /min-w-\[112px\]|h-6 w-6/);
   assert.match(available, /right-1/);
   assert.match(available, />Available<\/span>/);
   assert.match(away, /aria-checked="false"/);

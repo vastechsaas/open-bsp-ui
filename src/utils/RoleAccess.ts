@@ -46,7 +46,7 @@ export const roleAccess: Record<OrganizationRole, readonly NavigationAccess[]> =
       "teamMembers",
       "settings",
     ],
-    agent: ["conversations", "contacts", "settings"],
+    agent: ["conversations", "quickReplies", "contacts", "settings"],
   };
 
 const pathAccess: readonly [string, NavigationAccess][] = [

@@ -209,7 +209,7 @@ export default function PlatformOrganizationOnboarding() {
             icon={<UserPlus />}
             title={t("Equipo inicial")}
             description={t(
-              "Agregá supervisores, miembros o agentes. También podés hacerlo después.",
+              "Agregá supervisores o agentes. También podés hacerlo después.",
             )}
             action={
               <button
