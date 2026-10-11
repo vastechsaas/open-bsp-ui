@@ -115,7 +115,7 @@ export default function SettingsWorkspaceLayout({
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30 text-foreground">
       <header className="shrink-0 border-b border-border bg-background px-5 py-5 sm:px-7 lg:px-8">
         <h1 className="text-[26px] font-semibold tracking-tight text-primary">
-          {t("Preferencias")}
+          {t("Ajustes")}
         </h1>
         <p className="mt-1 max-w-3xl text-[13px] text-muted-foreground">
           {t(
@@ -127,7 +127,7 @@ export default function SettingsWorkspaceLayout({
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 sm:p-5 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-5 lg:overflow-hidden lg:p-6">
         <aside className="h-fit rounded-2xl border border-border bg-card p-2 shadow-sm lg:h-full lg:overflow-y-auto">
           <nav
-            aria-label={t("Preferencias")}
+            aria-label={t("Ajustes")}
             className="grid gap-1 sm:grid-cols-3 lg:grid-cols-1"
           >
             {navigation.map((item) => {

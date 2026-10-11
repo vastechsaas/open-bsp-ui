@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Modal } from "antd";
-import { History } from "lucide-react";
+import { ArrowLeft, ChevronRight, History, LockKeyhole, X } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import useBoundStore from "@/stores/useBoundStore";
 import { supabase, type MessageRow } from "@/supabase/client";
@@ -40,7 +40,12 @@ function PreviousChatsDialog({
   userId: string;
   conversationId: string;
 }) {
-  const { translate: t } = useTranslation();
+  const { translate: t, currentLanguage } = useTranslation();
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat(currentLanguage, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value));
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -109,7 +114,7 @@ function PreviousChatsDialog({
     <>
       <button
         type="button"
-        className="m-4 flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted"
+        className="m-4 flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setOpen(true)}
       >
         <History className="h-4 w-4" />
@@ -124,18 +129,32 @@ function PreviousChatsDialog({
         title={t("Chats anteriores")}
         footer={null}
         width={760}
+        centered
+        closable={{ "aria-label": t("Cerrar") }}
+        closeIcon={<X className="h-4 w-4 text-foreground" aria-hidden />}
+        className="[&_.ant-modal-close]:hover:bg-muted [&_.ant-modal-close]:focus-visible:ring-2 [&_.ant-modal-close]:focus-visible:ring-ring"
+        classNames={{
+          container:
+            "!rounded-2xl !border !border-border !bg-card !p-0 !text-card-foreground shadow-2xl",
+          header:
+            "!m-0 !border-b !border-border !bg-transparent !px-5 !py-4 !pr-14",
+          title: "!text-lg !font-semibold !text-foreground",
+          body: "max-h-[80dvh] overflow-y-auto !p-5 text-sm !text-foreground",
+        }}
         destroyOnHidden
       >
         {selected ? (
           <>
             <button
               type="button"
-              className="mb-3 text-primary underline"
+              className="mb-4 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setSelected(undefined)}
             >
+              <ArrowLeft className="h-4 w-4" aria-hidden />
               {t("Volver a la lista")}
             </button>
-            <p className="mb-3 text-muted-foreground">
+            <p className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <LockKeyhole className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {t("Esta conversación es historial de solo lectura")}
             </p>
             <div
@@ -145,7 +164,7 @@ function PreviousChatsDialog({
               {history.isPending && <p role="status">{t("Cargando…")}</p>}
               {history.isError && (
                 <p role="alert">
-                  {t("No se pudo cargar el historial")}{" "}
+                  {t("No se pudo cargar el historial.")}{" "}
                   <button
                     type="button"
                     className="underline"
@@ -181,8 +200,11 @@ function PreviousChatsDialog({
               {!history.isError &&
                 messages.map((message) => (
                   <div className="mb-2 flex flex-col" key={message.id}>
-                    <time className="text-xs text-muted-foreground">
-                      {new Date(message.timestamp).toLocaleString()}
+                    <time
+                      dateTime={message.timestamp}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {formatDate(message.timestamp)}
                     </time>
                     <Message message={message} first last />
                   </div>
@@ -213,18 +235,26 @@ function PreviousChatsDialog({
                   <li key={chat.id}>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between gap-3 rounded-lg p-3 text-left hover:bg-muted"
+                      className="flex w-full items-center justify-between gap-3 rounded-lg p-3 text-left text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => setSelected(chat.id)}
                     >
                       <span>
                         {chat.name || t("Conversación")}
                         <span className="block text-xs text-muted-foreground">
-                          {new Date(chat.created_at).toLocaleString()}
+                          {formatDate(chat.created_at)}
                         </span>
                       </span>
-                      <span>
-                        {chat.status === "closed" ? t("Cerrado") : t("Abierto")}
+                      <span className="ml-auto shrink-0 rounded-full border border-border bg-muted/70 px-2.5 py-1 text-xs font-medium text-foreground">
+                        {chat.status === "closed"
+                          ? t("Cerrado")
+                          : chat.status === "spam"
+                            ? t("Spam")
+                            : t("Abierto")}
                       </span>
+                      <ChevronRight
+                        className="h-4 w-4 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
                     </button>
                   </li>
                 ))}
