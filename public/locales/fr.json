@@ -1,4 +1,7 @@
 {
+  "Ausente": "Absent",
+  "Disponibilidad para conversaciones": "Disponibilité pour les conversations",
+  "No se pudo actualizar la disponibilidad.": "Impossible de mettre à jour la disponibilité.",
   "Activar horario comercial": "Activer les horaires d’ouverture",
   "Activado: aplica este horario al soporte humano. Desactivado: no restringe el soporte por horario. El chatbot sigue funcionando.": "Activé : appliquer ces horaires au support humain. Désactivé : ne pas limiter le support selon l’heure. Le chatbot continue de fonctionner.",
   "Busca por ciudad o región. Los horarios y festivos usan esta zona horaria.": "Recherchez une ville ou une région. Les horaires et jours fériés utilisent ce fuseau horaire.",

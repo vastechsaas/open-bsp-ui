@@ -1,6 +1,7 @@
-import { Circle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import AssignmentAvailabilityToggle from "@/components/AssignmentAvailabilityToggle";
+import { canSetConversationAvailability } from "@/utils/AssignmentAvailabilityUtils";
 import {
   useAssignmentPresence,
   useSetAssignmentPresence,
@@ -9,25 +10,45 @@ import {
 export default function AssignmentAvailabilityControl() {
   const { translate: t } = useTranslation();
   const { data: agent } = useCurrentAgent();
-  const isAgent = agent?.extra?.role === "agent";
-  const presence = useAssignmentPresence(isAgent);
+  const canSetAvailability = canSetConversationAvailability(
+    agent?.extra?.role,
+    agent?.extra?.invitation?.status,
+  );
+  const presence = useAssignmentPresence(canSetAvailability);
   const update = useSetAssignmentPresence();
-  if (!isAgent) return null;
-  const available = presence.data?.available ?? false;
+  if (!canSetAvailability) return null;
+  const available = presence.data?.available ?? null;
+  const failed = presence.isError || update.isError;
   return (
-    <button
-      type="button"
-      disabled={presence.isPending || update.isPending}
-      onClick={() => update.mutate(!available)}
-      title={available ? t("Disponible") : t("No disponible")}
-      className="assignment-availability-control flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
-    >
-      <Circle
-        className={`h-2.5 w-2.5 fill-current ${available ? "text-emerald-500" : "text-muted-foreground"}`}
+    <div className="relative flex w-fit items-center">
+      <AssignmentAvailabilityToggle
+        available={available}
+        disabled={available === null || update.isPending}
+        busy={presence.isPending || update.isPending}
+        failed={failed}
+        onToggle={() => update.mutate(!available)}
+        translate={t}
       />
-      <span className="assignment-availability-label">
-        {available ? t("Disponible") : t("No disponible")}
-      </span>
-    </button>
+      {failed && (
+        <div
+          role="alert"
+          className="absolute left-0 top-full z-30 mt-1 w-56 rounded-lg border border-destructive/40 bg-background p-2 text-xs text-destructive shadow-md"
+        >
+          {t("No se pudo actualizar la disponibilidad.")}{" "}
+          <button
+            type="button"
+            className="underline"
+            disabled={presence.isFetching || update.isPending}
+            onClick={() => {
+              if (presence.isError) void presence.refetch();
+              else if (update.variables !== undefined)
+                update.mutate(update.variables);
+            }}
+          >
+            {t("Reintentar")}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

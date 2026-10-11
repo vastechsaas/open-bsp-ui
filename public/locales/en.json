@@ -1,4 +1,7 @@
 {
+  "Ausente": "Away",
+  "Disponibilidad para conversaciones": "Conversation availability",
+  "No se pudo actualizar la disponibilidad.": "Could not update availability.",
   "Activar horario comercial": "Enable business hours",
   "Activado: aplica este horario al soporte humano. Desactivado: no restringe el soporte por horario. El chatbot sigue funcionando.": "On: apply this schedule to human support. Off: do not restrict support by time. The chatbot keeps running.",
   "Busca por ciudad o región. Los horarios y festivos usan esta zona horaria.": "Search by city or region. Schedules and holidays use this timezone.",

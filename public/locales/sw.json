@@ -1,4 +1,7 @@
 {
+  "Ausente": "Hayupo",
+  "Disponibilidad para conversaciones": "Upatikanaji kwa mazungumzo",
+  "No se pudo actualizar la disponibilidad.": "Imeshindwa kusasisha upatikanaji.",
   "Activar horario comercial": "Washa saa za kazi",
   "Activado: aplica este horario al soporte humano. Desactivado: no restringe el soporte por horario. El chatbot sigue funcionando.": "Ikiwashwa: tumia ratiba hii kwa usaidizi wa wahudumu. Ikizimwa: usizuie usaidizi kulingana na saa. Chatbot inaendelea kufanya kazi.",
   "Busca por ciudad o región. Los horarios y festivos usan esta zona horaria.": "Tafuta kwa jiji au eneo. Ratiba na sikukuu hutumia ukanda huu wa saa.",
