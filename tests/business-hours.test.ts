@@ -195,6 +195,7 @@ void test("all user-facing business-hour keys are translated in every supported 
     "Aplicar horario comercial",
     "Fuera del horario comercial",
     "Sin agentes disponibles",
+    "Confirmación de solicitud de soporte",
     "Organización suspendida",
     "Abierto ahora",
     "Horario personalizado",
@@ -272,7 +273,11 @@ void test("queue overrides preserve independent time zones, support inheritance 
 });
 
 void test("unavailable customer messages cannot be blank or exceed WhatsApp text limits", () => {
-  for (const field of ["outside_hours_message", "no_agents_message"]) {
+  for (const field of [
+    "handoff_message",
+    "outside_hours_message",
+    "no_agents_message",
+  ]) {
     assert.equal(readBusinessHours({ ...defaults(), [field]: " " }), null);
     assert.equal(
       readBusinessHours({ ...defaults(), [field]: "x".repeat(4097) }),
@@ -306,7 +311,7 @@ void test("schedule form hides exception editing without removing saved dates or
   );
   assert.match(exceptionSection, /2026-12-25/);
   assert.match(html, /type="date"/);
-  assert.match(html, /Mensajes de disponibilidad/);
+  assert.match(html, /Mensajes de soporte/);
   assert.match(html, /2026-12-25/);
   assert.match(html, /type="checkbox"/);
   assert.deepEqual(
@@ -338,7 +343,31 @@ void test("simplified settings keep the organization schedule primary and advanc
     /<details[^>]*>[\s\S]*Mensaje de respaldo durante el horario comercial/,
   );
   assert.doesNotMatch(html, /<details[^>]*\bopen[\s=>]/);
-  assert.equal((html.match(/<textarea/g) || []).length, 2);
+  assert.equal((html.match(/<textarea/g) || []).length, 3);
+});
+
+void test("shared handoff default is editable and existing custom node wording is not rewritten", () => {
+  const settings = { ...defaults(), handoff_message: "Organization default." };
+  assert.match(render(settings), /Organization default\./);
+  assert.equal(
+    businessHoursPatch(settings).extra.business_hours.handoff_message,
+    "Organization default.",
+  );
+  const inspector = source("../src/routes/_auth/chatbots/$flowId.tsx");
+  assert.match(inspector, /node\.data\.config\.acknowledgment_text \?\? ""/);
+  assert.match(inspector, /Usar el mensaje predeterminado de Configuración/);
+  assert.match(inspector, /event\.target\.value\.trim\(\)/);
+  for (const lang of ["en", "pt", "fr", "sw"]) {
+    const locale = JSON.parse(
+      source(`../public/locales/${lang}.json`),
+    ) as Record<string, string>;
+    for (const key of [
+      "Mensaje personalizado de soporte (opcional)",
+      "Usar el mensaje predeterminado de Configuración",
+      "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.",
+    ])
+      assert.ok(locale[key], `${lang}:${key}`);
+  }
 });
 
 void test("advanced team schedule settings are temporarily hidden without removing their configuration", () => {

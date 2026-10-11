@@ -2363,12 +2363,13 @@ function HumanHandoffInspector({
       )}
       <label className="block" data-validation-field="acknowledgment_text">
         <span className="text-[11px] font-medium">
-          {t("Confirmación al cliente (opcional)")}
+          {t("Mensaje personalizado de soporte (opcional)")}
         </span>
         <textarea
           value={node.data.config.acknowledgment_text ?? ""}
           maxLength={4096}
           rows={3}
+          placeholder={t("Usar el mensaje predeterminado de Configuración")}
           onChange={(event) =>
             onChange({
               acknowledgment_text: event.target.value.trim()
@@ -2380,7 +2381,7 @@ function HumanHandoffInspector({
         />
         <span className="block text-[10px] text-muted-foreground">
           {t(
-            "Se envía una vez antes de entregar la conversación al equipo de soporte.",
+            "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.",
           )}
         </span>
       </label>

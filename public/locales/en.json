@@ -1734,5 +1734,12 @@
   "Historial de conversación": "Conversation history",
   "No se pudieron cargar los chats anteriores": "Could not load previous chats",
   "No hay chats anteriores accesibles": "No accessible previous chats",
-  "Esperando soporte · Chatbot pausado": "Waiting for support · Chatbot paused"
+  "Esperando soporte · Chatbot pausado": "Waiting for support · Chatbot paused",
+  "Mensajes de soporte": "Support messages",
+  "El mensaje predeterminado se aplica a chatbots Node. El destino se configura en cada nodo.": "The default message applies to Node chatbots. Configure the destination in each node.",
+  "Confirmación de solicitud de soporte": "Support request acknowledgment",
+  "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "One message is sent based on availability. Existing custom node messages are preserved.",
+  "Mensaje personalizado de soporte (opcional)": "Custom support message (optional)",
+  "Usar el mensaje predeterminado de Configuración": "Use the default message from Settings",
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Leave blank to use Settings. Outside business hours or with no available agents, the corresponding support message is used."
 }

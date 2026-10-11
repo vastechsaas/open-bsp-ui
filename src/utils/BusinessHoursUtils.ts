@@ -122,7 +122,11 @@ export function readBusinessHours(
       dates.add((holiday as Record<string, unknown>).date as string);
     }
   }
-  for (const field of ["outside_hours_message", "no_agents_message"]) {
+  for (const field of [
+    "handoff_message",
+    "outside_hours_message",
+    "no_agents_message",
+  ]) {
     if (
       value[field] !== undefined &&
       (typeof value[field] !== "string" ||
