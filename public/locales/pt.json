@@ -1749,5 +1749,12 @@
   "Historial de conversación": "Histórico da conversa",
   "No se pudieron cargar los chats anteriores": "Não foi possível carregar os chats anteriores",
   "No hay chats anteriores accesibles": "Nenhum chat anterior acessível",
-  "Esperando soporte · Chatbot pausado": "Aguardando suporte · Chatbot pausado"
+  "Esperando soporte · Chatbot pausado": "Aguardando suporte · Chatbot pausado",
+  "Mensajes de soporte": "Mensagens de suporte",
+  "El mensaje predeterminado se aplica a chatbots Node. El destino se configura en cada nodo.": "A mensagem padrão se aplica a chatbots Node. Configure o destino em cada nó.",
+  "Confirmación de solicitud de soporte": "Confirmação da solicitação de suporte",
+  "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "Uma mensagem é enviada conforme a disponibilidade. As mensagens personalizadas existentes dos nós são preservadas.",
+  "Mensaje personalizado de soporte (opcional)": "Mensagem personalizada de suporte (opcional)",
+  "Usar el mensaje predeterminado de Configuración": "Usar a mensagem padrão das Configurações",
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Deixe vazio para usar as Configurações. Fora do horário comercial ou sem agentes disponíveis, é usada a mensagem de suporte correspondente."
 }

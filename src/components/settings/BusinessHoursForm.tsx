@@ -334,58 +334,73 @@ export default function BusinessHoursForm({
       {!queueOverride && (
         <fieldset disabled={saving} className="mt-6 space-y-4">
           <legend className="mb-3 text-sm font-medium">
-            {t("Mensajes de disponibilidad")}
+            {t("Mensajes de soporte")}
           </legend>
           <p className="text-xs text-muted-foreground">
             {t(
-              "Las solicitudes quedan en cola. Los chats ya atendidos permanecen abiertos.",
+              "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.",
             )}
           </p>
-          {(["outside_hours_message", "no_agents_message"] as const).map(
-            (field) => {
-              const message = (
-                <label key={field} className="block text-sm">
-                  {t(
-                    field === "outside_hours_message"
+          {(
+            [
+              "handoff_message",
+              "outside_hours_message",
+              "no_agents_message",
+            ] as const
+          ).map((field) => {
+            const message = (
+              <label key={field} className="block text-sm">
+                {t(
+                  field === "handoff_message"
+                    ? "Confirmación de solicitud de soporte"
+                    : field === "outside_hours_message"
                       ? "Fuera del horario comercial"
                       : "Sin agentes disponibles",
-                  )}
-                  <textarea
-                    maxLength={4096}
-                    rows={3}
-                    value={
-                      settings[field] ||
-                      (field === "outside_hours_message"
+                )}
+                <textarea
+                  maxLength={4096}
+                  rows={3}
+                  value={
+                    settings[field] ||
+                    (field === "handoff_message"
+                      ? "Your request has been sent to our support team.\n\nYou can continue using the chatbot while you wait. We’ll let you know when an agent takes over."
+                      : field === "outside_hours_message"
                         ? "Our support team is currently outside business hours. Your request is queued and will be reviewed when support is available."
                         : "All support agents are currently unavailable. Your request is queued for the next available support agent.")
-                    }
-                    onChange={(event) =>
-                      update({ ...settings, [field]: event.target.value })
-                    }
-                    className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
-                  />
-                </label>
-              );
-              return field === "outside_hours_message" ? (
-                message
-              ) : (
-                <details
-                  key={field}
-                  className="rounded-lg border border-border p-3"
-                >
-                  <summary className="cursor-pointer text-sm font-medium">
-                    {t("Mensaje de respaldo durante el horario comercial")}
-                  </summary>
-                  <p className="my-3 text-xs text-muted-foreground">
+                  }
+                  onChange={(event) =>
+                    update({ ...settings, [field]: event.target.value })
+                  }
+                  className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
+                />
+                {field === "handoff_message" && (
+                  <span className="mt-2 block text-xs text-muted-foreground">
                     {t(
-                      "Solo se usa si no hay agentes disponibles durante el horario comercial, por ejemplo, si están desconectados. El horario no garantiza su disponibilidad.",
+                      "El mensaje predeterminado se aplica a chatbots Node. El destino se configura en cada nodo.",
                     )}
-                  </p>
-                  {message}
-                </details>
-              );
-            },
-          )}
+                  </span>
+                )}
+              </label>
+            );
+            return field !== "no_agents_message" ? (
+              message
+            ) : (
+              <details
+                key={field}
+                className="rounded-lg border border-border p-3"
+              >
+                <summary className="cursor-pointer text-sm font-medium">
+                  {t("Mensaje de respaldo durante el horario comercial")}
+                </summary>
+                <p className="my-3 text-xs text-muted-foreground">
+                  {t(
+                    "Solo se usa si no hay agentes disponibles durante el horario comercial, por ejemplo, si están desconectados. El horario no garantiza su disponibilidad.",
+                  )}
+                </p>
+                {message}
+              </details>
+            );
+          })}
         </fieldset>
       )}
       {!validConfiguration && (

@@ -1749,5 +1749,12 @@
   "Historial de conversación": "Historia ya mazungumzo",
   "No se pudieron cargar los chats anteriores": "Imeshindikana kupakia mazungumzo ya awali",
   "No hay chats anteriores accesibles": "Hakuna mazungumzo ya awali yanayofikika",
-  "Esperando soporte · Chatbot pausado": "Inasubiri usaidizi · Chatbot imesitishwa"
+  "Esperando soporte · Chatbot pausado": "Inasubiri usaidizi · Chatbot imesitishwa",
+  "Mensajes de soporte": "Ujumbe wa usaidizi",
+  "El mensaje predeterminado se aplica a chatbots Node. El destino se configura en cada nodo.": "Ujumbe chaguomsingi unatumika kwa chatbot za Node. Sanidi unakoelekeza katika kila nodi.",
+  "Confirmación de solicitud de soporte": "Uthibitisho wa ombi la usaidizi",
+  "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "Ujumbe mmoja hutumwa kulingana na upatikanaji. Ujumbe maalumu uliopo wa nodi huhifadhiwa.",
+  "Mensaje personalizado de soporte (opcional)": "Ujumbe maalumu wa usaidizi (si lazima)",
+  "Usar el mensaje predeterminado de Configuración": "Tumia ujumbe chaguomsingi kutoka Mipangilio",
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Acha wazi ili kutumia Mipangilio. Nje ya saa za kazi au bila mawakala wanaopatikana, ujumbe husika wa usaidizi hutumika."
 }
