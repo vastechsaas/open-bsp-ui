@@ -36,6 +36,34 @@ void test("previous chats use app theme tokens, keyboard focus, translated close
   assert.match(source, /Esta conversación es historial de solo lectura/);
 });
 
+void test("shared customer history uses scoped read-only RPCs rather than assignment-filtered table reads", () => {
+  assert.match(source, /\.rpc\("list_previous_conversation_messages", \{/);
+  assert.match(source, /p_organization_id: orgId/);
+  assert.match(source, /p_conversation_id: conversationId/);
+  assert.match(source, /p_previous_conversation_id: selected!/);
+  assert.doesNotMatch(source, /\.from\("(?:messages|conversations)"\)/);
+  assert.doesNotMatch(source, /\.insert\(|\.update\(|\.delete\(/);
+  assert.doesNotMatch(source, /setActiveConvId|ChatFooter|Composer/);
+});
+
+void test("previous message pages retain their anchor, account and cancellation boundary", () => {
+  assert.match(
+    source,
+    /queryKey: \[\s*"previous-chat-history",\s*userId,\s*orgId,\s*conversationId,\s*selected,?\s*\]/,
+  );
+  assert.match(
+    source,
+    /key=\{`\$\{userId\}:\$\{orgId\}:\$\{conversationId\}`\}/,
+  );
+  assert.match(source, /enabled: open && !!selected/);
+  assert.match(source, /gcTime: 0/);
+  assert.match(source, /\.abortSignal\(signal\)/);
+  assert.match(source, /p_before_timestamp: pageParam\?\.timestamp/);
+  assert.match(source, /p_before_id: pageParam\?\.id/);
+  assert.match(source, /getNextPageParam: nextHistoryCursor/);
+  assert.match(source, /!history.isError &&/);
+});
+
 void test("Settings keeps its own navigation label, separate from the Preferences subsection", () => {
   const menu = readFileSync(
     new URL("../src/components/Menu.tsx", import.meta.url),
