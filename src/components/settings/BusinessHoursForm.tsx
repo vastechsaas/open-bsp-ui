@@ -232,7 +232,8 @@ export default function BusinessHoursForm({
         )}
       </section>
 
-      <fieldset disabled={saving} className="mt-6 space-y-4">
+      {/* Temporarily hide exception editing; preserve saved dates and runtime rules. */}
+      <fieldset hidden disabled={saving} className="mt-6 space-y-4">
         <legend className="mb-3 text-sm font-medium">
           {t("Festivos y excepciones")}
         </legend>

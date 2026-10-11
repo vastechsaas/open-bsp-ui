@@ -284,7 +284,7 @@ void test("unavailable customer messages cannot be blank or exceed WhatsApp text
   }
 });
 
-void test("schedule form exposes editable timezone, exceptions and global customer messages", () => {
+void test("schedule form hides exception editing without removing saved dates or customer messages", () => {
   const settings = defaults();
   settings.holidays = [
     {
@@ -295,11 +295,24 @@ void test("schedule form exposes editable timezone, exceptions and global custom
     },
   ];
   const html = render(settings);
-  assert.match(html, /Festivos y excepciones/);
+  const exceptionSection = html.match(
+    /<fieldset[^>]*hidden=""[^>]*>[\s\S]*?<\/fieldset>/,
+  )?.[0];
+  assert.ok(exceptionSection);
+  assert.match(exceptionSection, /Festivos y excepciones/);
+  assert.match(
+    exceptionSection,
+    /Las excepciones reemplazan el horario semanal/,
+  );
+  assert.match(exceptionSection, /2026-12-25/);
   assert.match(html, /type="date"/);
   assert.match(html, /Mensajes de disponibilidad/);
   assert.match(html, /2026-12-25/);
   assert.match(html, /type="checkbox"/);
+  assert.deepEqual(
+    businessHoursPatch(settings).extra.business_hours.holidays,
+    settings.holidays,
+  );
   assert.match(
     source("../src/routes/_auth/settings/business-hours.tsx"),
     /get_business_hours_status/,
