@@ -9,6 +9,8 @@ import Menu from "@/components/Menu";
 import Chat from "@/components/Chat";
 import ChatHeader from "@/components/ChatHeader";
 import ChatFooter from "@/components/ChatFooter";
+import MessagesWorkspaceHeader from "@/components/MessagesWorkspaceHeader";
+import ConversationOwnershipBanner from "@/components/ConversationOwnershipBanner";
 import { useCallback, useEffect, useState } from "react";
 import FilePicker from "@/components/FileUploader/FilePicker";
 import FilePreviewer from "@/components/FilePreviewer";
@@ -92,6 +94,8 @@ function AppLayout() {
       address.service === "whatsapp" && address.status === "connected",
   );
   const pathname = location.pathname;
+  const isMessagesRoute =
+    pathname === "/conversations" || pathname === "/conversations/";
   const currentRole = currentAgent?.extra?.role;
   const canAccessCurrentPath =
     !activeOrgId ||
@@ -206,17 +210,18 @@ function AppLayout() {
 
   return (
     <div
-      className="app-grid transition-[grid-template-columns] duration-200"
+      className={`app-grid transition-[grid-template-columns] duration-200 ${isMessagesRoute ? "messages-workspace" : ""}`}
       style={viewportWidth >= 768 ? { gridTemplateColumns } : undefined}
     >
       {/* Menu - Fixed width */}
       <div
         className={
-          isFullscreenWorkspaceRoute
+          (isMessagesRoute ? "row-span-2 " : "") +
+          (isFullscreenWorkspaceRoute
             ? "hidden"
             : showCenterPanel
               ? "hidden md:flex"
-              : "flex"
+              : "flex")
         }
       >
         <Menu
@@ -225,11 +230,19 @@ function AppLayout() {
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
+      {isMessagesRoute && (
+        <div
+          className={`min-w-0 ${activeConvId ? "col-span-full md:col-start-2" : "col-start-2"} col-end-[-1] row-start-1`}
+        >
+          <MessagesWorkspaceHeader />
+        </div>
+      )}
       {/* Left Panel - Router Outlet */}
       <div
         ref={panelRef}
         className={
-          "flex-col overflow-hidden md:border-r border-border bg-background text-foreground col-span-2 md:col-span-1 relative " +
+          "flex-col overflow-hidden md:border-r border-border bg-background text-foreground md:col-span-1 relative " +
+          (isMessagesRoute ? "col-span-1 " : "col-span-2 ") +
           (isWorkspaceRoute
             ? "hidden"
             : showCenterPanel
@@ -284,6 +297,7 @@ function AppLayout() {
                   setCustomerDetailsOpen((open) => !open)
                 }
               />
+              <ConversationOwnershipBanner conversationId={activeConvId} />
               <Chat />
               <ChatFooter />
             </div>

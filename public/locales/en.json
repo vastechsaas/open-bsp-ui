@@ -1,4 +1,11 @@
 {
+  "Vistas de conversaciones": "Conversation views",
+  "No se pudieron cargar los contadores.": "Could not load conversation counts.",
+  "Los contadores reflejan la cola seleccionada, no el texto de búsqueda.": "Counts reflect the selected queue, not the search text.",
+  "No se pudo sincronizar el estado del chat.": "Could not synchronize chat ownership.",
+  "Devolviendo al chatbot—sincronización pendiente": "Returning to chatbot—sync pending",
+  "Limpiar filtros": "Clear filters",
+  "Filtros": "Filters",
   "Ausente": "Away",
   "Disponibilidad para conversaciones": "Conversation availability",
   "No se pudo actualizar la disponibilidad.": "Could not update availability.",

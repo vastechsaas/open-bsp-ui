@@ -575,7 +575,7 @@ export default function ChatFooter() {
   }
 
   const composerModeTabs = activeConvId && conv && (
-    <div className="mb-2 flex w-fit gap-1 rounded-lg border border-border bg-background/95 p-1 text-[12px] shadow-sm">
+    <div className="mb-2 flex w-fit gap-1 rounded-lg border border-border bg-background p-1 text-[12px] shadow-sm">
       <button
         type="button"
         className={
@@ -670,12 +670,12 @@ export default function ChatFooter() {
   return (
     activeConvId &&
     conv && (
-      <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10">
+      <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10 rounded-xl border border-border bg-background p-2 shadow-sm">
         {composerModeTabs}
         {templatePicker && <TemplatePicker />}
         <div
           className={
-            "flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)]" +
+            "flex items-end text-foreground p-[5px] rounded-xl border border-border focus-within:ring-2 focus-within:ring-primary/20" +
             (templateDraft
               ? " bg-incoming-chat-bubble"
               : !inCSWindow

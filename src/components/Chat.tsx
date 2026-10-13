@@ -403,6 +403,7 @@ export default function Chat() {
                 data-message-id={envOrSep.message.id}
               >
                 <Message
+                  refined
                   key={envOrSep.message.id}
                   message={envOrSep.message}
                   first={envOrSep.first}

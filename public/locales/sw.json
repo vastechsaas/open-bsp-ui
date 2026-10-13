@@ -1,4 +1,13 @@
 {
+  "Cola": "Foleni",
+  "Todas las colas": "Foleni zote",
+  "Vistas de conversaciones": "Mwonekano wa mazungumzo",
+  "No se pudieron cargar los contadores.": "Imeshindikana kupakia idadi ya mazungumzo.",
+  "Los contadores reflejan la cola seleccionada, no el texto de búsqueda.": "Idadi inahusu foleni iliyochaguliwa, si maandishi ya utafutaji.",
+  "No se pudo sincronizar el estado del chat.": "Imeshindikana kusawazisha hali ya mazungumzo.",
+  "Devolviendo al chatbot—sincronización pendiente": "Inarudishwa kwa chatbot—inasubiri usawazishaji",
+  "Limpiar filtros": "Futa vichujio",
+  "Filtros": "Vichujio",
   "Ausente": "Hayupo",
   "Disponibilidad para conversaciones": "Upatikanaji kwa mazungumzo",
   "No se pudo actualizar la disponibilidad.": "Imeshindwa kusasisha upatikanaji.",

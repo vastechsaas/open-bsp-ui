@@ -26,9 +26,10 @@ function getConversationQueuesRpc(args: {
 
 export function useConversationQueues() {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
 
   return useQuery({
-    queryKey: queryKeys.conversationQueues.config(orgId),
+    queryKey: [...queryKeys.conversationQueues.config(orgId), userId],
     queryFn: async () => {
       const { data, error } = await getConversationQueuesRpc({
         p_organization_id: orgId!,
@@ -38,6 +39,6 @@ export function useConversationQueues() {
 
       return toConversationQueueConfig(data);
     },
-    enabled: !!orgId,
+    enabled: !!orgId && !!userId,
   });
 }
