@@ -53,7 +53,8 @@ export default function PrivateNoteComposer({
     const textarea = textareaRef.current;
     if (!textarea) return;
     textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(160, Math.max(40, textarea.scrollHeight))}px`;
+    // Empty placeholders must not enlarge the editor on narrow screens.
+    textarea.style.height = `${draft.text ? Math.min(160, Math.max(40, textarea.scrollHeight)) : 40}px`;
   }, [draft.text, conversationId]);
   const activeMention = findActiveMention(draft.text, cursor);
   const suggestions = useMemo(() => {
@@ -186,7 +187,7 @@ export default function PrivateNoteComposer({
             rows={1}
             aria-label={t("Nota privada")}
             aria-describedby={`note-visibility-${conversationId}`}
-            className="max-h-40 min-h-10 w-full resize-none bg-transparent px-2 py-2 text-[15px] outline-none placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60"
+            className="block max-h-40 min-h-10 w-full resize-none [field-sizing:fixed] bg-transparent px-2 py-2 text-[15px] leading-6 outline-none placeholder:whitespace-nowrap placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60"
             placeholder={t("Nota interna · Solo para tu equipo")}
             onChange={(event) => {
               const nextText = event.target.value;

@@ -22,12 +22,12 @@ Release target: staging only. Main requires subsequent approval.
 
 ## Validation
 
-Eight new tests cover selector rendering/accessibility, mode handling, draft/tool
+Nine new tests cover selector rendering/accessibility, mode handling, draft/tool
 preservation, existing sending fences, note audience/height, scoped header styles
 and all supported translations. Existing layout-dependent assertions now target
 the inline control rather than the removed tab row.
 
-Local validation: all 401 frontend tests, generated-type synchronization,
+Local validation: all 402 frontend tests, generated-type synchronization,
 TypeScript and production build passed. Changed-file formatting/lint passed;
 whole-repository lint retains its existing warning baseline (no errors).
 
@@ -41,3 +41,8 @@ The 390px mobile viewport has no document-level horizontal overflow.
 Visual review identified Ant Design's default white dropdown in dark mode. The
 new menu now uses scoped application popover/accent/theme colors without altering
 other dropdowns, and automatically focuses its menu for keyboard navigation.
+
+Follow-up alignment fix: render the private-note textarea as a block with a
+24px line height and 8px vertical padding, matching the adjacent 40px controls.
+Override global native field sizing for this editor and keep an empty placeholder
+from enlarging it on narrow screens. Typed multiline notes still grow up to 160px.
