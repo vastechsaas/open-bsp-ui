@@ -46,3 +46,5 @@ Follow-up alignment fix: render the private-note textarea as a block with a
 24px line height and 8px vertical padding, matching the adjacent 40px controls.
 Override global native field sizing for this editor and keep an empty placeholder
 from enlarging it on narrow screens. Typed multiline notes still grow up to 160px.
+Hide horizontal overflow so a long single-line placeholder cannot introduce a
+scrollbar and consume vertical space; long typed notes remain vertically scrollable.

@@ -187,7 +187,7 @@ export default function PrivateNoteComposer({
             rows={1}
             aria-label={t("Nota privada")}
             aria-describedby={`note-visibility-${conversationId}`}
-            className="block max-h-40 min-h-10 w-full resize-none [field-sizing:fixed] bg-transparent px-2 py-2 text-[15px] leading-6 outline-none placeholder:whitespace-nowrap placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60"
+            className="block max-h-40 min-h-10 w-full resize-none overflow-x-hidden overflow-y-auto [field-sizing:fixed] bg-transparent px-2 py-2 text-[15px] leading-6 outline-none placeholder:whitespace-nowrap placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60"
             placeholder={t("Nota interna · Solo para tu equipo")}
             onChange={(event) => {
               const nextText = event.target.value;

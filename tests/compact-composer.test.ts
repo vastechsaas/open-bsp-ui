@@ -103,6 +103,7 @@ void test("private-note text aligns with 40px controls without inline baseline o
   assert.match(note, /\[field-sizing:fixed\]/);
   assert.match(note, /text-\[15px\] leading-6/);
   assert.match(note, /placeholder:whitespace-nowrap/);
+  assert.match(note, /overflow-x-hidden overflow-y-auto/);
   assert.match(
     note,
     /draft\.text \? Math\.min\(160, Math\.max\(40, textarea\.scrollHeight\)\) : 40/,
