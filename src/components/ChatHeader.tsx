@@ -117,7 +117,7 @@ export default function Header({
   }
 
   return (
-    <div className="header border-b border-border bg-background z-30 shadow-md">
+    <div className="header messages-chat-header items-center border-b border-border bg-background z-30 shadow-sm">
       {/* Back button */}
       <button
         className="mr-4 md:hidden"

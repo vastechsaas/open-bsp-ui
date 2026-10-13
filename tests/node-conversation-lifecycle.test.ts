@@ -224,7 +224,7 @@ test("takeover requires authorized waiting ownership and never follows assignmen
     /mutate\(\s*waiting \? "takeover" : "resolve-and-close",/,
   );
   assert.match(footer, /!privateNoteMode &&[\s\S]*?nodeHumanSendingBlocked/);
-  assert.match(footer, /\{composerModeTabs\}/);
+  assert.match(footer, /\{composerModeSelect\}/);
 });
 
 void test("lifecycle header controls use explicit theme colors, including disabled close", () => {

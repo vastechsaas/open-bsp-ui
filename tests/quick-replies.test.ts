@@ -127,7 +127,7 @@ void test("customer composer copies editable text without sending or exposing pr
   assert.match(source, /if \(activeConvId && conv && privateNoteMode\)/);
   assert.match(
     source,
-    /<PrivateNoteComposer conversationId=\{activeConvId\} \/>/,
+    /<PrivateNoteComposer\s+conversationId=\{activeConvId\}\s+modeSelector=\{composerModeSelect\}\s*\/>/,
   );
   assert.match(source, /inCSWindow/);
   assert.match(source, /customerReplyAllowed/);
