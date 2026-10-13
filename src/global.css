@@ -289,7 +289,7 @@ button:disabled {
   }
 
   @media (max-width: 767px) {
-    .messages-workspace {
+    .app-grid.messages-workspace {
       grid-template-columns: 48px minmax(0, 1fr);
     }
   }

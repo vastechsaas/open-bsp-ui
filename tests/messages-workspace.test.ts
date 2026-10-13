@@ -171,6 +171,10 @@ void test("workspace styling retains themes and both existing sidebar components
     source("src/global.css"),
     /\.messages-workspace \.bg-chat::before/,
   );
+  assert.match(
+    source("src/global.css"),
+    /\.app-grid\.messages-workspace\s*\{\s*grid-template-columns: 48px minmax\(0, 1fr\)/,
+  );
 });
 void test("all new UI labels and ownership states are translated consistently", () => {
   const components = [

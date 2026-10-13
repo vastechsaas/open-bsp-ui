@@ -42,6 +42,15 @@ RPC exists, anonymous execution denied, and all owner/supervisor/agent counts
 match their existing authorized view queries. Only the counter migration was
 applied. Frontend browser verification follows its staging deployment.
 
+Staging browser smoke checks: authenticated owner view, live status totals,
+VIP filter and Clear, preserved customer-details/Previous chats controls, loaded
+history and media rendering. A mobile cascade conflict found during the review
+was corrected with a Messages-scoped higher-specificity grid rule and regression
+assertion. No messages were sent and no ownership/closure actions were performed.
+Agent/supervisor totals were verified through read-only authenticated database
+checks; their separate UI sign-ins and real Node lifecycle transitions still
+need team acceptance testing.
+
 Deploy the backend RPC before merging the dependent frontend into
 `meta_vista_frontend`. Main, Node runtime and DKR flows are outside this release.
 
