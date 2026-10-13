@@ -490,6 +490,35 @@ input[type="range"]::-moz-range-track {
     gap: 2px;
   }
 }
+/* Scope theme overrides to the inline composer menu, including its portal. */
+.ant-dropdown.composer-mode-menu .ant-dropdown-menu {
+  background: var(--popover);
+  border: 1px solid var(--border);
+}
+
+.ant-dropdown.composer-mode-menu .ant-dropdown-menu .ant-dropdown-menu-item {
+  color: var(--popover-foreground);
+}
+
+.ant-dropdown.composer-mode-menu
+  .ant-dropdown-menu
+  .ant-dropdown-menu-item:hover,
+.ant-dropdown.composer-mode-menu
+  .ant-dropdown-menu
+  .ant-dropdown-menu-item-active,
+.ant-dropdown.composer-mode-menu
+  .ant-dropdown-menu
+  .ant-dropdown-menu-item-selected {
+  background: var(--accent);
+  color: var(--popover-foreground);
+}
+
+.ant-dropdown.composer-mode-menu
+  .ant-dropdown-menu
+  .ant-dropdown-menu-item-selected {
+  color: var(--primary);
+}
+
 /* pretty-print-json theme mapping */
 .json-key {
   color: var(--primary);

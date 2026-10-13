@@ -31,6 +31,13 @@ Local validation: all 401 frontend tests, generated-type synchronization,
 TypeScript and production build passed. Changed-file formatting/lint passed;
 whole-repository lint retains its existing warning baseline (no errors).
 
-Staging visual review should cover desktop/mobile sizing, upward-menu placement,
-keyboard operation, note mode and switching back to Reply. Do not send messages
-or perform takeover/closure merely to review this visual change.
+Staging review verified desktop/mobile sizing, keyboard opening/dismissal, note
+mode, multiline expansion and preservation of separate unsent drafts when
+switching modes. Test drafts were cleared; no messages/notes were submitted and
+no takeover/closure actions performed. At the same 863px viewport the customer
+composer reduced from 116.8px to 53.6px; both headers reduced from 60px to 52px.
+The 390px mobile viewport has no document-level horizontal overflow.
+
+Visual review identified Ant Design's default white dropdown in dark mode. The
+new menu now uses scoped application popover/accent/theme colors without altering
+other dropdowns, and automatically focuses its menu for keyboard navigation.

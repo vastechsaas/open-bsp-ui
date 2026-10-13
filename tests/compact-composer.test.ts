@@ -60,6 +60,7 @@ void test("both modes share the inline selector and retain separate drafts and t
 void test("mode selection only changes local mode and closes the upward menu", () => {
   const selector = source("src/components/ComposerModeSelect.tsx");
   assert.match(selector, /placement="topLeft"/);
+  assert.match(selector, /autoFocus/);
   assert.match(
     selector,
     /selectedKeys: \[privateNoteMode \? "note" : "reply"\]/,
@@ -107,6 +108,10 @@ void test("header density is scoped without resizing either sidebar or changing 
   assert.match(filter, /queue\.label/);
   assert.match(filter, /queues\.map/);
   assert.match(filter, /min-h-10/);
+  assert.match(
+    css,
+    /\.composer-mode-menu \.ant-dropdown-menu\s*\{\s*background: var\(--popover\)/,
+  );
 });
 
 void test("all compact composer copy has translations in every supported non-source language", () => {
