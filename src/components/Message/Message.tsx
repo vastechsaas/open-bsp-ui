@@ -303,16 +303,23 @@ function Avatar({
 // Shared in/out message classes. I could not find a better way to do it. - cabra 15/05/2024
 const msgRowClasses = "lg:px-[63px] px-[24px] flex";
 const avatarMsgRowClasses = "lg:px-[calc(63px+38px)] px-[calc(24px+33px)] flex";
+const refinedRowClasses = "lg:px-[32px] px-[20px] flex";
+const refinedAvatarRowClasses =
+  "lg:px-[calc(32px+38px)] px-[calc(20px+33px)] flex";
 
 const msgBubbleClasses =
   "relative rounded-lg shadow break-words text-[14.2px] leading-[19px] p-[3px]";
+const refinedBubbleClasses =
+  "relative rounded-xl border border-border/30 shadow-sm break-words text-[14px] leading-[21px] p-[5px]";
 
 const textMsgMaxWidth = " max-w-[90%] lg:max-w-[65%]";
+const refinedTextMaxWidth = " max-w-[90%] lg:max-w-[78%]";
 
 const msgTailClasses = "w-[8px] h-[13px] absolute top-0";
 
 export function InMessage({
   text,
+  refined,
   first,
   last,
   avatar,
@@ -321,7 +328,13 @@ export function InMessage({
   return (
     <div
       className={
-        (avatar ? avatarMsgRowClasses : msgRowClasses) +
+        (refined
+          ? avatar
+            ? refinedAvatarRowClasses
+            : refinedRowClasses
+          : avatar
+            ? avatarMsgRowClasses
+            : msgRowClasses) +
         " justify-start" +
         (last ? " mb-[12px]" : " mb-[2px]")
       }
@@ -329,10 +342,10 @@ export function InMessage({
       <div
         className={
           // max-w-65% applies to text only but could not find a way to abstract it
-          msgBubbleClasses +
+          (refined ? refinedBubbleClasses : msgBubbleClasses) +
           " bg-incoming-chat-bubble text-foreground" +
           (first ? " rounded-tl-none" : "") +
-          (text ? textMsgMaxWidth : "")
+          (text ? (refined ? refinedTextMaxWidth : textMsgMaxWidth) : "")
         }
       >
         {first && (
@@ -356,6 +369,7 @@ export function InMessage({
 
 export function OutMessage({
   text,
+  refined,
   first,
   last,
   children,
@@ -366,7 +380,13 @@ export function OutMessage({
   return (
     <div
       className={
-        (avatar ? avatarMsgRowClasses : msgRowClasses) +
+        (refined
+          ? avatar
+            ? refinedAvatarRowClasses
+            : refinedRowClasses
+          : avatar
+            ? avatarMsgRowClasses
+            : msgRowClasses) +
         " justify-end" +
         (last ? " mb-[12px]" : " mb-[2px]")
       }
@@ -374,10 +394,10 @@ export function OutMessage({
       <div
         className={
           // max-w-65% applies to text only but could not find a way to abstract it
-          msgBubbleClasses +
+          (refined ? refinedBubbleClasses : msgBubbleClasses) +
           " text-foreground" +
           (first ? " rounded-tr-none" : "") +
-          (text ? textMsgMaxWidth : "") +
+          (text ? (refined ? refinedTextMaxWidth : textMsgMaxWidth) : "") +
           (privateNote
             ? " border border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-50"
             : internal
@@ -412,6 +432,7 @@ export function OutMessage({
 
 type UIMessage = {
   text?: boolean;
+  refined?: boolean;
   first?: boolean;
   last?: boolean;
   orgName?: string;
@@ -571,6 +592,15 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
             fixedWidth,
           }}
         >
+          {props.refined &&
+            props.first &&
+            !privateNote &&
+            props.authorName &&
+            !props.avatar && (
+              <div className="px-2 pt-1 text-[11px] font-medium text-muted-foreground">
+                {props.authorName}
+              </div>
+            )}
           {content}
         </OutMessage>
       )}

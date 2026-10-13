@@ -276,6 +276,24 @@ button:disabled {
   }
 
   /* WhatsApp Web-like Grid Layout */
+  .messages-workspace {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+
+  .messages-workspace .bg-chat {
+    background-color: var(--color-background);
+  }
+
+  .messages-workspace .bg-chat::before {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .messages-workspace {
+      grid-template-columns: 48px minmax(0, 1fr);
+    }
+  }
+
   .app-grid {
     display: grid;
     /* Default (lg+): Menu | Left Panel | Chat */

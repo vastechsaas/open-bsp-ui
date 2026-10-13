@@ -1,4 +1,13 @@
 {
+  "Cola": "File",
+  "Todas las colas": "Toutes les files",
+  "Vistas de conversaciones": "Vues des conversations",
+  "No se pudieron cargar los contadores.": "Impossible de charger les compteurs.",
+  "Los contadores reflejan la cola seleccionada, no el texto de búsqueda.": "Les compteurs reflètent la file sélectionnée, pas le texte recherché.",
+  "No se pudo sincronizar el estado del chat.": "Impossible de synchroniser l’état de la conversation.",
+  "Devolviendo al chatbot—sincronización pendiente": "Retour au chatbot—synchronisation en attente",
+  "Limpiar filtros": "Effacer les filtres",
+  "Filtros": "Filtres",
   "Ausente": "Absent",
   "Disponibilidad para conversaciones": "Disponibilité pour les conversations",
   "No se pudo actualizar la disponibilidad.": "Impossible de mettre à jour la disponibilité.",

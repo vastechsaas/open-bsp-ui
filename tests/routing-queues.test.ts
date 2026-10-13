@@ -69,7 +69,7 @@ void test("settings, queue picker, and Mentioned-global behavior are wired", () 
     "utf8",
   );
   const filter = readFileSync(
-    new URL("../src/components/ChatFilter.tsx", import.meta.url),
+    new URL("../src/components/ChatSearch.tsx", import.meta.url),
     "utf8",
   );
   const list = readFileSync(

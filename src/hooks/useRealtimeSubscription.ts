@@ -5,6 +5,7 @@ import {
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { useEffect } from "react";
+import { conversationCountKey } from "@/utils/ConversationWorkspaceUtils";
 import { useQueryClient } from "@tanstack/react-query";
 import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { useCurrentAgent } from "@/queries/useAgents";
@@ -55,12 +56,24 @@ export const useRealtimeSubscription = () => {
       useBoundStore.getState().ui.user?.id === userId;
 
     let recoveryPromise: Promise<void> | undefined;
+    let countRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const refreshCounts = () => {
+      if (countRefreshTimer || !isCurrentScope()) return;
+      countRefreshTimer = setTimeout(() => {
+        countRefreshTimer = undefined;
+        if (isCurrentScope())
+          void queryClient.invalidateQueries({
+            queryKey: conversationCountKey(userId, activeOrgId),
+          });
+      }, 500);
+    };
     const refreshInboxVisibility = async () => {
       if (!isCurrentScope()) return;
       const queryKey = supportInboxKey(activeOrgId, userId);
       await queryClient.cancelQueries({ queryKey });
       if (!isCurrentScope()) return;
       await queryClient.invalidateQueries({ queryKey });
+      refreshCounts();
       await queryClient.invalidateQueries({
         queryKey: ["node-conversation-lifecycle", userId, activeOrgId],
       });
@@ -218,6 +231,7 @@ export const useRealtimeSubscription = () => {
           (payload) => {
             // TODO: https://github.com/supabase/supabase/issues/32817
             if (!isCurrentScope() || payload.table !== "conversations") return;
+            refreshCounts();
 
             const conversation = payload.new as ConversationRow;
             const changed = inboxMembershipChanged(
@@ -244,6 +258,7 @@ export const useRealtimeSubscription = () => {
             const message = payload.new as MessageRow;
 
             pushMessages([message]);
+            if (payload.eventType !== "UPDATE") refreshCounts();
 
             if (
               currentAgentId &&
@@ -426,6 +441,7 @@ export const useRealtimeSubscription = () => {
       cancelled = true;
       if (dataRetryTimer) clearTimeout(dataRetryTimer);
       if (queueRetryTimer) clearTimeout(queueRetryTimer);
+      if (countRefreshTimer) clearTimeout(countRefreshTimer);
       window.removeEventListener("online", recoverWhenActive);
       document.removeEventListener("visibilitychange", recoverWhenActive);
       if (dataChannel) void dataChannel.unsubscribe();

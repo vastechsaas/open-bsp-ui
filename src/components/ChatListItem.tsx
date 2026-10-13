@@ -332,9 +332,21 @@ export default function ChatListItem({
       <ItemActions trigger={["contextMenu"]} itemId={itemId}>
         <div
           className={
-            "chat-list-item h-[72px] flex cursor-pointer rounded-xl group" +
-            (active ? " bg-accent" : " hover:bg-accent")
+            "chat-list-item min-h-[82px] flex cursor-pointer rounded-xl border group transition-colors" +
+            (active
+              ? " border-primary/60 bg-primary/10"
+              : " border-transparent hover:border-border hover:bg-accent")
           }
+          role="button"
+          tabIndex={0}
+          aria-current={active ? "page" : undefined}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              void openConversation();
+            }
+          }}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -367,7 +379,7 @@ export default function ChatListItem({
           <div className="info flex flex-col justify-center grow min-w-0 pr-[15px]">
             {/* Upper row */}
             <div className="flex justify-between items-baseline">
-              <div className="truncate text-foreground text-[16px]">
+              <div className="truncate text-foreground text-[14px] font-semibold">
                 {displayName}
               </div>
               <div

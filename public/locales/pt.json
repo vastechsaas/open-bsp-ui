@@ -1,4 +1,13 @@
 {
+  "Cola": "Fila",
+  "Todas las colas": "Todas as filas",
+  "Vistas de conversaciones": "Visualizações de conversas",
+  "No se pudieron cargar los contadores.": "Não foi possível carregar os contadores.",
+  "Los contadores reflejan la cola seleccionada, no el texto de búsqueda.": "Os contadores refletem a fila selecionada, não o texto da pesquisa.",
+  "No se pudo sincronizar el estado del chat.": "Não foi possível sincronizar o estado da conversa.",
+  "Devolviendo al chatbot—sincronización pendiente": "Devolvendo ao chatbot—sincronização pendente",
+  "Limpiar filtros": "Limpar filtros",
+  "Filtros": "Filtros",
   "Ausente": "Ausente",
   "Disponibilidad para conversaciones": "Disponibilidade para conversas",
   "No se pudo actualizar la disponibilidad.": "Não foi possível atualizar a disponibilidade.",
