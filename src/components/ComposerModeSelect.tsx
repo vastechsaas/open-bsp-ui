@@ -20,6 +20,8 @@ export default function ComposerModeSelect({
     <Dropdown
       trigger={["click"]}
       placement="topLeft"
+      autoFocus
+      classNames={{ root: "composer-mode-menu" }}
       open={open}
       onOpenChange={setOpen}
       menu={{
