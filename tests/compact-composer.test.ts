@@ -98,6 +98,17 @@ void test("private notes clearly identify the audience and grow within a bounded
   );
 });
 
+void test("private-note text aligns with 40px controls without inline baseline or placeholder growth", () => {
+  assert.match(note, /className="block max-h-40 min-h-10/);
+  assert.match(note, /\[field-sizing:fixed\]/);
+  assert.match(note, /text-\[15px\] leading-6/);
+  assert.match(note, /placeholder:whitespace-nowrap/);
+  assert.match(
+    note,
+    /draft\.text \? Math\.min\(160, Math\.max\(40, textarea\.scrollHeight\)\) : 40/,
+  );
+});
+
 void test("header density is scoped without resizing either sidebar or changing views", () => {
   const css = source("src/global.css");
   assert.match(
