@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquareText, Mic, Plus, StickyNote, X } from "lucide-react";
+import { Mic, Plus, X } from "lucide-react";
 import {
   newMessage,
   pushMessageToDb,
@@ -25,6 +25,7 @@ import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
 import AssignConversationButton from "./AssignConversationButton";
 import PrivateNoteComposer from "./PrivateNoteComposer";
+import ComposerModeSelect from "./ComposerModeSelect";
 import {
   canComposePrivateNote,
   canSendCustomerReply,
@@ -574,35 +575,13 @@ export default function ChatFooter() {
     );
   }
 
-  const composerModeTabs = activeConvId && conv && (
-    <div className="mb-2 flex w-fit gap-1 rounded-lg border border-border bg-background p-1 text-[12px] shadow-sm">
-      <button
-        type="button"
-        className={
-          "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors " +
-          (!privateNoteMode
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-accent")
-        }
-        onClick={() => setPrivateNoteMode(false)}
-      >
-        <MessageSquareText className="h-3.5 w-3.5" />
-        {t("Responder al cliente")}
-      </button>
-      <button
-        type="button"
-        className={
-          "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors " +
-          (privateNoteMode
-            ? "bg-amber-500 text-amber-950"
-            : "text-muted-foreground hover:bg-amber-100 dark:hover:bg-amber-950")
-        }
-        onClick={() => setPrivateNoteMode(true)}
-      >
-        <StickyNote className="h-3.5 w-3.5" />
-        {t("Nota privada")}
-      </button>
-    </div>
+  const composerModeSelect = activeConvId && conv && (
+    <ComposerModeSelect
+      key={activeConvId}
+      privateNoteMode={privateNoteMode}
+      onChange={setPrivateNoteMode}
+      translate={t}
+    />
   );
 
   if (activeConvId && conv && !canComposePrivateNote(conv.status)) {
@@ -622,38 +601,42 @@ export default function ChatFooter() {
     return (
       <div
         role="status"
-        className="mx-[12px] mb-[12px] rounded-xl border border-border bg-background/95 px-4 py-3 text-center text-[13px] text-muted-foreground"
+        className="mx-3 mb-2 flex items-center gap-2 rounded-xl border border-border bg-background/95 p-1.5 text-[13px] text-muted-foreground"
       >
-        {composerModeTabs}
-        {nodeLifecycle.status.isPending ||
-        nodeLifecycle.mapping.data?.sync_pending
-          ? t("Sincronizando solicitud de soporte…")
-          : nodeLifecycle.mapping.data?.pending_request_id
-            ? (nodeLifecycle.status.data?.optimistic_action ??
-                nodeLifecycle.status.data?.operation?.action) === "takeover"
-              ? t("Tomando control—sincronización pendiente")
-              : t("Cerrando—sincronización pendiente")
-            : nodeLifecycle.status.data?.support_request?.status === "waiting"
-              ? t("Toma el control del chat antes de responder al cliente")
-              : t("El chatbot está atendiendo esta conversación")}
+        {composerModeSelect}
+        <span className="min-w-0">
+          {nodeLifecycle.status.isPending ||
+          nodeLifecycle.mapping.data?.sync_pending
+            ? t("Sincronizando solicitud de soporte…")
+            : nodeLifecycle.mapping.data?.pending_request_id
+              ? (nodeLifecycle.status.data?.optimistic_action ??
+                  nodeLifecycle.status.data?.operation?.action) === "takeover"
+                ? t("Tomando control—sincronización pendiente")
+                : t("Cerrando—sincronización pendiente")
+              : nodeLifecycle.status.data?.support_request?.status === "waiting"
+                ? t("Toma el control del chat antes de responder al cliente")
+                : t("El chatbot está atendiendo esta conversación")}
+        </span>
       </div>
     );
   }
 
   if (activeConvId && conv && privateNoteMode) {
     return (
-      <div className="relative z-10 mx-[12px] mb-[12px] mt-[4px] lg:mt-0">
-        {composerModeTabs}
-        <PrivateNoteComposer conversationId={activeConvId} />
+      <div className="relative z-10 mx-3 mb-2 mt-1 lg:mt-0">
+        <PrivateNoteComposer
+          conversationId={activeConvId}
+          modeSelector={composerModeSelect}
+        />
       </div>
     );
   }
 
   if (activeConvId && conv && isAgent && !customerReplyAllowed) {
     return (
-      <div className="relative z-10 mx-[12px] mb-[12px] mt-[4px] lg:mt-0">
-        {composerModeTabs}
-        <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm sm:flex-row">
+      <div className="relative z-10 mx-3 mb-2 mt-1 lg:mt-0">
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-background/95 p-1.5 shadow-sm">
+          {composerModeSelect}
           <span className="text-center text-[13px] font-medium text-muted-foreground sm:text-left">
             {conv?.assigned_agent_id === null
               ? t("Asígnate esta conversación para responder")
@@ -670,12 +653,11 @@ export default function ChatFooter() {
   return (
     activeConvId &&
     conv && (
-      <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10 rounded-xl border border-border bg-background p-2 shadow-sm">
-        {composerModeTabs}
+      <div className="relative mx-3 mb-2 mt-1 lg:mt-0 z-10 rounded-xl border border-border bg-background p-1.5 shadow-sm">
         {templatePicker && <TemplatePicker />}
         <div
           className={
-            "flex items-end text-foreground p-[5px] rounded-xl border border-border focus-within:ring-2 focus-within:ring-primary/20" +
+            "flex items-end gap-1 text-foreground rounded-lg focus-within:ring-2 focus-within:ring-primary/20" +
             (templateDraft
               ? " bg-incoming-chat-bubble"
               : !inCSWindow
@@ -715,6 +697,8 @@ export default function ChatFooter() {
                 )}
               </div>
 
+              {composerModeSelect}
+
               <input
                 disabled={!inCSWindow}
                 ref={fileInput}
@@ -740,7 +724,7 @@ export default function ChatFooter() {
               />
 
               {/* Text input or template mode */}
-              <div className="relative grow">
+              <div className="relative min-w-0 grow border-l border-border pl-1">
                 {templateDraft ? (
                   renderTemplateBody()
                 ) : (
@@ -781,6 +765,9 @@ export default function ChatFooter() {
                     <div
                       ref={editableDiv}
                       contentEditable={inCSWindow}
+                      role="textbox"
+                      aria-label={t("Escribe un mensaje")}
+                      aria-multiline="true"
                       className={`${
                         !inCSWindow ? "cursor-pointer" : ""
                       } outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words`}
@@ -866,7 +853,7 @@ export default function ChatFooter() {
                     {!message && (
                       <div
                         className={
-                          "absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground" +
+                          "absolute inset-x-1 bottom-[1px] truncate py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground" +
                           (inCSWindow ? "" : " cursor-pointer")
                         }
                         onClick={() =>

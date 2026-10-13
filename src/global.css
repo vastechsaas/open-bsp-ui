@@ -280,6 +280,13 @@ button:disabled {
     grid-template-rows: auto minmax(0, 1fr) !important;
   }
 
+  /* Compact only Messages headers; navigation and customer details stay intact. */
+  .messages-workspace-header .conversation-header,
+  .messages-workspace .messages-chat-header {
+    height: 52px;
+    padding-block: 6px;
+  }
+
   .messages-workspace .bg-chat {
     background-color: var(--color-background);
   }

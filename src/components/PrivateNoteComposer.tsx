@@ -1,5 +1,5 @@
 import { ArrowRightLeft, Send, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { message, Modal } from "antd";
 import useBoundStore from "@/stores/useBoundStore";
@@ -19,8 +19,10 @@ import { getPrivateNoteTransferTarget } from "@/utils/PrivateNoteUtils";
 
 export default function PrivateNoteComposer({
   conversationId,
+  modeSelector,
 }: {
   conversationId: string;
+  modeSelector?: ReactNode;
 }) {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
@@ -47,6 +49,12 @@ export default function PrivateNoteComposer({
   const { data: humans = [] } = useMentionableHumans();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursor, setCursor] = useState(draft.text.length);
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(160, Math.max(40, textarea.scrollHeight))}px`;
+  }, [draft.text, conversationId]);
   const activeMention = findActiveMention(draft.text, cursor);
   const suggestions = useMemo(() => {
     if (!activeMention) return [];
@@ -139,10 +147,10 @@ export default function PrivateNoteComposer({
   };
 
   return (
-    <div className="rounded-2xl border border-amber-300 bg-amber-100 p-2 text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-50">
-      <div className="px-2 pb-1 text-[12px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-        {t("Nota privada")}
-      </div>
+    <div className="rounded-xl border border-amber-300 bg-amber-100 p-1.5 text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-50">
+      <span id={`note-visibility-${conversationId}`} className="sr-only">
+        {t("Solo tu equipo puede ver esta nota")}
+      </span>
       {selectedHumans.length > 0 && (
         <div className="flex flex-wrap gap-1 px-2 pb-1">
           {selectedHumans.map((human) => (
@@ -169,14 +177,17 @@ export default function PrivateNoteComposer({
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2">
-        <div className="relative grow">
+      <div className="flex items-end gap-1">
+        {modeSelector}
+        <div className="relative min-w-0 grow">
           <textarea
             ref={textareaRef}
             value={draft.text}
             rows={1}
+            aria-label={t("Nota privada")}
+            aria-describedby={`note-visibility-${conversationId}`}
             className="max-h-40 min-h-10 w-full resize-none bg-transparent px-2 py-2 text-[15px] outline-none placeholder:text-amber-700/60 dark:placeholder:text-amber-300/60"
-            placeholder={t("Escribe una nota interna")}
+            placeholder={t("Nota interna · Solo para tu equipo")}
             onChange={(event) => {
               const nextText = event.target.value;
               setDraft(conversationId, {
@@ -228,12 +239,14 @@ export default function PrivateNoteComposer({
         </div>
         <button
           type="button"
+          aria-label={t("Agregar nota")}
           disabled={!draft.text.trim() || createNote.isPending}
-          className="rounded-full bg-amber-600 p-2 text-white disabled:opacity-50"
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-amber-700 px-2 text-xs font-medium text-white disabled:opacity-50"
           onClick={() => void submit()}
           title={t("Guardar nota privada")}
         >
           <Send className="h-5 w-5" />
+          <span className="hidden sm:inline">{t("Agregar nota")}</span>
         </button>
       </div>
       {transferTarget && (

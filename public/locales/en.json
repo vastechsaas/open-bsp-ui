@@ -1,4 +1,9 @@
 {
+  "Responder": "Reply",
+  "Modo de mensaje": "Message mode",
+  "Agregar nota": "Add note",
+  "Solo tu equipo puede ver esta nota": "Only your team can see this note",
+  "Nota interna · Solo para tu equipo": "Private note · Only visible to your team",
   "Vistas de conversaciones": "Conversation views",
   "No se pudieron cargar los contadores.": "Could not load conversation counts.",
   "Los contadores reflejan la cola seleccionada, no el texto de búsqueda.": "Counts reflect the selected queue, not the search text.",
