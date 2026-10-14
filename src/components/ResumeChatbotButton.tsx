@@ -61,11 +61,18 @@ export default function ResolveConversationControls({
   )
     return null;
   const error =
-    (lifecycle.action.variables === "takeover" &&
-    snapshot?.state === "human_owned"
+    ((lifecycle.action.variables === "takeover" &&
+      snapshot?.state === "human_owned") ||
+    (lifecycle.action.variables === "resolve-and-close" &&
+      snapshot?.state === "closed" &&
+      !snapshot.pending_request_id)
       ? null
       : lifecycle.action.error?.message) ||
-    lifecycle.status.error?.message ||
+    (lifecycle.status.isError
+      ? t(
+          "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.",
+        )
+      : null) ||
     (snapshot?.operation && snapshot.operation.status !== "succeeded"
       ? snapshot.operation.last_error
       : null) ||
@@ -117,6 +124,7 @@ export default function ResolveConversationControls({
           disabled={
             pending ||
             syncingSupport ||
+            lifecycle.status.isError ||
             snapshot?.awaiting_mapping ||
             (waiting ? !canTakeOver : !canResolve)
           }
@@ -178,6 +186,12 @@ export default function ResolveConversationControls({
                 className="text-destructive underline"
                 disabled={lifecycle.action.isPending}
                 onClick={() => {
+                  // A failed GET is not a failed close/takeover. Reconcile the
+                  // confirmed state before considering any further action.
+                  if (lifecycle.status.isError) {
+                    void lifecycle.status.refetch();
+                    return;
+                  }
                   const operation = snapshot?.operation;
                   if (
                     operation &&

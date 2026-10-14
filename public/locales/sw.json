@@ -1773,5 +1773,6 @@
   "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "Ujumbe mmoja hutumwa kulingana na upatikanaji. Ujumbe maalumu uliopo wa nodi huhifadhiwa.",
   "Mensaje personalizado de soporte (opcional)": "Ujumbe maalumu wa usaidizi (si lazima)",
   "Usar el mensaje predeterminado de Configuración": "Tumia ujumbe chaguomsingi kutoka Mipangilio",
-  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Acha wazi ili kutumia Mipangilio. Nje ya saa za kazi au bila mawakala wanaopatikana, ujumbe husika wa usaidizi hutumika."
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Acha wazi ili kutumia Mipangilio. Nje ya saa za kazi au bila mawakala wanaopatikana, ujumbe husika wa usaidizi hutumika.",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Hali ya mazungumzo haikuweza kusasishwa. Kitendo huenda kimekamilika; sasisha kabla ya kujaribu tena."
 }

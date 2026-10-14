@@ -12,6 +12,7 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { queryKeys } from "@/queries/queryKeys";
 import { supportInboxKey } from "@/queries/useSupportInboxVisibility";
+import { recoverRead } from "@/utils/ReadRecoveryUtils";
 import {
   isInboxChange,
   inboxMembershipChanged,
@@ -50,6 +51,7 @@ export const useRealtimeSubscription = () => {
 
     const filter = `organization_id=eq.${activeOrgId}`;
     let cancelled = false;
+    const recoveryController = new AbortController();
     const isCurrentScope = () =>
       !cancelled &&
       useBoundStore.getState().ui.activeOrgId === activeOrgId &&
@@ -81,12 +83,18 @@ export const useRealtimeSubscription = () => {
 
     const reconcileConversation = async (conversationId: string) => {
       if (!isCurrentScope()) return;
-      const { data, error } = await supabase
-        .from("conversations")
-        .select()
-        .eq("organization_id", activeOrgId)
-        .eq("id", conversationId)
-        .maybeSingle();
+      const { data, error } = await recoverRead(
+        () =>
+          supabase
+            .from("conversations")
+            .select()
+            .eq("organization_id", activeOrgId)
+            .eq("id", conversationId)
+            .abortSignal(recoveryController.signal)
+            .maybeSingle()
+            .throwOnError(),
+        recoveryController.signal,
+      ).catch((error: unknown) => ({ data: null, error }));
       if (!isCurrentScope()) return;
 
       if (error) {
@@ -97,13 +105,19 @@ export const useRealtimeSubscription = () => {
       if (data) {
         pushConversations([data as ConversationRow]);
 
-        const { data: messages, error: messagesError } = await supabase
-          .from("messages")
-          .select()
-          .eq("organization_id", activeOrgId)
-          .eq("conversation_id", conversationId)
-          .order("timestamp", { ascending: false })
-          .limit(100);
+        const { data: messages, error: messagesError } = await recoverRead(
+          () =>
+            supabase
+              .from("messages")
+              .select()
+              .eq("organization_id", activeOrgId)
+              .eq("conversation_id", conversationId)
+              .order("timestamp", { ascending: false })
+              .limit(100)
+              .abortSignal(recoveryController.signal)
+              .throwOnError(),
+          recoveryController.signal,
+        ).catch((error: unknown) => ({ data: null, error }));
         if (!isCurrentScope()) return;
 
         if (messagesError) {
@@ -128,12 +142,18 @@ export const useRealtimeSubscription = () => {
         const conversations: ConversationRow[] = [];
 
         for (let from = 0; ; from += CONVERSATION_PAGE_SIZE) {
-          const { data, error } = await supabase
-            .from("conversations")
-            .select()
-            .eq("organization_id", activeOrgId)
-            .order("id", { ascending: true })
-            .range(from, from + CONVERSATION_PAGE_SIZE - 1);
+          const { data, error } = await recoverRead(
+            () =>
+              supabase
+                .from("conversations")
+                .select()
+                .eq("organization_id", activeOrgId)
+                .order("id", { ascending: true })
+                .range(from, from + CONVERSATION_PAGE_SIZE - 1)
+                .abortSignal(recoveryController.signal)
+                .throwOnError(),
+            recoveryController.signal,
+          );
           if (!isCurrentScope()) return;
 
           if (error) throw error;
@@ -155,11 +175,18 @@ export const useRealtimeSubscription = () => {
         if (inaccessibleIds.length) removeConversations(inaccessibleIds);
         pushConversations(conversations);
 
-        const { data, error } = await supabase.rpc("init_data", {
-          p_organization_id: activeOrgId,
-          p_limit: 1000,
-          p_per_conversation: 1,
-        });
+        const { data, error } = await recoverRead(
+          () =>
+            supabase
+              .rpc("init_data", {
+                p_organization_id: activeOrgId,
+                p_limit: 1000,
+                p_per_conversation: 1,
+              })
+              .abortSignal(recoveryController.signal)
+              .throwOnError(),
+          recoveryController.signal,
+        );
 
         if (error) throw error;
 
@@ -174,6 +201,7 @@ export const useRealtimeSubscription = () => {
         });
       })()
         .catch((error: unknown) => {
+          if (!isCurrentScope()) return;
           console.error("Could not refresh conversation queue state", error);
         })
         .finally(() => {
@@ -439,6 +467,7 @@ export const useRealtimeSubscription = () => {
     // Cleanup subscription on unmount
     return () => {
       cancelled = true;
+      recoveryController.abort();
       if (dataRetryTimer) clearTimeout(dataRetryTimer);
       if (queueRetryTimer) clearTimeout(queueRetryTimer);
       if (countRefreshTimer) clearTimeout(countRefreshTimer);

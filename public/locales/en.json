@@ -1798,5 +1798,6 @@
   "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "One message is sent based on availability. Existing custom node messages are preserved.",
   "Mensaje personalizado de soporte (opcional)": "Custom support message (optional)",
   "Usar el mensaje predeterminado de Configuración": "Use the default message from Settings",
-  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Leave blank to use Settings. Outside business hours or with no available agents, the corresponding support message is used."
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Leave blank to use Settings. Outside business hours or with no available agents, the corresponding support message is used.",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Chat status could not be refreshed. The action may have completed; refresh before trying again."
 }

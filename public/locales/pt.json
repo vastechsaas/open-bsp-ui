@@ -1773,5 +1773,6 @@
   "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "Uma mensagem é enviada conforme a disponibilidade. As mensagens personalizadas existentes dos nós são preservadas.",
   "Mensaje personalizado de soporte (opcional)": "Mensagem personalizada de suporte (opcional)",
   "Usar el mensaje predeterminado de Configuración": "Usar a mensagem padrão das Configurações",
-  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Deixe vazio para usar as Configurações. Fora do horário comercial ou sem agentes disponíveis, é usada a mensagem de suporte correspondente."
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Deixe vazio para usar as Configurações. Fora do horário comercial ou sem agentes disponíveis, é usada a mensagem de suporte correspondente.",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Não foi possível atualizar o estado da conversa. A ação pode ter sido concluída; atualize antes de tentar novamente."
 }

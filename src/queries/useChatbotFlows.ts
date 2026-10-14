@@ -4,6 +4,7 @@ import { useChatbotPermissions } from "./useModulePermissions";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { type Database, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
+import { recoverRead, retryTransientRead } from "@/utils/ReadRecoveryUtils";
 import {
   createChatbotManagementError,
   type ChatbotEditorGraph,
@@ -160,7 +161,7 @@ export function useNodeConversationLifecycle(conversationId?: string) {
     refetchOnWindowFocus: "always",
     refetchOnReconnect: "always",
     staleTime: 0,
-    retry: 1,
+    retry: retryTransientRead,
     queryFn: async ({ signal }) => {
       const fresh = await invokeChatbotManagement<NodeConversationSnapshot>(
         `conversations/${conversationId}/lifecycle?organization_id=${encodeURIComponent(orgId!)}`,
@@ -171,11 +172,54 @@ export function useNodeConversationLifecycle(conversationId?: string) {
       const pending = client.getQueryData<NodeConversationSnapshot>(key);
       // A poll or Realtime invalidation must not remove the shared sending
       // fence while the POST (including its fresh preflight) is still running.
-      return reconcileLifecycleRead(
+      const confirmed = reconcileLifecycleRead(
         pending,
         fresh,
         !!client.isMutating({ mutationKey: key }),
       );
+      const current = useBoundStore.getState();
+      // Refresh the actual row independently after confirmation. Do not invent
+      // updated_at or let a failed row read reject a confirmed lifecycle read.
+      if (
+        current.ui.user?.id === userId &&
+        current.ui.activeOrgId === orgId &&
+        confirmed.state === "closed" &&
+        !confirmed.pending_request_id
+      ) {
+        const conversation = current.chat.conversations.get(conversationId!);
+        if (
+          conversation?.organization_id === orgId &&
+          conversation.status !== "closed"
+        )
+          void recoverRead(
+            () =>
+              supabase
+                .from("conversations")
+                .select()
+                .eq("organization_id", orgId!)
+                .eq("id", conversationId!)
+                .abortSignal(signal)
+                .maybeSingle()
+                .throwOnError(),
+            signal,
+          )
+            .then(({ data }) => {
+              const state = useBoundStore.getState();
+              if (
+                data &&
+                state.ui.user?.id === userId &&
+                state.ui.activeOrgId === orgId
+              )
+                state.chat.pushConversations([data]);
+            })
+            .catch(() => {
+              if (!signal.aborted)
+                console.warn(
+                  "Confirmed close; conversation refresh unavailable",
+                );
+            });
+      }
+      return confirmed;
     },
   });
   // One query owns the header/composer snapshot. This adapter keeps legacy
@@ -372,7 +416,9 @@ export function useNodeConversationLifecycle(conversationId?: string) {
             }
           : snapshot,
       );
-      await Promise.all([
+      // Read failures must not turn an accepted lifecycle action into a failed
+      // mutation or cause another POST. Each query retains its own retry state.
+      await Promise.allSettled([
         client.invalidateQueries({ queryKey: key }),
         client.invalidateQueries({ queryKey: ["node-chatbot-resume"] }),
         client.invalidateQueries({ queryKey: [orgId, "conversation_queues"] }),

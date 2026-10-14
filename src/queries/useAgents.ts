@@ -8,6 +8,31 @@ import {
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { queryKeys } from "./queryKeys";
+import { retryTransientRead } from "@/utils/ReadRecoveryUtils";
+
+// Message presentation must not request the AI configuration or require a row
+// hidden by RLS. Keep this cache separate from the full agent editor query.
+export function useMessageSender(id: string) {
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  return useQuery({
+    queryKey: [orgId, "message-sender", userId, id],
+    enabled: !!userId && !!orgId && !!id,
+    queryFn: async ({ signal }) => {
+      const { data } = await supabase
+        .from("agents")
+        .select("id,name,picture")
+        .eq("organization_id", orgId!)
+        .eq("id", id)
+        .abortSignal(signal)
+        .throwOnError()
+        .maybeSingle();
+      return data;
+    },
+    retry: retryTransientRead,
+    staleTime: 60_000,
+  });
+}
 
 export function useAgent<T = AgentRow>(id: string) {
   const userId = useBoundStore((state) => state.ui.user?.id);

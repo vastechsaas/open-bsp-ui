@@ -1773,5 +1773,6 @@
   "Se envía un solo mensaje según la disponibilidad. Los mensajes personalizados del nodo se conservan.": "Un seul message est envoyé selon la disponibilité. Les messages personnalisés existants des nœuds sont conservés.",
   "Mensaje personalizado de soporte (opcional)": "Message d’assistance personnalisé (facultatif)",
   "Usar el mensaje predeterminado de Configuración": "Utiliser le message par défaut des Paramètres",
-  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Laissez vide pour utiliser les Paramètres. En dehors des horaires ou sans agent disponible, le message d’assistance correspondant est utilisé."
+  "Dejalo vacío para usar Configuración. Fuera de horario o sin agentes disponibles se usa el mensaje correspondiente de soporte.": "Laissez vide pour utiliser les Paramètres. En dehors des horaires ou sans agent disponible, le message d’assistance correspondant est utilisé.",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Impossible d’actualiser l’état de la conversation. L’action a peut-être abouti ; actualisez avant de réessayer."
 }
