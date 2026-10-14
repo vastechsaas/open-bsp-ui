@@ -1797,5 +1797,6 @@
   "Cuerpo de solicitud": "Request body",
   "Mapeos de respuesta": "Response mappings",
   "Mensaje de respuesta inválida": "Invalid-answer message",
-  "Máximo de intentos": "Maximum attempts"
+  "Máximo de intentos": "Maximum attempts",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Chat status could not be refreshed. The action may have completed; refresh before trying again."
 }

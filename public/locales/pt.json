@@ -1772,5 +1772,6 @@
   "Cuerpo de solicitud": "Corpo da solicitação",
   "Mapeos de respuesta": "Mapeamentos de resposta",
   "Mensaje de respuesta inválida": "Mensagem de resposta inválida",
-  "Máximo de intentos": "Máximo de tentativas"
+  "Máximo de intentos": "Máximo de tentativas",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Não foi possível atualizar o estado da conversa. A ação pode ter sido concluída; atualize antes de tentar novamente."
 }

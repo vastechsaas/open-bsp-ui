@@ -16,7 +16,8 @@ import { type FormEventHandler, type PropsWithChildren, useState } from "react";
 import { prettyPrintJson } from "pretty-print-json";
 import { useTranslation } from "@/hooks/useTranslation";
 import AvatarComponent from "@/components/Avatar";
-import { useAgent } from "@/queries/useAgents";
+import { useMessageSender } from "@/queries/useAgents";
+import { messageSenderLabel } from "@/utils/ReadRecoveryUtils";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
 import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
@@ -269,13 +270,15 @@ function Avatar({
   color: string;
   display: "name" | "picture-left" | "picture-right";
 }) {
-  const { data: agent } = useAgent(agentId);
+  const { data: agent } = useMessageSender(agentId);
+  const { translate: t } = useTranslation();
+  const label = messageSenderLabel(agent, t("Agente"));
 
   if (display === "picture-left" || display === "picture-right") {
     return (
       <AvatarComponent
         src={agent?.picture}
-        fallback={agent?.name.charAt(0) || "A"}
+        fallback={label.charAt(0)}
         size={28}
         className={
           `${
@@ -294,7 +297,7 @@ function Avatar({
           (color && AVATAR_TEXT_COLORS[color]) || ""
         }`}
       >
-        {agent?.name || "?"}
+        {label}
       </div>
     );
   }

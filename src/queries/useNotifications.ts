@@ -7,6 +7,7 @@ import {
 import useBoundStore from "@/stores/useBoundStore";
 import { supabase, type Tables } from "@/supabase/client";
 import { queryKeys } from "./queryKeys";
+import { retryTransientRead } from "@/utils/ReadRecoveryUtils";
 
 export type UserNotification = Tables<"user_notifications">;
 type NotificationRpcRow = UserNotification & { total_count: number };
@@ -20,21 +21,24 @@ const PAGE_SIZE = 10;
 
 export function useNotificationsPage(page: number, unreadOnly: boolean) {
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
 
   return useQuery({
-    queryKey: queryKeys.notifications.page(organizationId, page, unreadOnly),
-    queryFn: async (): Promise<NotificationPage> => {
+    queryKey: [
+      ...queryKeys.notifications.page(organizationId, page, unreadOnly),
+      userId,
+    ],
+    queryFn: async ({ signal }): Promise<NotificationPage> => {
       if (!organizationId) return { rows: [], total: 0 };
 
-      const { data, error } = await supabase.rpc(
-        "list_user_notifications_page",
-        {
+      const { data, error } = await supabase
+        .rpc("list_user_notifications_page", {
           p_organization_id: organizationId,
           p_page: page,
           p_page_size: PAGE_SIZE,
           p_unread_only: unreadOnly,
-        },
-      );
+        })
+        .abortSignal(signal);
       if (error) throw error;
 
       const rows = (data ?? []) as NotificationRpcRow[];
@@ -43,26 +47,30 @@ export function useNotificationsPage(page: number, unreadOnly: boolean) {
         total: Number(rows[0]?.total_count ?? 0),
       };
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !!userId,
+    retry: retryTransientRead,
     placeholderData: keepPreviousData,
   });
 }
 
 export function useUnreadNotificationCount() {
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
+  const userId = useBoundStore((state) => state.ui.user?.id);
 
   return useQuery({
-    queryKey: queryKeys.notifications.unreadCount(organizationId),
-    queryFn: async () => {
+    queryKey: [...queryKeys.notifications.unreadCount(organizationId), userId],
+    queryFn: async ({ signal }) => {
       if (!organizationId) return 0;
-      const { data, error } = await supabase.rpc(
-        "get_unread_notification_count",
-        { p_organization_id: organizationId },
-      );
+      const { data, error } = await supabase
+        .rpc("get_unread_notification_count", {
+          p_organization_id: organizationId,
+        })
+        .abortSignal(signal);
       if (error) throw error;
       return Number(data ?? 0);
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !!userId,
+    retry: retryTransientRead,
   });
 }
 

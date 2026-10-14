@@ -1772,5 +1772,6 @@
   "Cuerpo de solicitud": "Corps de la requête",
   "Mapeos de respuesta": "Correspondances de réponse",
   "Mensaje de respuesta inválida": "Message de réponse invalide",
-  "Máximo de intentos": "Nombre maximal de tentatives"
+  "Máximo de intentos": "Nombre maximal de tentatives",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Impossible d’actualiser l’état de la conversation. L’action a peut-être abouti ; actualisez avant de réessayer."
 }

@@ -1773,5 +1773,6 @@
   "Cuerpo de solicitud": "Mwili wa ombi",
   "Mapeos de respuesta": "Ulinganishi wa majibu",
   "Mensaje de respuesta inválida": "Ujumbe wa jibu lisilo halali",
-  "Máximo de intentos": "Upeo wa majaribio"
+  "Máximo de intentos": "Upeo wa majaribio",
+  "No se pudo actualizar el estado del chat. La acción puede haberse completado; actualizá antes de reintentar.": "Hali ya mazungumzo haikuweza kusasishwa. Kitendo huenda kimekamilika; sasisha kabla ya kujaribu tena."
 }
