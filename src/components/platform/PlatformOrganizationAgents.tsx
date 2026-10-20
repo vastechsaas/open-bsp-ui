@@ -15,15 +15,22 @@ import Spinner from "@/components/Spinner";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
-  type PlatformOrganizationAgentRow,
-  useInvitePlatformOrganizationAgent,
   usePlatformOrganizationAgentCapacity,
-  usePlatformOrganizationAgentsPage,
   usePlatformRoutingQueuesPage,
-  useRemovePlatformOrganizationAgent,
-  useUpdatePlatformOrganizationAgent,
   useUpdatePlatformOrganizationAgentCapacity,
 } from "@/queries/usePlatformOrganizationManagement";
+import {
+  type PlatformOrganizationMemberRow as PlatformOrganizationAgentRow,
+  usePlatformOrganizationMembersPage,
+  usePlatformMemberMutation,
+} from "@/queries/usePlatformTeamMembers";
+import {
+  canManagePlatformMember,
+  platformMemberRoleLabel,
+  PLATFORM_MEMBER_ROLES,
+  platformMemberError,
+  type PlatformMemberRole,
+} from "@/utils/PlatformTeamMemberUtils";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 
 type DialogState =
@@ -44,7 +51,7 @@ export default function PlatformOrganizationAgents({
   const [pageSize, setPageSize] = useState(DEFAULT_DATA_TABLE_PAGE_SIZE);
   const [dialog, setDialog] = useState<DialogState>(null);
   const debouncedSearch = useDebouncedValue(search.trim());
-  const agents = usePlatformOrganizationAgentsPage(organizationId, {
+  const agents = usePlatformOrganizationMembersPage(organizationId, {
     page,
     pageSize,
     search: debouncedSearch || undefined,
@@ -74,9 +81,11 @@ export default function PlatformOrganizationAgents({
     <div>
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div>
-          <h2 className="text-xl font-semibold">{t("Agentes")}</h2>
+          <h2 className="text-xl font-semibold">{t("Miembros del equipo")}</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {t("Administrá los agentes, invitaciones y acceso a colas.")}
+            {t(
+              "Administrá las membresías, roles y acceso a colas de esta organización.",
+            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 lg:ml-auto">
@@ -91,12 +100,11 @@ export default function PlatformOrganizationAgents({
           <button
             type="button"
             className="primary inline-flex items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={capacity.isPending || atLimit}
-            title={atLimit ? t("La capacidad de agentes está completa") : ""}
+            disabled={capacity.isPending}
             onClick={() => setDialog({ type: "invite" })}
           >
             <Plus className="h-4 w-4" />
-            {t("Invitar agente")}
+            {t("Agregar miembro")}
           </button>
         </div>
       </header>
@@ -134,7 +142,7 @@ export default function PlatformOrganizationAgents({
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder={t("Buscar agente por nombre o correo")}
+          placeholder={t("Buscar miembro por nombre o correo")}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none"
         />
       </label>
@@ -145,15 +153,16 @@ export default function PlatformOrganizationAgents({
             <Spinner />
           </div>
         ) : agents.isError ? (
-          <State title={t("No se pudieron cargar los agentes")} />
+          <State title={t("No se pudieron cargar los miembros")} />
         ) : rows.length === 0 ? (
-          <State title={t("No se encontraron agentes")} />
+          <State title={t("No se encontraron miembros")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left">
               <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">{t("Agente")}</th>
+                  <th className="px-4 py-3">{t("Miembro")}</th>
+                  <th className="px-4 py-3">{t("Rol")}</th>
                   <th className="px-4 py-3">{t("Correo electrónico")}</th>
                   <th className="px-4 py-3">{t("Estado")}</th>
                   <th className="px-4 py-3">{t("Colas")}</th>
@@ -170,6 +179,9 @@ export default function PlatformOrganizationAgents({
                         </span>
                         <span className="font-medium">{agent.name}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      {t(platformMemberRoleLabel(agent.role))}
                     </td>
                     <td className="px-4 py-4 text-muted-foreground">
                       {agent.email || "—"}
@@ -188,26 +200,36 @@ export default function PlatformOrganizationAgents({
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          className="rounded-lg border border-border p-2 hover:bg-muted"
-                          title={t("Editar")}
-                          onClick={() => setDialog({ type: "edit", agent })}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-lg border border-border p-2 text-destructive hover:bg-destructive/10"
-                          title={
-                            agent.invitation_status === "pending"
-                              ? t("Cancelar invitación")
-                              : t("Eliminar agente")
-                          }
-                          onClick={() => setDialog({ type: "remove", agent })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {!canManagePlatformMember(agent.role) ? (
+                          <span className="text-xs text-muted-foreground">
+                            {t("Solo lectura")}
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="rounded-lg border border-border p-2 hover:bg-muted"
+                              title={t("Editar")}
+                              onClick={() => setDialog({ type: "edit", agent })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-lg border border-border p-2 text-destructive hover:bg-destructive/10"
+                              title={
+                                agent.invitation_status === "pending"
+                                  ? t("Cancelar invitación")
+                                  : t("Quitar acceso a la organización")
+                              }
+                              onClick={() =>
+                                setDialog({ type: "remove", agent })
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -235,13 +257,17 @@ export default function PlatformOrganizationAgents({
         <CapacityDialog
           organizationId={organizationId}
           current={limit}
-          onClose={() => setDialog(null)}
+          onClose={() =>
+            setDialog((current) => (current === dialog ? null : current))
+          }
         />
       )}
       {dialog?.type === "invite" && (
         <InviteDialog
           organizationId={organizationId}
-          onClose={() => setDialog(null)}
+          onClose={() =>
+            setDialog((current) => (current === dialog ? null : current))
+          }
         />
       )}
       {dialog?.type === "edit" && (
@@ -249,14 +275,18 @@ export default function PlatformOrganizationAgents({
           organizationId={organizationId}
           agent={dialog.agent}
           queues={queueOptions}
-          onClose={() => setDialog(null)}
+          onClose={() =>
+            setDialog((current) => (current === dialog ? null : current))
+          }
         />
       )}
       {dialog?.type === "remove" && (
         <RemoveDialog
           organizationId={organizationId}
           agent={dialog.agent}
-          onClose={() => setDialog(null)}
+          onClose={() =>
+            setDialog((current) => (current === dialog ? null : current))
+          }
         />
       )}
     </div>
@@ -325,6 +355,33 @@ function CapacityDialog({
   );
 }
 
+function RoleField({
+  role,
+  onChange,
+}: {
+  role: PlatformMemberRole;
+  onChange: (role: PlatformMemberRole) => void;
+}) {
+  const { translate: t } = useTranslation();
+  return (
+    <label className="block text-sm font-medium">
+      {t("Rol")}
+      <select
+        aria-label={t("Rol")}
+        className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground"
+        value={role}
+        onChange={(event) => onChange(event.target.value as PlatformMemberRole)}
+      >
+        {PLATFORM_MEMBER_ROLES.map((option) => (
+          <option key={option.value} value={option.value}>
+            {t(option.label)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function InviteDialog({
   organizationId,
   onClose,
@@ -333,28 +390,31 @@ function InviteDialog({
   onClose: () => void;
 }) {
   const { translate: t } = useTranslation();
-  const mutation = useInvitePlatformOrganizationAgent(organizationId);
+  const mutation = usePlatformMemberMutation(organizationId);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<PlatformMemberRole>("agent");
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
       await mutation.mutateAsync({
+        action: "invite",
         name: name.trim(),
         email: email.trim().toLowerCase(),
+        role,
       });
-      void toast.success(t("Invitación creada"));
+      void toast.success(t("Membresía pendiente creada"));
       onClose();
-    } catch {
-      void toast.error(t("No se pudo invitar al agente"));
+    } catch (error) {
+      void toast.error(t(platformMemberError(error)));
     }
   };
   return (
-    <Dialog title={t("Invitar agente")} onClose={onClose}>
+    <Dialog title={t("Agregar miembro")} onClose={onClose}>
       <form onSubmit={(event) => void submit(event)} className="space-y-4">
         <p className="text-sm text-muted-foreground">
           {t(
-            "La invitación quedará pendiente hasta que la persona inicie sesión con este correo.",
+            "Solo se crea una membresía pendiente. No se envía correo ni se crea una cuenta de acceso.",
           )}
         </p>
         <TextField
@@ -369,10 +429,16 @@ function InviteDialog({
           onChange={setEmail}
           type="email"
         />
+        <RoleField role={role} onChange={setRole} />
+        {mutation.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {t(platformMemberError(mutation.error))}
+          </p>
+        )}
         <Actions
           pending={mutation.isPending}
           disabled={!name.trim() || !email.trim()}
-          submitLabel={t("Invitar")}
+          submitLabel={t("Crear membresía pendiente")}
           onCancel={onClose}
         />
       </form>
@@ -392,26 +458,31 @@ function EditDialog({
   onClose: () => void;
 }) {
   const { translate: t } = useTranslation();
-  const mutation = useUpdatePlatformOrganizationAgent(organizationId);
+  const mutation = usePlatformMemberMutation(organizationId);
   const [name, setName] = useState(agent.name);
+  const [role, setRole] = useState<PlatformMemberRole>(agent.role);
+  const [confirmedRoleChange, setConfirmedRoleChange] = useState(false);
   const [queueIds, setQueueIds] = useState<string[]>(agent.queue_ids ?? []);
   const accepted = agent.invitation_status === "accepted";
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (role !== agent.role && !confirmedRoleChange) return;
     try {
       await mutation.mutateAsync({
-        id: agent.id,
+        action: "update",
+        member: agent,
         name: name.trim(),
-        routingQueueIds: accepted ? queueIds : [],
+        role,
+        queueIds: accepted && role === "agent" ? queueIds : [],
       });
-      void toast.success(t("Agente actualizado"));
+      void toast.success(t("Membresía actualizada"));
       onClose();
-    } catch {
-      void toast.error(t("No se pudo actualizar el agente"));
+    } catch (error) {
+      void toast.error(t(platformMemberError(error)));
     }
   };
   return (
-    <Dialog title={t("Editar agente")} onClose={onClose}>
+    <Dialog title={t("Editar miembro")} onClose={onClose}>
       <form onSubmit={(event) => void submit(event)} className="space-y-4">
         <TextField
           label={t("Nombre")}
@@ -419,7 +490,34 @@ function EditDialog({
           onChange={setName}
           autoFocus
         />
-        {accepted ? (
+        <label className="block text-sm font-medium">
+          {t("Correo electrónico")}
+          <input
+            readOnly
+            value={agent.email || ""}
+            className="mt-2 h-10 w-full rounded-lg border border-input bg-muted px-3 text-muted-foreground"
+          />
+        </label>
+        <RoleField
+          role={role}
+          onChange={(value) => {
+            setRole(value);
+            setConfirmedRoleChange(false);
+          }}
+        />
+        {role !== agent.role && (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={confirmedRoleChange}
+              onChange={(event) => setConfirmedRoleChange(event.target.checked)}
+            />
+            {t(
+              "Confirmo el cambio de rol. Cambiará los permisos y restablecerá la disponibilidad a Ausente.",
+            )}
+          </label>
+        )}
+        {accepted && role === "agent" ? (
           <fieldset>
             <legend className="text-sm font-medium">
               {t("Colas asignadas")}
@@ -455,12 +553,21 @@ function EditDialog({
           </fieldset>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {t("Las colas se pueden asignar después de aceptar la invitación.")}
+            {t(
+              "Solo los agentes aceptados pueden pertenecer a colas activas de esta organización.",
+            )}
+          </p>
+        )}
+        {mutation.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {t(platformMemberError(mutation.error))}
           </p>
         )}
         <Actions
           pending={mutation.isPending}
-          disabled={!name.trim()}
+          disabled={
+            !name.trim() || (role !== agent.role && !confirmedRoleChange)
+          }
           onCancel={onClose}
         />
       </form>
@@ -478,35 +585,43 @@ function RemoveDialog({
   onClose: () => void;
 }) {
   const { translate: t } = useTranslation();
-  const mutation = useRemovePlatformOrganizationAgent(organizationId);
+  const mutation = usePlatformMemberMutation(organizationId);
   const pending = agent.invitation_status === "pending";
   const remove = async () => {
     try {
-      await mutation.mutateAsync(agent.id);
+      await mutation.mutateAsync({ action: "remove", member: agent });
       void toast.success(
-        pending ? t("Invitación cancelada") : t("Agente eliminado"),
+        t(
+          pending
+            ? "Invitación cancelada"
+            : "Acceso a la organización eliminado",
+        ),
       );
       onClose();
-    } catch {
-      void toast.error(
-        pending
-          ? t("No se pudo cancelar la invitación")
-          : t("No se pudo eliminar el agente"),
-      );
+    } catch (error) {
+      void toast.error(t(platformMemberError(error)));
     }
   };
   return (
     <Dialog
-      title={pending ? t("Cancelar invitación") : t("Eliminar agente")}
+      title={t(
+        pending ? "Cancelar invitación" : "Quitar acceso a la organización",
+      )}
       onClose={onClose}
     >
       <p className="text-sm text-muted-foreground">
-        {pending
-          ? t("La invitación pendiente se eliminará y liberará un puesto.")
-          : t(
-              "Se eliminará la membresía del agente. Su historial de conversaciones y mensajes se conservará.",
-            )}
+        {t(
+          "Se quitará solo esta membresía. La cuenta de acceso, otras organizaciones y el historial se conservan.",
+        )}
       </p>
+      <p className="mt-3 text-sm font-medium">
+        {agent.name} · {agent.email} · {t(platformMemberRoleLabel(agent.role))}
+      </p>
+      {mutation.isError && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {t(platformMemberError(mutation.error))}
+        </p>
+      )}
       <div className="mt-6 flex justify-end gap-2">
         <button
           type="button"
@@ -522,11 +637,13 @@ function RemoveDialog({
           disabled={mutation.isPending}
           onClick={() => void remove()}
         >
-          {mutation.isPending
-            ? t("Guardando…")
-            : pending
-              ? t("Cancelar invitación")
-              : t("Eliminar")}
+          {t(
+            mutation.isPending
+              ? "Guardando…"
+              : pending
+                ? "Cancelar invitación"
+                : "Quitar acceso a la organización",
+          )}
         </button>
       </div>
     </Dialog>

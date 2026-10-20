@@ -62,7 +62,7 @@ export default function PlatformOrganizationDetailLayout({
       active: location.pathname.endsWith("/queues"),
     },
     {
-      label: t("Agentes"),
+      label: t("Miembros del equipo"),
       to: "/platform/$organizationId/agents" as const,
       active: location.pathname.endsWith("/agents"),
     },

@@ -3,6 +3,7 @@ import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { useEffect } from "react";
 import useBoundStore from "@/stores/useBoundStore";
 import { supabase } from "@/supabase/client";
+import { queryKeys } from "./queryKeys";
 import type {
   EffectiveModulePermissions,
   ModuleMatrix,
@@ -41,6 +42,22 @@ export function useModulePermissionRefresh() {
     const refresh = () => {
       void client.invalidateQueries({
         queryKey: [orgId, "module-permissions", userId],
+      });
+      // Team mutations use this existing private channel as well. Refresh the
+      // authoritative membership before rendering role-dependent actions.
+      void client.invalidateQueries({ queryKey: queryKeys.agents.all(orgId) });
+      void client.invalidateQueries({ queryKey: queryKeys.members.all(orgId) });
+      void client.invalidateQueries({
+        queryKey: queryKeys.organizations.all(),
+      });
+      void client.invalidateQueries({
+        queryKey: queryKeys.agents.invitations(),
+      });
+      void client.invalidateQueries({
+        queryKey: queryKeys.routingQueues.all(orgId),
+      });
+      void client.invalidateQueries({
+        queryKey: queryKeys.assignmentPresence.current(orgId),
       });
     };
     let disposed = false;
