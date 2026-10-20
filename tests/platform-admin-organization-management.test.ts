@@ -89,7 +89,7 @@ void test("Agents supports protected management and capacity", () => {
   const query = read("../src/queries/usePlatformOrganizationManagement.ts");
 
   assert.match(agents, /Configurar límite/);
-  assert.match(agents, /Invitar agente/);
+  assert.match(agents, /Agregar miembro/);
   assert.match(agents, /invitation_status/);
   assert.match(agents, /queue_names/);
   assert.match(agents, /capacity\.data\?\.over_limit/);
