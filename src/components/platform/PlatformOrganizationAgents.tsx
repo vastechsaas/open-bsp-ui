@@ -190,7 +190,8 @@ export default function PlatformOrganizationAgents({
                       <StatusBadge status={agent.invitation_status} />
                     </td>
                     <td className="px-4 py-4">
-                      {agent.invitation_status === "pending" ? (
+                      {agent.invitation_status === "pending" &&
+                      agent.role === "agent" ? (
                         <span className="text-muted-foreground">
                           {t("Disponible después de aceptar")}
                         </span>
