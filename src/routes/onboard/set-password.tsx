@@ -159,6 +159,11 @@ function SetPassword() {
         });
       if (loginError || !login.session)
         throw new Error("ONBOARDING_UNAVAILABLE");
+      const beforeTransfer = (await supabase.auth.getSession()).data.session;
+      if (beforeTransfer && beforeTransfer.user.id !== preview.user_id) {
+        setBlocked(true);
+        return;
+      }
       setPassword("");
       setConfirmation("");
       const { error: sessionError } = await supabase.auth.setSession({

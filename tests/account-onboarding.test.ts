@@ -102,7 +102,7 @@ void test("recipient setup isolates auth and explicitly verifies native tokens",
   assert.match(route, /active.access_token/);
   assert.match(
     read("../src/supabase/client.ts"),
-    /detectSessionInUrl:[\s\S]*window.location.pathname !== "\/onboard\/set-password"/,
+    /detectSessionInUrl:[\s\S]*!window.location.pathname.startsWith\("\/onboard\/set-password"\)/,
   );
   const request = read("../src/queries/useAccountOnboarding.ts");
   assert.match(request, /runRef.current = null/);
