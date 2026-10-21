@@ -33,7 +33,7 @@ export const supabase = createClient<Database>(
       // invitation containing a fragment must not replace an existing login.
       detectSessionInUrl:
         typeof window === "undefined" ||
-        window.location.pathname !== "/onboard/set-password",
+        !window.location.pathname.startsWith("/onboard/set-password"),
     },
   },
 );
