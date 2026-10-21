@@ -98,7 +98,8 @@ void test("Agents supports protected management and capacity", () => {
   assert.match(query, /create_platform_organization_agent_invitation/);
   assert.match(query, /update_platform_organization_agent/);
   assert.match(query, /remove_platform_organization_agent/);
-  assert.doesNotMatch(agents, /password|role editing|impersonat/i);
+  assert.doesNotMatch(agents, /impersonat|auth\.admin|SERVICE_ROLE/i);
+  assert.match(agents, /useAccountOnboarding/);
 });
 
 void test("new organization-management labels exist in every locale", () => {

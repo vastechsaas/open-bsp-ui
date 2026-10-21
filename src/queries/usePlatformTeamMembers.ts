@@ -8,9 +8,12 @@ import {
   type PlatformMemberRole,
 } from "@/utils/PlatformTeamMemberUtils";
 import { queryKeys } from "./queryKeys";
+import type { AccountSetupStatus } from "@/utils/AccountOnboardingUtils";
 
 export type PlatformOrganizationMemberRow =
-  Database["public"]["Functions"]["list_platform_organization_members_page"]["Returns"][number];
+  Database["public"]["Functions"]["list_platform_organization_members_page"]["Returns"][number] & {
+    setup?: AccountSetupStatus;
+  };
 export const platformMembersKey = (orgId: string) =>
   ["platform", "tenant", orgId, "members"] as const;
 
@@ -32,7 +35,22 @@ export function usePlatformOrganizationMembersPage(
         })
         .abortSignal(signal)
         .throwOnError();
-      return { rows: data, total: data[0]?.total_count ?? 0 };
+      const { data: setups } = data.length
+        ? await supabase
+            .rpc("list_platform_member_onboarding", {
+              p_organization_id: organizationId,
+              p_member_ids: data.map((member) => member.id),
+            })
+            .abortSignal(signal)
+            .throwOnError()
+        : { data: [] };
+      return {
+        rows: data.map((member) => ({
+          ...member,
+          setup: setups.find((setup) => setup.member_id === member.id),
+        })),
+        total: data[0]?.total_count ?? 0,
+      };
     },
   });
 }

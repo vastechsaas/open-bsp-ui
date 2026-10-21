@@ -29,7 +29,11 @@ export const supabase = createClient<Database>(
   {
     auth: {
       flowType: "pkce",
-      detectSessionInUrl: true,
+      // Account setup has its own per-tab Auth client. Even a legacy/default
+      // invitation containing a fragment must not replace an existing login.
+      detectSessionInUrl:
+        typeof window === "undefined" ||
+        window.location.pathname !== "/onboard/set-password",
     },
   },
 );

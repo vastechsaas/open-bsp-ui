@@ -73,7 +73,9 @@ export default function PendingInvitationGate({
                   type="button"
                   className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={updateAgent.isPending}
-                  onClick={() => void respond(invitation.id, "rejected")}
+                  onClick={() =>
+                    void respond(invitation.id, "rejected").catch(() => {})
+                  }
                 >
                   {t("Rechazar")}
                 </button>
@@ -81,7 +83,9 @@ export default function PendingInvitationGate({
                   type="button"
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={updateAgent.isPending}
-                  onClick={() => void respond(invitation.id, "accepted")}
+                  onClick={() =>
+                    void respond(invitation.id, "accepted").catch(() => {})
+                  }
                 >
                   {updateAgent.isPending ? <Spinner size={16} /> : t("Aceptar")}
                 </button>
@@ -92,7 +96,11 @@ export default function PendingInvitationGate({
 
         {updateAgent.isError && (
           <p className="mt-4 text-sm text-destructive" role="alert">
-            {t("No se pudo responder a la invitación.")}
+            {t(
+              updateAgent.error.message.includes("ONBOARDING_SETUP_REQUIRED")
+                ? "Completá la configuración desde el enlace de invitación antes de unirte."
+                : "No se pudo responder a la invitación.",
+            )}
           </p>
         )}
       </section>
