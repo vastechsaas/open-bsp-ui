@@ -41,7 +41,7 @@ void test("platform mode does not mount ordinary tenant initialization or realti
   assert.match(root, /function TenantRuntime\(\)/);
   assert.match(
     root,
-    /!isPlatformPath\(location\.pathname\) && <TenantRuntime \/>/,
+    /!isPlatformPath\(location\.pathname\)[\s\S]*location\.pathname !== "\/onboard\/set-password"[\s\S]*<TenantRuntime \/>/,
   );
   assert.doesNotMatch(root, /setActiveOrg\([^)]*organizationId/);
 });

@@ -133,7 +133,10 @@ void test("existing route stays; email is read-only; role changes and removals r
   assert.match(ui, /readOnly[\s\S]*value=\{agent.email/);
   assert.match(ui, /confirmedRoleChange/);
   assert.match(ui, /accepted && role === "agent"/);
-  assert.match(ui, /Solo se crea una membresía pendiente/);
+  assert.match(
+    read("../src/components/platform/AccountSetupFields.tsx"),
+    /Solo se crea una membresía pendiente/,
+  );
   assert.match(ui, /Quitar acceso a la organización/);
   assert.match(ui, /Cancelar invitación/);
 });

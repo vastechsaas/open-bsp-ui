@@ -22,7 +22,8 @@ function RootLayout() {
 
   return (
     <>
-      {!isPlatformPath(location.pathname) && <TenantRuntime />}
+      {!isPlatformPath(location.pathname) &&
+        location.pathname !== "/onboard/set-password" && <TenantRuntime />}
       <Outlet />
     </>
   );

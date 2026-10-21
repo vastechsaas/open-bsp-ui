@@ -21,6 +21,7 @@ import { Route as PlatformStorageRouteImport } from './routes/platform/storage'
 import { Route as PlatformOrganizationsRouteImport } from './routes/platform/organizations'
 import { Route as PlatformOnboardingRouteImport } from './routes/platform/onboarding'
 import { Route as PlatformOrganizationIdRouteImport } from './routes/platform/$organizationId'
+import { Route as OnboardSetPasswordRouteImport } from './routes/onboard/set-password'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as LoginEmailRouteImport } from './routes/login_.email'
@@ -161,6 +162,11 @@ const PlatformOrganizationIdRoute = PlatformOrganizationIdRouteImport.update({
   id: '/$organizationId',
   path: '/$organizationId',
   getParentRoute: () => PlatformRoute,
+} as any)
+const OnboardSetPasswordRoute = OnboardSetPasswordRouteImport.update({
+  id: '/onboard/set-password',
+  path: '/onboard/set-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OauthInstagramRoute = OauthInstagramRouteImport.update({
   id: '/oauth/instagram',
@@ -626,6 +632,7 @@ export interface FileRoutesByFullPath {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/onboard/set-password': typeof OnboardSetPasswordRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
   '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
@@ -717,6 +724,7 @@ export interface FileRoutesByTo {
   '/login/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/onboard/set-password': typeof OnboardSetPasswordRoute
   '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
   '/platform/storage': typeof PlatformStorageRoute
@@ -811,6 +819,7 @@ export interface FileRoutesById {
   '/login_/email': typeof LoginEmailRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/instagram': typeof OauthInstagramRoute
+  '/onboard/set-password': typeof OnboardSetPasswordRoute
   '/platform/$organizationId': typeof PlatformOrganizationIdRouteWithChildren
   '/platform/onboarding': typeof PlatformOnboardingRoute
   '/platform/organizations': typeof PlatformOrganizationsRoute
@@ -907,6 +916,7 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/onboard/set-password'
     | '/platform/$organizationId'
     | '/platform/onboarding'
     | '/platform/organizations'
@@ -998,6 +1008,7 @@ export interface FileRouteTypes {
     | '/login/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/onboard/set-password'
     | '/platform/onboarding'
     | '/platform/organizations'
     | '/platform/storage'
@@ -1091,6 +1102,7 @@ export interface FileRouteTypes {
     | '/login_/email'
     | '/oauth/callback'
     | '/oauth/instagram'
+    | '/onboard/set-password'
     | '/platform/$organizationId'
     | '/platform/onboarding'
     | '/platform/organizations'
@@ -1182,6 +1194,7 @@ export interface RootRouteChildren {
   LoginEmailRoute: typeof LoginEmailRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthInstagramRoute: typeof OauthInstagramRoute
+  OnboardSetPasswordRoute: typeof OnboardSetPasswordRoute
   OnboardInstagramTokenRoute: typeof OnboardInstagramTokenRoute
   OnboardInstagramCallbackRoute: typeof OnboardInstagramCallbackRoute
   OnboardWhatsappTokenRoute: typeof OnboardWhatsappTokenRoute
@@ -1272,6 +1285,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/platform/$organizationId'
       preLoaderRoute: typeof PlatformOrganizationIdRouteImport
       parentRoute: typeof PlatformRoute
+    }
+    '/onboard/set-password': {
+      id: '/onboard/set-password'
+      path: '/onboard/set-password'
+      fullPath: '/onboard/set-password'
+      preLoaderRoute: typeof OnboardSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/oauth/instagram': {
       id: '/oauth/instagram'
@@ -2094,6 +2114,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginEmailRoute: LoginEmailRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthInstagramRoute: OauthInstagramRoute,
+  OnboardSetPasswordRoute: OnboardSetPasswordRoute,
   OnboardInstagramTokenRoute: OnboardInstagramTokenRoute,
   OnboardInstagramCallbackRoute: OnboardInstagramCallbackRoute,
   OnboardWhatsappTokenRoute: OnboardWhatsappTokenRoute,
