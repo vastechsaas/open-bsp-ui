@@ -2,7 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useInstagramSignup } from "@/queries/useInstagramSignup";
-import { IG_INAPP_REDIRECT_PATH } from "@/routes/_auth/integrations/instagram/new";
+import { supabase } from "@/supabase/client";
+import useBoundStore from "@/stores/useBoundStore";
+import {
+  consumeInstagramOAuthContext,
+  IG_INAPP_REDIRECT_PATH,
+  IG_OAUTH_CONTEXT_KEY,
+} from "@/utils/InstagramIntegrationUtils";
 
 // Standalone (outside the `_auth` layout) so the return page is a bare
 // "connecting" screen instead of the whole app shell.
@@ -25,39 +31,64 @@ function InstagramOAuthCallback() {
   const ran = useRef(false);
 
   // The connect page redirected this same tab to Instagram and back, so the
-  // token exchange runs here, scoped to the (persisted) active org.
+  // token exchange runs here, bound to the initiating user and organization.
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
 
-    const expected = localStorage.getItem("ig_oauth_state");
-    localStorage.removeItem("ig_oauth_state");
-
     // User canceled/denied: quietly return to the connect screen.
     if (error === "access_denied") {
-      navigate({ to: "/integrations/instagram/new", hash: "" });
+      sessionStorage.removeItem(IG_OAUTH_CONTEXT_KEY);
+      void navigate({ to: "/integrations/instagram/new", hash: "" });
       return;
     }
 
-    if (error || !code || !state || state !== expected) {
+    if (error || !code || !state) {
+      sessionStorage.removeItem(IG_OAUTH_CONTEXT_KEY);
       setFailed(true);
       return;
     }
 
-    const redirect_uri = `${window.location.origin}${IG_INAPP_REDIRECT_PATH}`;
-    signup(
-      { code, redirect_uri },
-      {
-        onSuccess: (data: { address?: string }) =>
-          navigate({
-            to: "/integrations/instagram/$orgAddressId",
-            params: { orgAddressId: data.address ?? "" },
-            // Drop the `#_=_` artifact Instagram appends to the redirect.
-            hash: "",
-          }),
-        onError: () => setFailed(true),
-      },
-    );
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const context = consumeInstagramOAuthContext(
+        sessionStorage,
+        state,
+        useBoundStore.getState().ui.activeOrgId,
+        session?.user.id,
+      );
+      const redirect_uri = `${window.location.origin}${IG_INAPP_REDIRECT_PATH}`;
+      signup(
+        {
+          code,
+          redirect_uri,
+          organization_id: context.organizationId,
+          user_id: context.userId,
+        },
+        {
+          onSuccess: (data: { address?: string }) => {
+            const current = useBoundStore.getState().ui;
+            if (
+              current.activeOrgId !== context.organizationId ||
+              current.user?.id !== context.userId
+            )
+              return;
+            if (!data.address) {
+              setFailed(true);
+              return;
+            }
+            void navigate({
+              to: "/integrations/instagram/$orgAddressId",
+              params: { orgAddressId: data.address },
+              hash: "",
+            });
+          },
+          onError: () => setFailed(true),
+        },
+      );
+    })().catch(() => setFailed(true));
   }, [code, state, error, signup, navigate]);
 
   return (

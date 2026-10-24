@@ -1,4 +1,8 @@
 {
+  "Requiere reconexión": "Reconnection required",
+  "No se pudieron cargar las cuentas de Instagram.": "Instagram accounts could not be loaded.",
+  "Volver a conectar": "Reconnect",
+  "No se pudo desconectar la cuenta de Instagram.": "The Instagram account could not be disconnected.",
   "Completá la configuración desde el enlace de invitación antes de unirte.": "Complete account setup through the invitation link before joining.",
   "Configurar acceso": "Set up login",
   "Enviar invitación por correo": "Send invitation email",
