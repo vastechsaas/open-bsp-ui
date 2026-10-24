@@ -2,6 +2,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { queryKeys } from "./queryKeys";
+import type { InstagramOrganizationAddressExtra } from "@/supabase/client";
+
+type InstagramAccountResult = {
+  address: string;
+  organization_id: string;
+  service: "instagram";
+  status: string;
+  extra: Omit<InstagramOrganizationAddressExtra, "access_token">;
+};
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -34,36 +43,46 @@ export async function getInstagramAuthorizeUrl(
 export type InstagramSignupPayload = {
   code: string;
   redirect_uri: string;
+  organization_id: string;
+  user_id: string;
 };
 
 export function useInstagramSignup() {
   const queryClient = useQueryClient();
-  const organization_id = useBoundStore((state) => state.ui.activeOrgId);
 
   return useMutation({
     mutationFn: async (payload: InstagramSignupPayload) => {
-      if (!organization_id) throw new Error("No active organization");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (
+        useBoundStore.getState().ui.activeOrgId !== payload.organization_id ||
+        session?.user.id !== payload.user_id
+      )
+        throw new Error("Instagram connection context is no longer valid");
 
-      const { data, error } = await supabase.functions.invoke(
-        "instagram-management/signup",
-        {
-          method: "POST",
-          body: {
-            organization_id,
-            ...payload,
+      const { data, error } =
+        await supabase.functions.invoke<InstagramAccountResult>(
+          "instagram-management/signup",
+          {
+            method: "POST",
+            body: {
+              organization_id: payload.organization_id,
+              code: payload.code,
+              redirect_uri: payload.redirect_uri,
+            },
           },
-        },
-      );
+        );
 
       if (error) throw error;
+      if (!data) throw new Error("Instagram account response is missing");
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, payload) =>
       queryClient.invalidateQueries({
-        queryKey: queryKeys.organizations.addresses(organization_id),
-      });
-    },
+        queryKey: queryKeys.organizations.addresses(payload.organization_id),
+      }),
   });
 }
 
@@ -75,25 +94,26 @@ export function useInstagramDisconnect() {
     mutationFn: async (payload: { ig_user_id: string }) => {
       if (!organization_id) throw new Error("No active organization");
 
-      const { data, error } = await supabase.functions.invoke(
-        "instagram-management/signup",
-        {
-          method: "DELETE",
-          body: {
-            organization_id,
-            ...payload,
+      const { data, error } =
+        await supabase.functions.invoke<InstagramAccountResult>(
+          "instagram-management/signup",
+          {
+            method: "DELETE",
+            body: {
+              organization_id,
+              ...payload,
+            },
           },
-        },
-      );
+        );
 
       if (error) throw error;
+      if (!data) throw new Error("Instagram account response is missing");
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: queryKeys.organizations.addresses(organization_id),
-      });
-    },
+      }),
   });
 }

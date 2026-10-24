@@ -8,6 +8,9 @@ import { InstagramOutlined } from "@ant-design/icons";
 import { Link, Plus } from "lucide-react";
 import type { JSX } from "react";
 import type { InstagramOrganizationAddressExtra } from "@/supabase/client";
+import { instagramConnectionState } from "@/utils/InstagramIntegrationUtils";
+import Button from "@/components/Button";
+import { useCurrentAgent } from "@/queries/useAgents";
 
 export const Route = createFileRoute("/_auth/integrations/instagram/")({
   component: InstagramIndex,
@@ -16,7 +19,14 @@ export const Route = createFileRoute("/_auth/integrations/instagram/")({
 function InstagramIndex() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
-  const { data: integrations } = useOrganizationsAddresses();
+  const {
+    data: integrations,
+    isPending,
+    isError,
+    refetch,
+  } = useOrganizationsAddresses();
+  const { data: currentAgent } = useCurrentAgent();
+  const isOwner = currentAgent?.extra?.role === "owner";
 
   const instagramIntegrations = integrations?.filter(
     (integration) => integration.service === "instagram",
@@ -25,6 +35,9 @@ function InstagramIndex() {
   const statusLabels: Record<string, string | JSX.Element> = {
     connected: <span className="text-primary">{t("Conectado")}</span>,
     disconnected: t("Desconectado"),
+    needs_reauth: (
+      <span className="text-destructive">{t("Requiere reconexión")}</span>
+    ),
   };
 
   return (
@@ -32,9 +45,24 @@ function InstagramIndex() {
       <SectionHeader title="Instagram" />
 
       <SectionBody className="gap-4">
+        {isPending && (
+          <p className="text-muted-foreground">{t("Cargando...")}</p>
+        )}
+        {isError && (
+          <div role="alert" className="flex flex-col gap-3">
+            <p className="text-destructive">
+              {t("No se pudieron cargar las cuentas de Instagram.")}
+            </p>
+            <Button className="secondary w-fit" onClick={() => void refetch()}>
+              {t("Reintentar")}
+            </Button>
+          </div>
+        )}
         <div className="flex flex-col">
           <SectionItem
             title={t("Conectar cuenta")}
+            disabled={!isOwner}
+            disabledReason={t("Requiere permisos de propietario")}
             aside={
               <div className="p-[8px] bg-primary/10 rounded-full">
                 <Plus className="w-[24px] h-[24px] text-primary" />
@@ -79,7 +107,12 @@ function InstagramIndex() {
                 }
                 title={title}
                 description={
-                  statusLabels[integration.status] || integration.status
+                  statusLabels[
+                    instagramConnectionState({
+                      status: integration.status,
+                      extra,
+                    })
+                  ]
                 }
                 onClick={() =>
                   navigate({

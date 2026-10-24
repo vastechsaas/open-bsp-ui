@@ -4,8 +4,7 @@ import SectionItem from "@/components/SectionItem";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 // import { FileText } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { WhatsAppOutlined } from "@ant-design/icons";
-// import { InstagramOutlined } from "@ant-design/icons";
+import { InstagramOutlined, WhatsAppOutlined } from "@ant-design/icons";
 
 export const Route = createFileRoute("/_auth/integrations/")({
   component: IntegrationsIndex,
@@ -36,7 +35,6 @@ function IntegrationsIndex() {
               })
             }
           />
-          {/* Instagram integration is intentionally hidden for this deployment.
           <SectionItem
             aside={
               <div className="p-[8px]">
@@ -53,7 +51,6 @@ function IntegrationsIndex() {
               })
             }
           />
-          */}
           {/* Media pre-processing is intentionally hidden for this deployment.
           <SectionItem
             aside={

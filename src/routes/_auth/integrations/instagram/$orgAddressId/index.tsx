@@ -7,6 +7,7 @@ import { useOrganizationAddress } from "@/queries/useOrganizationsAddresses";
 import { useInstagramDisconnect } from "@/queries/useInstagramSignup";
 import { useCurrentAgent } from "@/queries/useAgents";
 import type { InstagramOrganizationAddressExtra } from "@/supabase/client";
+import { instagramConnectionState } from "@/utils/InstagramIntegrationUtils";
 
 export const Route = createFileRoute(
   "/_auth/integrations/instagram/$orgAddressId/",
@@ -22,7 +23,7 @@ function InstagramAddressDetail() {
   const disconnect = useInstagramDisconnect();
   const { data: agent } = useCurrentAgent();
 
-  if (!integration) return;
+  if (!integration || integration.service !== "instagram") return;
 
   const isOwner = agent?.extra?.role === "owner";
   const extra = integration.extra as
@@ -95,9 +96,14 @@ function InstagramAddressDetail() {
               type="text"
               className="text capitalize"
               value={
-                integration.status === "connected"
-                  ? t("Conectado")
-                  : t("Desconectado")
+                instagramConnectionState({
+                  status: integration.status,
+                  extra,
+                }) === "needs_reauth"
+                  ? t("Requiere reconexión")
+                  : integration.status === "connected"
+                    ? t("Conectado")
+                    : t("Desconectado")
               }
               readOnly
             />
@@ -110,7 +116,23 @@ function InstagramAddressDetail() {
                   "La conexión expiró o fue revocada. Volvé a conectar la cuenta.",
                 )}
               </p>
+              <Button
+                type="button"
+                className="primary w-fit"
+                disabled={!isOwner}
+                disabledReason={t("Requiere permisos de propietario")}
+                onClick={() =>
+                  navigate({ to: "/integrations/instagram/new", hash: "" })
+                }
+              >
+                {t("Volver a conectar")}
+              </Button>
             </div>
+          )}
+          {disconnect.isError && (
+            <p role="alert" className="text-destructive">
+              {t("No se pudo desconectar la cuenta de Instagram.")}
+            </p>
           )}
 
           {integration.status === "connected" && (
