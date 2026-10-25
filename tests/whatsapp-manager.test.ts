@@ -20,7 +20,7 @@ void test("full-width workspaces inherit the project foreground color", () => {
   assert.match(layout, /flex bg-background text-foreground/);
 });
 
-void test("WhatsApp Manager prefers the connected WhatsApp account", () => {
+void test("WhatsApp Manager selects only connected WhatsApp accounts", () => {
   const selected = selectWhatsAppManagerAccount([
     { address: "200", service: "whatsapp", status: "disconnected" },
     { address: "instagram", service: "instagram", status: "connected" },
@@ -28,6 +28,56 @@ void test("WhatsApp Manager prefers the connected WhatsApp account", () => {
   ]);
   assert.equal(selected?.address, "100");
   assert.equal(selectWhatsAppManagerAccount([]), undefined);
+});
+
+void test("disconnected, pending and unrelated accounts never open a manager profile", () => {
+  assert.equal(selectWhatsAppManagerAccount(undefined), undefined);
+  assert.equal(
+    selectWhatsAppManagerAccount([
+      { address: "dkr", service: "whatsapp", status: "disconnected" },
+    ]),
+    undefined,
+  );
+  assert.equal(
+    selectWhatsAppManagerAccount([
+      { address: "dkr", service: "whatsapp", status: "disconnected" },
+      { address: "pending", service: "whatsapp", status: "pending" },
+      { address: "instagram", service: "instagram", status: "connected" },
+    ]),
+    undefined,
+  );
+});
+
+void test("disconnect hides the profile and reconnect makes it available again", () => {
+  const account = { address: "dkr", service: "whatsapp", status: "connected" };
+  assert.equal(selectWhatsAppManagerAccount([account]), account);
+  assert.equal(
+    selectWhatsAppManagerAccount([{ ...account, status: "disconnected" }]),
+    undefined,
+  );
+  assert.equal(selectWhatsAppManagerAccount([account]), account);
+});
+
+void test("connected account selection stays deterministic without mutating query data", () => {
+  const accounts = [
+    { address: "200", service: "whatsapp", status: "connected" },
+    { address: "100", service: "whatsapp", status: "connected" },
+  ];
+  assert.equal(selectWhatsAppManagerAccount(accounts)?.address, "100");
+  assert.deepEqual(
+    accounts.map((account) => account.address),
+    ["200", "100"],
+  );
+});
+
+void test("manager request failures show Retry instead of a cached profile", () => {
+  const route = readFileSync(
+    new URL("../src/routes/_auth/whatsapp-manager.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /if \(account && !isError\)/);
+  assert.match(route, /No hay una cuenta de WhatsApp conectada/);
+  assert.match(route, /onClick=\{\(\) => void refetch\(\)\}/);
 });
 
 void test("WhatsApp icon is placed above Settings in the lower sidebar", () => {
