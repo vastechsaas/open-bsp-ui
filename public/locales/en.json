@@ -1,4 +1,12 @@
 {
+  "Comprobando sincronización con Node…": "Checking Node synchronization…",
+  "No se pudo comprobar la sincronización con Node.": "Node synchronization could not be checked.",
+  "Cuenta sincronizada con Node": "Account synchronized with Node",
+  "La sincronización con Node falló": "Node synchronization failed",
+  "Sincronización con Node pendiente": "Node synchronization pending",
+  "Node aún no ha confirmado el cambio. Si no está disponible, el estado remoto puede seguir siendo el anterior.": "Node has not confirmed the change yet. If it is unavailable, its remote state may still be unchanged.",
+  "Reintentar sincronización": "Retry synchronization",
+  "No se pudo reintentar la sincronización.": "Synchronization could not be retried.",
   "Responder": "Reply",
   "Modo de mensaje": "Message mode",
   "Agregar nota": "Add note",

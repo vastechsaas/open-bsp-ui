@@ -1,4 +1,12 @@
 {
+  "Comprobando sincronización con Node…": "Verificando sincronização com Node…",
+  "No se pudo comprobar la sincronización con Node.": "Não foi possível verificar a sincronização com Node.",
+  "Cuenta sincronizada con Node": "Conta sincronizada com Node",
+  "La sincronización con Node falló": "A sincronização com Node falhou",
+  "Sincronización con Node pendiente": "Sincronização com Node pendente",
+  "Node aún no ha confirmado el cambio. Si no está disponible, el estado remoto puede seguir siendo el anterior.": "O Node ainda não confirmou a alteração. Se estiver indisponível, o estado remoto pode permanecer inalterado.",
+  "Reintentar sincronización": "Tentar sincronização novamente",
+  "No se pudo reintentar la sincronización.": "Não foi possível tentar a sincronização novamente.",
   "Responder": "Responder",
   "Modo de mensaje": "Modo de mensagem",
   "Agregar nota": "Adicionar nota",

@@ -1,4 +1,12 @@
 {
+  "Comprobando sincronización con Node…": "Inakagua usawazishaji wa Node…",
+  "No se pudo comprobar la sincronización con Node.": "Imeshindwa kukagua usawazishaji wa Node.",
+  "Cuenta sincronizada con Node": "Akaunti imesawazishwa na Node",
+  "La sincronización con Node falló": "Usawazishaji wa Node umeshindwa",
+  "Sincronización con Node pendiente": "Usawazishaji wa Node unasubiri",
+  "Node aún no ha confirmado el cambio. Si no está disponible, el estado remoto puede seguir siendo el anterior.": "Node bado haijathibitisha mabadiliko. Ikiwa haipatikani, hali yake ya mbali inaweza kubaki bila kubadilika.",
+  "Reintentar sincronización": "Jaribu usawazishaji tena",
+  "No se pudo reintentar la sincronización.": "Imeshindwa kujaribu usawazishaji tena.",
   "Responder": "Jibu",
   "Modo de mensaje": "Aina ya ujumbe",
   "Agregar nota": "Ongeza dokezo",
