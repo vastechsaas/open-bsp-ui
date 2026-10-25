@@ -29,7 +29,7 @@ function WhatsAppManager() {
     );
   }
 
-  if (account) {
+  if (account && !isError) {
     return (
       <WhatsAppBusinessProfile orgAddressId={account.address} managerMode />
     );

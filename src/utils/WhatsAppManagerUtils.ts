@@ -12,11 +12,8 @@ export function selectWhatsAppManagerAccount<T extends WhatsAppAddress>(
   addresses: T[] | undefined,
 ) {
   return [...(addresses || [])]
-    .filter((item) => item.service === "whatsapp")
-    .sort((left, right) => {
-      const connectedDifference =
-        Number(right.status === "connected") -
-        Number(left.status === "connected");
-      return connectedDifference || left.address.localeCompare(right.address);
-    })[0];
+    .filter(
+      (item) => item.service === "whatsapp" && item.status === "connected",
+    )
+    .sort((left, right) => left.address.localeCompare(right.address))[0];
 }
