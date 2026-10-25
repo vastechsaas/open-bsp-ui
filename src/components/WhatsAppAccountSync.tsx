@@ -48,11 +48,10 @@ export default function WhatsAppAccountSync({
         <Button
           type="button"
           disabled={retry.isPending}
+          loading={retry.isPending}
           onClick={() => retry.mutate()}
         >
-          {retry.isPending
-            ? t("Reintentando…")
-            : t("Reintentar sincronización")}
+          {t("Reintentar sincronización")}
         </Button>
       )}
       {retry.isError && (
