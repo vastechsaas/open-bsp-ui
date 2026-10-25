@@ -1,4 +1,12 @@
 {
+  "Comprobando sincronización con Node…": "Vérification de la synchronisation avec Node…",
+  "No se pudo comprobar la sincronización con Node.": "Impossible de vérifier la synchronisation avec Node.",
+  "Cuenta sincronizada con Node": "Compte synchronisé avec Node",
+  "La sincronización con Node falló": "La synchronisation avec Node a échoué",
+  "Sincronización con Node pendiente": "Synchronisation avec Node en attente",
+  "Node aún no ha confirmado el cambio. Si no está disponible, el estado remoto puede seguir siendo el anterior.": "Node n’a pas encore confirmé la modification. S’il est indisponible, son état distant peut rester inchangé.",
+  "Reintentar sincronización": "Réessayer la synchronisation",
+  "No se pudo reintentar la sincronización.": "Impossible de réessayer la synchronisation.",
   "Requiere reconexión": "Reconnexion requise",
   "No se pudieron cargar las cuentas de Instagram.": "Impossible de charger les comptes Instagram.",
   "Volver a conectar": "Reconnecter",

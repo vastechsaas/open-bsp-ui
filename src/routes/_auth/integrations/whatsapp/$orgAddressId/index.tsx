@@ -11,6 +11,8 @@ import { useState } from "react";
 import Button from "@/components/Button";
 import SectionItem from "@/components/SectionItem";
 import { Building2, LayoutTemplate } from "lucide-react";
+import WhatsAppAccountSync from "@/components/WhatsAppAccountSync";
+import { useWhatsAppAccountSync } from "@/queries/useWhatsAppAccountSync";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/",
@@ -24,6 +26,7 @@ function WhatsAppDetails() {
   const navigate = useNavigate();
   const { data: integration } = useOrganizationAddress(orgAddressId);
   const disconnect = useWhatsAppDisconnect();
+  const accountSync = useWhatsAppAccountSync(orgAddressId);
   const { data: agent } = useCurrentAgent();
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -53,7 +56,9 @@ function WhatsAppDetails() {
       { phone_number_id: integration.address },
       {
         onSuccess: () => {
-          navigate({ to: "/integrations/whatsapp" });
+          void accountSync.query.refetch();
+          if (!accountSync.query.data)
+            void navigate({ to: "/integrations/whatsapp" });
         },
       },
     );
@@ -64,6 +69,7 @@ function WhatsAppDetails() {
       <SectionHeader title={extra?.verified_name || t("Cuenta de WhatsApp")} />
 
       <SectionBody className="pb-[40px]">
+        <WhatsAppAccountSync address={orgAddressId} isOwner={isOwner} />
         <SectionItem
           title={t("Perfil comercial")}
           aside={
@@ -158,18 +164,6 @@ function WhatsAppDetails() {
               readOnly
             />
           </label>
-
-          {extra?.access_token && (
-            <label>
-              <div className="label">{t("Token de acceso de WABA")}</div>
-              <input
-                type="text"
-                className="text font-mono text-xs"
-                value={extra.access_token}
-                readOnly
-              />
-            </label>
-          )}
 
           <div className="instructions">
             <p>
