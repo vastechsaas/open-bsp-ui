@@ -15,6 +15,7 @@ interface LinkButtonProps {
   expanded?: boolean;
   access?: NavigationAccess;
   role?: OrganizationRole;
+  visible?: boolean;
 }
 
 export function LinkButton({
@@ -26,7 +27,9 @@ export function LinkButton({
   expanded = false,
   access,
   role,
+  visible = true,
 }: LinkButtonProps) {
+  if (!visible) return null;
   if (access && !canAccessNavigation(role, access)) return null;
 
   return (

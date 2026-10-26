@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { isVisibleNavigationPath } from "@/utils/UiVisibility";
 
 type SettingsWorkspaceLayoutProps = {
@@ -76,16 +77,16 @@ const settingsNavigation = [
   },
 ] as const;
 
-const visibleSettingsNavigation = settingsNavigation.filter((item) =>
-  isVisibleNavigationPath(item.to),
-);
-
 export default function SettingsWorkspaceLayout({
   children,
 }: SettingsWorkspaceLayoutProps) {
   const { translate: t } = useTranslation();
   const location = useLocation();
   const { data: currentAgent } = useCurrentAgent();
+  const organization = useCurrentOrganization();
+  const visibleSettingsNavigation = settingsNavigation.filter((item) =>
+    isVisibleNavigationPath(item.to, organization.data?.extra),
+  );
   const role = currentAgent?.extra?.role;
   const roleSettingsNavigation = visibleSettingsNavigation.filter(
     (item) => item.to !== "/settings/preferences" || role === "owner",
@@ -130,7 +131,7 @@ export default function SettingsWorkspaceLayout({
             aria-label={t("Ajustes")}
             className="grid gap-1 sm:grid-cols-3 lg:grid-cols-1"
           >
-            {navigation.map((item) => {
+            {(organization.isSuccess ? navigation : []).map((item) => {
               const Icon = item.icon;
               const active = location.pathname.startsWith(item.to);
 

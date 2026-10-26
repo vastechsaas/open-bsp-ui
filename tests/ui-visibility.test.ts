@@ -35,7 +35,7 @@ void test("hide only requested navigation entries, retaining their routes", () =
   );
   assert.match(
     settings,
-    /settingsNavigation.filter\(\(item\) =>\s*isVisibleNavigationPath\(item.to\)/,
+    /settingsNavigation.filter\(\(item\) =>\s*isVisibleNavigationPath\(item.to, organization.data\?\.extra\)/,
   );
   assert.doesNotMatch(settings, /[?:] settingsNavigation[;.]/);
   assert.match(source("src/routes/_auth/stats.tsx"), /createFileRoute/);
@@ -46,6 +46,100 @@ void test("hide only requested navigation entries, retaining their routes", () =
   assert.match(
     source("src/routes/_auth/settings/api-keys/index.tsx"),
     /useApiKeys/,
+  );
+});
+
+void test("organization visibility hides only configured tabs without affecting other organizations", () => {
+  const extra = {
+    ui_visibility: {
+      hidden_paths: [
+        "/quick-replies",
+        "/campaigns",
+        "/chatbots",
+        "/team-members",
+        "/whatsapp-manager",
+      ],
+      settings_visible_paths: ["/settings/organization"],
+    },
+  };
+  for (const path of extra.ui_visibility.hidden_paths) {
+    assert.equal(isVisibleNavigationPath(path, extra), false, path);
+    assert.equal(isVisibleNavigationPath(path, {}), true, path);
+    assert.equal(isVisibleNavigationPath(path), true, path);
+  }
+  for (const path of [
+    "/dashboard",
+    "/conversations",
+    "/contacts",
+    "/templates",
+    "/integrations",
+    "/settings",
+    "/settings/organization",
+  ])
+    assert.equal(isVisibleNavigationPath(path, extra), true, path);
+  for (const path of [
+    "/settings/preferences",
+    "/settings/business-hours",
+    "/settings/media-management",
+    "/settings/appearance",
+    "/settings/routing-queues",
+    "/settings/automation",
+    "/settings/webhooks",
+    "/settings/api-keys",
+  ])
+    assert.equal(isVisibleNavigationPath(path, extra), false, path);
+});
+
+void test("missing or malformed organization visibility retains existing behavior", () => {
+  for (const extra of [
+    null,
+    undefined,
+    [],
+    "invalid",
+    {},
+    { ui_visibility: null },
+    { ui_visibility: [] },
+    {
+      ui_visibility: { hidden_paths: true, settings_visible_paths: "invalid" },
+    },
+  ]) {
+    assert.equal(isVisibleNavigationPath("/campaigns", extra), true);
+    assert.equal(isVisibleNavigationPath("/settings/appearance", extra), true);
+    assert.equal(isVisibleNavigationPath("/settings/api-keys", extra), false);
+  }
+});
+
+void test("sidebar and settings use current organization metadata without tenant IDs or permission changes", () => {
+  const menu = source("src/components/Menu.tsx");
+  assert.match(
+    menu,
+    /organizations\?\.find\(\s*\(org\) => org.id === activeOrgId,?\s*\)/,
+  );
+  assert.match(
+    menu,
+    /!!currentOrganization &&\s*isVisibleNavigationPath\(path, currentOrganization.extra\)/,
+  );
+  for (const path of [
+    "quick-replies",
+    "campaigns",
+    "chatbots",
+    "team-members",
+    "whatsapp-manager",
+  ])
+    assert.ok(menu.includes(`visible={visibleNavigation("/${path}")}`));
+  const link = source("src/components/LinkButton.tsx");
+  assert.match(link, /if \(!visible\) return null/);
+  assert.match(
+    link,
+    /if \(access && !canAccessNavigation\(role, access\)\) return null/,
+  );
+  const settings = source(
+    "src/components/settings/SettingsWorkspaceLayout.tsx",
+  );
+  assert.match(settings, /organization.isSuccess \? navigation : \[\]/);
+  assert.doesNotMatch(
+    source("src/utils/UiVisibility.ts"),
+    /bf15dc18|Test Organization/,
   );
 });
 

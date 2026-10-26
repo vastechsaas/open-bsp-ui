@@ -45,6 +45,12 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const { data: organizations } = useOrganizations();
+  const currentOrganization = organizations?.find(
+    (org) => org.id === activeOrgId,
+  );
+  const visibleNavigation = (path: string) =>
+    !!currentOrganization &&
+    isVisibleNavigationPath(path, currentOrganization.extra);
   const { translate: t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -135,6 +141,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/quick-replies"
+            visible={visibleNavigation("/quick-replies")}
             access="quickReplies"
             role={role}
             title={t("Respuestas rápidas")}
@@ -168,6 +175,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/campaigns"
+            visible={visibleNavigation("/campaigns")}
             access="campaigns"
             role={role}
             title={t("Campañas")}
@@ -180,6 +188,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
           {chatbotPermissions.isSuccess && chatbotPermissions.data.can_view && (
             <LinkButton
               to="/chatbots"
+              visible={visibleNavigation("/chatbots")}
               role={role}
               title={t("Chatbots")}
               isActive={pathname.startsWith("/chatbots")}
@@ -202,6 +211,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
 
           <LinkButton
             to="/team-members"
+            visible={visibleNavigation("/team-members")}
             access="teamMembers"
             role={role}
             title={t("Miembros del equipo")}
@@ -257,6 +267,7 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
           integrationEnabled(integrationAvailability.data, "whatsapp") && (
             <LinkButton
               to="/whatsapp-manager"
+              visible={visibleNavigation("/whatsapp-manager")}
               access="whatsappManager"
               role={role}
               title={t("Gestor de WhatsApp")}
