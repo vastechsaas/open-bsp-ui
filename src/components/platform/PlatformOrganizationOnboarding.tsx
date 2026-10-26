@@ -1,4 +1,10 @@
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { Link } from "@tanstack/react-router";
 import { message as toast } from "antd";
 import {
@@ -17,11 +23,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   type OrganizationProvisioningStatus,
   usePlatformOrganizationProvisioning,
-  useProvisionPlatformOrganization,
   useRetryPlatformOrganizationProvisioning,
 } from "@/queries/usePlatformOrganizationProvisioning";
 import {
-  buildOrganizationProvisioningPayload,
   createOrganizationProvisioningDraft,
   createOrganizationProvisioningMember,
   getOrganizationProvisioningFingerprint,
@@ -30,11 +34,24 @@ import {
   type OrganizationProvisioningMember,
   validateOrganizationProvisioningDraft,
 } from "@/utils/OrganizationProvisioningUtils";
+import AccountSetupFields, {
+  useAccountSetupFields,
+} from "./AccountSetupFields";
+import OrganizationSetupProgress from "./OrganizationSetupProgress";
+import {
+  OrganizationSetupError,
+  useCreateOrganizationSetup,
+} from "@/queries/useOrganizationSetup";
+import {
+  buildOrganizationSetupPayload,
+  directSetupValid,
+  type OrganizationSetupResult,
+  type TransientSetupSecret,
+} from "@/utils/OrganizationSetupUtils";
+import type { AccountSetupMode } from "@/utils/AccountOnboardingUtils";
+import { accountSetupError } from "@/utils/AccountOnboardingUtils";
 
-type ProvisioningResult = {
-  organization_id: string | null;
-  organization_name: string;
-};
+type ProvisioningResult = OrganizationSetupResult;
 
 export default function PlatformOrganizationOnboarding() {
   const { translate: t } = useTranslation();
@@ -42,7 +59,60 @@ export default function PlatformOrganizationOnboarding() {
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [result, setResult] = useState<ProvisioningResult | null>(null);
   const requestRef = useRef<{ id: string; fingerprint: string } | null>(null);
-  const provision = useProvisionPlatformOrganization();
+  const provision = useCreateOrganizationSetup();
+  const ownerSetup = useAccountSetupFields();
+  const personSecrets = useRef(new Map<string, TransientSetupSecret>());
+  const processingSecrets = useRef(new Map<string, TransientSetupSecret>());
+  const attemptedPayload = useRef<ReturnType<
+    typeof buildOrganizationSetupPayload
+  > | null>(null);
+  const [createLocked, setCreateLocked] = useState(false);
+  const [clearSecretsVersion, setClearSecretsVersion] = useState(0);
+  useEffect(
+    () => () => {
+      personSecrets.current.clear();
+      processingSecrets.current.clear();
+    },
+    [],
+  );
+
+  const create = (
+    payload: ReturnType<typeof buildOrganizationSetupPayload>,
+  ) => {
+    attemptedPayload.current = payload;
+    setCreateLocked(true);
+    ownerSetup.setPassword("");
+    ownerSetup.setConfirmation("");
+    ownerSetup.setConfirmed(false);
+    setClearSecretsVersion((v) => v + 1);
+    provision.mutate(payload, {
+      onSuccess: (data) => {
+        setResult(data);
+        setDraft(createOrganizationProvisioningDraft());
+        setFormErrors([]);
+        requestRef.current = null;
+        ownerSetup.setPassword("");
+        ownerSetup.setConfirmation("");
+        ownerSetup.setConfirmed(false);
+        personSecrets.current.clear();
+        setCreateLocked(false);
+        toast.success(t("Organización creada"));
+      },
+      onError: (error) => {
+        processingSecrets.current.clear();
+        ownerSetup.setPassword("");
+        ownerSetup.setConfirmation("");
+        ownerSetup.setConfirmed(false);
+        if (
+          error instanceof OrganizationSetupError &&
+          error.status >= 400 &&
+          error.status < 500
+        )
+          setCreateLocked(false);
+        toast.error(t(accountSetupError(error.message)));
+      },
+    });
+  };
 
   const updateDraft = <Key extends keyof OrganizationProvisioningDraft>(
     key: Key,
@@ -77,8 +147,40 @@ export default function PlatformOrganizationOnboarding() {
       return;
     }
 
-    const candidate = buildOrganizationProvisioningPayload(
+    const ownerSecret = {
+      password: ownerSetup.password,
+      confirmation: ownerSetup.confirmation,
+      confirmed: ownerSetup.confirmed,
+    };
+    const modes = [
+      { key: "owner", mode: ownerSetup.mode },
+      ...draft.members.map((m) => ({
+        key: m.id,
+        mode: m.setupMode ?? "invitation",
+      })),
+    ];
+    personSecrets.current.set("owner", ownerSecret);
+    if (
+      modes.some(
+        (p) =>
+          p.mode === "direct" &&
+          !directSetupValid(personSecrets.current.get(p.key)),
+      )
+    ) {
+      toast.error(
+        t("Confirmá las contraseñas y la creación directa de cada persona."),
+      );
+      return;
+    }
+    processingSecrets.current.clear();
+    for (const person of modes)
+      if (person.mode === "direct")
+        processingSecrets.current.set(person.key, {
+          ...personSecrets.current.get(person.key)!,
+        });
+    const candidate = buildOrganizationSetupPayload(
       draft,
+      ownerSetup.mode,
       "00000000-0000-4000-8000-000000000000",
     );
     const fingerprint = getOrganizationProvisioningFingerprint(candidate);
@@ -88,19 +190,7 @@ export default function PlatformOrganizationOnboarding() {
         : crypto.randomUUID();
     requestRef.current = { id: requestId, fingerprint };
 
-    provision.mutate(buildOrganizationProvisioningPayload(draft, requestId), {
-      onSuccess: (data) => {
-        setResult({
-          organization_id: data.organization_id,
-          organization_name: data.organization_name,
-        });
-        setDraft(createOrganizationProvisioningDraft());
-        setFormErrors([]);
-        requestRef.current = null;
-        toast.success(t("Organización incorporada e invitaciones enviadas"));
-      },
-      onError: (error) => toast.error(error.message),
-    });
+    create(buildOrganizationSetupPayload(draft, ownerSetup.mode, requestId));
   };
 
   return (
@@ -112,7 +202,7 @@ export default function PlatformOrganizationOnboarding() {
           </h1>
           <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
             {t(
-              "Creá el tenant, configurá sus límites e invitá al propietario y al equipo inicial desde un solo lugar.",
+              "Creá la organización y configurá el acceso del propietario y del equipo inicial desde un solo lugar.",
             )}
           </p>
         </div>
@@ -130,7 +220,9 @@ export default function PlatformOrganizationOnboarding() {
               {result.organization_name}
             </p>
             <p className="text-muted-foreground">
-              {t("El tenant está listo y las invitaciones fueron solicitadas.")}
+              {t(
+                "Organización creada. La configuración de acceso se muestra por persona.",
+              )}
             </p>
           </div>
           {result.organization_id && (
@@ -145,7 +237,10 @@ export default function PlatformOrganizationOnboarding() {
           <button
             type="button"
             className="rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
-            onClick={() => setResult(null)}
+            onClick={() => {
+              processingSecrets.current.clear();
+              setResult(null);
+            }}
           >
             {t("Cerrar")}
           </button>
@@ -153,253 +248,363 @@ export default function PlatformOrganizationOnboarding() {
       )}
 
       <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.82fr)]">
-        <form
-          className="space-y-5 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6"
-          onSubmit={submit}
-        >
-          <FormSection
-            icon={<Building2 />}
-            title={t("Organización y propietario")}
-            description={t(
-              "El propietario recibirá una invitación por correo electrónico.",
-            )}
+        {result ? (
+          <OrganizationSetupProgress
+            key={result.provisioning_id}
+            provisioningId={result.provisioning_id}
+            initial={result}
+            secrets={processingSecrets.current}
+            onClose={() => {
+              processingSecrets.current.clear();
+              setResult(null);
+            }}
+          />
+        ) : (
+          <form
+            className="space-y-5 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6"
+            onSubmit={submit}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("Nombre de la organización")} wide>
-                <input
-                  className="text"
-                  maxLength={250}
-                  value={draft.organizationName}
-                  onChange={(event) =>
-                    updateDraft("organizationName", event.target.value)
-                  }
-                  aria-invalid={formErrors.includes("organization_name")}
-                  required
-                />
-              </Field>
-              <Field label={t("Nombre del propietario")}>
-                <input
-                  className="text"
-                  maxLength={120}
-                  value={draft.ownerName}
-                  onChange={(event) =>
-                    updateDraft("ownerName", event.target.value)
-                  }
-                  aria-invalid={formErrors.includes("owner_name")}
-                  required
-                />
-              </Field>
-              <Field label={t("Correo del propietario")}>
-                <input
-                  className="text"
-                  type="email"
-                  maxLength={320}
-                  value={draft.ownerEmail}
-                  onChange={(event) =>
-                    updateDraft("ownerEmail", event.target.value)
-                  }
-                  aria-invalid={formErrors.includes("owner_email")}
-                  required
-                />
-              </Field>
-            </div>
-          </FormSection>
-
-          <FormSection
-            icon={<UserPlus />}
-            title={t("Equipo inicial")}
-            description={t(
-              "Agregá supervisores o agentes. También podés hacerlo después.",
-            )}
-            action={
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
-                onClick={addMember}
-                disabled={draft.members.length >= 50}
+            <fieldset disabled={createLocked} className="space-y-5">
+              <FormSection
+                icon={<Building2 />}
+                title={t("Organización y propietario")}
+                description={t(
+                  "Elegí cómo configurar el acceso del propietario.",
+                )}
               >
-                <Plus className="h-4 w-4" />
-                {t("Agregar persona")}
-              </button>
-            }
-          >
-            {draft.members.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
-                {t("No hay integrantes adicionales todavía.")}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {draft.members.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="grid gap-3 rounded-xl border border-border bg-background/50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_160px_40px] sm:items-end"
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={t("Nombre de la organización")} wide>
+                    <input
+                      className="text"
+                      maxLength={250}
+                      value={draft.organizationName}
+                      onChange={(event) =>
+                        updateDraft("organizationName", event.target.value)
+                      }
+                      aria-invalid={formErrors.includes("organization_name")}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("Nombre del propietario")}>
+                    <input
+                      className="text"
+                      maxLength={120}
+                      value={draft.ownerName}
+                      onChange={(event) =>
+                        updateDraft("ownerName", event.target.value)
+                      }
+                      aria-invalid={formErrors.includes("owner_name")}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("Correo del propietario")}>
+                    <input
+                      className="text"
+                      type="email"
+                      maxLength={320}
+                      value={draft.ownerEmail}
+                      onChange={(event) =>
+                        updateDraft("ownerEmail", event.target.value)
+                      }
+                      aria-invalid={formErrors.includes("owner_email")}
+                      required
+                    />
+                  </Field>
+                </div>
+                <div className="mt-4">
+                  <AccountSetupFields
+                    fields={ownerSetup}
+                    pending={provision.isPending}
+                  />
+                </div>
+              </FormSection>
+
+              <FormSection
+                icon={<UserPlus />}
+                title={t("Equipo inicial")}
+                description={t(
+                  "Agregá supervisores o agentes. También podés hacerlo después.",
+                )}
+                action={
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                    onClick={addMember}
+                    disabled={draft.members.length >= 50}
                   >
-                    <Field label={`${t("Nombre")} ${index + 1}`}>
-                      <input
-                        className="text"
-                        maxLength={120}
-                        value={member.name}
-                        onChange={(event) =>
-                          updateMember(member.id, { name: event.target.value })
-                        }
-                        required
-                      />
-                    </Field>
-                    <Field label={t("Correo electrónico")}>
-                      <input
-                        className="text"
-                        type="email"
-                        maxLength={320}
-                        value={member.email}
-                        onChange={(event) =>
-                          updateMember(member.id, { email: event.target.value })
-                        }
-                        required
-                      />
-                    </Field>
-                    <Field label={t("Rol")}>
-                      <select
-                        className="text"
-                        value={member.role}
-                        onChange={(event) =>
-                          updateMember(member.id, {
-                            role: event.target
-                              .value as OrganizationProvisioningMember["role"],
-                          })
-                        }
+                    <Plus className="h-4 w-4" />
+                    {t("Agregar persona")}
+                  </button>
+                }
+              >
+                {draft.members.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
+                    {t("No hay integrantes adicionales todavía.")}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {draft.members.map((member, index) => (
+                      <div
+                        key={member.id}
+                        className="grid gap-3 rounded-xl border border-border bg-background/50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_160px_40px] sm:items-end"
                       >
-                        {ORGANIZATION_PROVISIONING_ROLES.map((role) => (
-                          <option key={role.value} value={role.value}>
-                            {t(role.label)}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10"
-                      aria-label={t("Quitar persona")}
-                      onClick={() =>
+                        <Field label={`${t("Nombre")} ${index + 1}`}>
+                          <input
+                            className="text"
+                            maxLength={120}
+                            value={member.name}
+                            onChange={(event) =>
+                              updateMember(member.id, {
+                                name: event.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </Field>
+                        <Field label={t("Correo electrónico")}>
+                          <input
+                            className="text"
+                            type="email"
+                            maxLength={320}
+                            value={member.email}
+                            onChange={(event) =>
+                              updateMember(member.id, {
+                                email: event.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </Field>
+                        <Field label={t("Rol")}>
+                          <select
+                            className="text"
+                            value={member.role}
+                            onChange={(event) =>
+                              updateMember(member.id, {
+                                role: event.target
+                                  .value as OrganizationProvisioningMember["role"],
+                              })
+                            }
+                          >
+                            {ORGANIZATION_PROVISIONING_ROLES.map((role) => (
+                              <option key={role.value} value={role.value}>
+                                {t(role.label)}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <button
+                          type="button"
+                          className="flex h-10 w-10 items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10"
+                          aria-label={t("Quitar persona")}
+                          onClick={() => {
+                            personSecrets.current.delete(member.id);
+                            updateDraft(
+                              "members",
+                              draft.members.filter(
+                                (item) => item.id !== member.id,
+                              ),
+                            );
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <div className="sm:col-span-4">
+                          <InitialAccountSetup
+                            personKey={member.id}
+                            clearVersion={clearSecretsVersion}
+                            mode={member.setupMode ?? "invitation"}
+                            onModeChange={(mode) =>
+                              updateMember(member.id, { setupMode: mode })
+                            }
+                            register={(secret) => {
+                              if (secret)
+                                personSecrets.current.set(member.id, secret);
+                              else personSecrets.current.delete(member.id);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </FormSection>
+
+              <FormSection
+                icon={<RefreshCw />}
+                title={t("Configuración inicial")}
+                description={t(
+                  "Estos valores pueden ajustarse más adelante desde la administración del tenant.",
+                )}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    label={t("Capacidad de agentes")}
+                    hint={t("Dejá vacío para no establecer un límite.")}
+                  >
+                    <input
+                      className="text"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={draft.maxAgentSeats}
+                      onChange={(event) =>
+                        updateDraft("maxAgentSeats", event.target.value)
+                      }
+                      aria-invalid={
+                        formErrors.includes("agent_capacity") ||
+                        formErrors.includes("agent_capacity_exceeded")
+                      }
+                    />
+                  </Field>
+                  <Field label={t("Cuota de almacenamiento")}>
+                    <select
+                      className="text"
+                      value={draft.storageQuotaGb}
+                      onChange={(event) =>
                         updateDraft(
-                          "members",
-                          draft.members.filter((item) => item.id !== member.id),
+                          "storageQuotaGb",
+                          Number(event.target.value) as 25 | 50 | 75 | 100,
                         )
                       }
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+                      {[25, 50, 75, 100].map((quota) => (
+                        <option key={quota} value={quota}>
+                          {quota} GB
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-primary"
+                    checked={draft.autoAssign}
+                    onChange={(event) =>
+                      updateDraft("autoAssign", event.target.checked)
+                    }
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">
+                      {t("Activar asignación automática")}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {t(
+                        "Las conversaciones usarán las reglas de asignación configuradas para la organización.",
+                      )}
+                    </span>
+                  </span>
+                </label>
+              </FormSection>
+
+              {formErrors.length > 0 && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  {t(
+                    "Hay datos incompletos, correos duplicados o la capacidad es menor que el equipo inicial.",
+                  )}
+                </div>
+              )}
+              {provision.isError && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  {t(accountSetupError(provision.error.message))}
+                </div>
+              )}
+
+              <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  {t(
+                    "La organización se crea una sola vez. Los errores de acceso se reintentan por persona desde el historial.",
+                  )}
+                </p>
+                <button
+                  type="submit"
+                  className="inline-flex min-w-48 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  disabled={provision.isPending}
+                >
+                  {provision.isPending ? (
+                    <Spinner size={18} />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {provision.isPending
+                    ? t("Creando organización…")
+                    : t("Crear organización")}
+                </button>
+              </div>
+            </fieldset>
+            {createLocked && !provision.isPending && provision.isError && (
+              <div role="alert" className="space-y-2 p-3 text-sm">
+                <p>
+                  {t(
+                    "No se pudo confirmar la creación. Reintentá la misma solicitud antes de cambiar los datos.",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => {
+                    if (attemptedPayload.current)
+                      create(attemptedPayload.current);
+                  }}
+                >
+                  {t("Reintentar")}
+                </button>
               </div>
             )}
-          </FormSection>
-
-          <FormSection
-            icon={<RefreshCw />}
-            title={t("Configuración inicial")}
-            description={t(
-              "Estos valores pueden ajustarse más adelante desde la administración del tenant.",
-            )}
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label={t("Capacidad de agentes")}
-                hint={t("Dejá vacío para no establecer un límite.")}
-              >
-                <input
-                  className="text"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={draft.maxAgentSeats}
-                  onChange={(event) =>
-                    updateDraft("maxAgentSeats", event.target.value)
-                  }
-                  aria-invalid={
-                    formErrors.includes("agent_capacity") ||
-                    formErrors.includes("agent_capacity_exceeded")
-                  }
-                />
-              </Field>
-              <Field label={t("Cuota de almacenamiento")}>
-                <select
-                  className="text"
-                  value={draft.storageQuotaGb}
-                  onChange={(event) =>
-                    updateDraft(
-                      "storageQuotaGb",
-                      Number(event.target.value) as 25 | 50 | 75 | 100,
-                    )
-                  }
-                >
-                  {[25, 50, 75, 100].map((quota) => (
-                    <option key={quota} value={quota}>
-                      {quota} GB
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 accent-primary"
-                checked={draft.autoAssign}
-                onChange={(event) =>
-                  updateDraft("autoAssign", event.target.checked)
-                }
-              />
-              <span>
-                <span className="block text-sm font-medium">
-                  {t("Activar asignación automática")}
-                </span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  {t(
-                    "Las conversaciones usarán las reglas de asignación configuradas para la organización.",
-                  )}
-                </span>
-              </span>
-            </label>
-          </FormSection>
-
-          {formErrors.length > 0 && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              {t(
-                "Hay datos incompletos, correos duplicados o la capacidad es menor que el equipo inicial.",
-              )}
-            </div>
-          )}
-          {provision.isError && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              {provision.error.message}
-            </div>
-          )}
-
-          <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-              {t(
-                "La organización se crea una sola vez. Si una invitación falla, podés reintentar la misma solicitud desde el historial.",
-              )}
-            </p>
-            <button
-              type="submit"
-              className="inline-flex min-w-48 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              disabled={provision.isPending}
-            >
-              {provision.isPending ? (
-                <Spinner size={18} />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {provision.isPending
-                ? t("Creando organización…")
-                : t("Crear e invitar")}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
 
         <ProvisioningHistory />
       </div>
+    </div>
+  );
+}
+
+function InitialAccountSetup({
+  personKey,
+  mode,
+  clearVersion,
+  onModeChange,
+  register,
+}: {
+  personKey: string;
+  mode: AccountSetupMode;
+  clearVersion: number;
+  onModeChange: (mode: AccountSetupMode) => void;
+  register: (secret: TransientSetupSecret | null) => void;
+}) {
+  const fields = useAccountSetupFields(mode);
+  useEffect(() => {
+    fields.setPassword("");
+    fields.setConfirmation("");
+    fields.setConfirmed(false);
+  }, [
+    clearVersion,
+    fields.setPassword,
+    fields.setConfirmation,
+    fields.setConfirmed,
+  ]);
+  useEffect(() => {
+    if (fields.mode !== mode) onModeChange(fields.mode);
+    register({
+      password: fields.password,
+      confirmation: fields.confirmation,
+      confirmed: fields.confirmed,
+    });
+  }, [
+    fields.mode,
+    fields.password,
+    fields.confirmation,
+    fields.confirmed,
+    mode,
+    onModeChange,
+    register,
+  ]);
+  // The parent owns cleanup of transient values when this draft is submitted.
+  return (
+    <div data-person={personKey}>
+      <AccountSetupFields fields={fields} pending={false} />
     </div>
   );
 }
@@ -418,9 +623,25 @@ function ProvisioningHistory() {
     status: status || undefined,
   });
   const retry = useRetryPlatformOrganizationProvisioning();
+  const [selectedSetup, setSelectedSetup] = useState<string | null>(null);
 
   return (
     <section className="rounded-2xl border border-border bg-card shadow-sm">
+      {selectedSetup && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 sm:p-8"
+        >
+          <div className="mx-auto max-w-3xl">
+            <OrganizationSetupProgress
+              key={selectedSetup}
+              provisioningId={selectedSetup}
+              onClose={() => setSelectedSetup(null)}
+            />
+          </div>
+        </div>
+      )}
       <div className="border-b border-border p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -465,7 +686,7 @@ function ProvisioningHistory() {
           >
             <option value="">{t("Todos los estados")}</option>
             <option value="pending_invitation">
-              {t("Enviando invitaciones")}
+              {t("Configuración en curso")}
             </option>
             <option value="completed">{t("Completada")}</option>
             <option value="failed">{t("Fallida")}</option>
@@ -498,7 +719,14 @@ function ProvisioningHistory() {
                     {item.owner_name} · {item.owner_email}
                   </p>
                 </div>
-                <ProvisioningStatus status={item.status} />
+                <ProvisioningStatus
+                  status={
+                    item.setup_version === 2 &&
+                    item.status === "pending_invitation"
+                      ? "processing"
+                      : item.status
+                  }
+                />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground">
                 <span>{formatDate(item.updated_at)}</span>
@@ -511,7 +739,16 @@ function ProvisioningHistory() {
                   {item.last_error}
                 </p>
               )}
-              {item.status === "failed" && (
+              {item.setup_version === 2 && (
+                <button
+                  type="button"
+                  className="rounded-lg border border-border px-3 py-2 text-xs"
+                  onClick={() => setSelectedSetup(item.id)}
+                >
+                  {t("Ver configuración de acceso")}
+                </button>
+              )}
+              {item.setup_version !== 2 && item.status === "failed" && (
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
@@ -613,7 +850,9 @@ function ProvisioningStatus({ status }: { status: string }) {
       ? t("Completada")
       : status === "failed"
         ? t("Fallida")
-        : t("Enviando invitaciones");
+        : status === "processing"
+          ? t("Configuración en curso")
+          : t("Enviando invitaciones");
   const tone =
     status === "completed"
       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"

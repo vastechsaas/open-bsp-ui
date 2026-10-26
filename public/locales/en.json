@@ -1837,5 +1837,18 @@
   "Este enlace venció, fue cancelado o ya se utilizó. Pedí una nueva invitación.": "This link expired, was cancelled or has already been used. Request a new invitation.",
   "La configuración de invitaciones no está disponible. Contactá al administrador.": "Invitation setup is not available. Contact the administrator.",
   "La membresía cambió. Actualizá la lista antes de continuar.": "The membership changed. Refresh the list before continuing.",
-  "No se pudo completar la configuración. Consultá el estado y reintentá.": "Setup could not be completed. Check status and retry."
+  "No se pudo completar la configuración. Consultá el estado y reintentá.": "Setup could not be completed. Check status and retry.",
+  "Organización creada": "Organization created",
+  "Pendiente de configuración": "Setup pending",
+  "Reintentar configuración": "Retry setup",
+  "Ver configuración de acceso": "View account setup",
+  "Organización creada. La configuración de acceso se muestra por persona.": "Organization created. Account setup is shown separately for each person.",
+  "No se pudo cargar la configuración de acceso.": "Account setup could not be loaded.",
+  "La organización está creada. Revisá el acceso de cada persona; una invitación enviada no significa que ya se haya unido.": "The organization has been created. Review each person’s access; an invitation sent does not mean they have joined.",
+  "No se pudo confirmar la configuración. Consultá el estado antes de reintentar.": "Setup could not be confirmed. Check its status before retrying.",
+  "Confirmá las contraseñas y la creación directa de cada persona.": "Confirm each person’s matching passwords and direct account creation.",
+  "No se pudo confirmar la creación. Reintentá la misma solicitud antes de cambiar los datos.": "Creation could not be confirmed. Retry the same request before changing its details.",
+  "Creá la organización y configurá el acceso del propietario y del equipo inicial desde un solo lugar.": "Create the organization and set up access for its owner and initial team in one place.",
+  "Elegí cómo configurar el acceso del propietario.": "Choose how to set up the owner’s login.",
+  "La organización se crea una sola vez. Los errores de acceso se reintentan por persona desde el historial.": "The organization is created only once. Retry account-setup failures individually from the history."
 }

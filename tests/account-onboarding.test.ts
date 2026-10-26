@@ -82,7 +82,8 @@ void test("three modes, default invitation and direct confirmation are wired", (
   const fields = read("../src/components/platform/AccountSetupFields.tsx");
   for (const mode of ["invitation", "direct", "pending"])
     assert.ok(fields.includes(`value="${mode}"`));
-  assert.ok(fields.includes('useState<AccountSetupMode>("invitation")'));
+  assert.ok(fields.includes('initialMode: AccountSetupMode = "invitation"'));
+  assert.ok(fields.includes("useState<AccountSetupMode>(initialMode)"));
   assert.ok(fields.includes('autoComplete="new-password"'));
   assert.ok(fields.includes("fields.confirmed"));
   const members = read(

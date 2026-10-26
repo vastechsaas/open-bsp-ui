@@ -1,4 +1,5 @@
 import { isVisibleInvitationRole } from "./UiVisibility";
+import type { AccountSetupMode } from "./AccountOnboardingUtils";
 
 export type OrganizationProvisioningRole =
   | "owner"
@@ -12,6 +13,7 @@ export type OrganizationProvisioningMember = {
   name: string;
   email: string;
   role: OrganizationProvisioningRole;
+  setupMode?: AccountSetupMode;
 };
 
 export type OrganizationProvisioningDraft = {

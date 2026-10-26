@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { AccountSetupMode } from "@/utils/AccountOnboardingUtils";
 
-export function useAccountSetupFields() {
-  const [mode, setMode] = useState<AccountSetupMode>("invitation");
+export function useAccountSetupFields(
+  initialMode: AccountSetupMode = "invitation",
+) {
+  const [mode, setMode] = useState<AccountSetupMode>(initialMode);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [confirmed, setConfirmed] = useState(false);

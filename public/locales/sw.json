@@ -1816,5 +1816,18 @@
   "Este enlace venció, fue cancelado o ya se utilizó. Pedí una nueva invitación.": "Kiungo hiki kimeisha muda, kimeghairiwa au kimetumika. Omba mwaliko mpya.",
   "La configuración de invitaciones no está disponible. Contactá al administrador.": "Usanidi wa mialiko haupatikani. Wasiliana na msimamizi.",
   "La membresía cambió. Actualizá la lista antes de continuar.": "Uanachama umebadilika. Sasisha orodha kabla ya kuendelea.",
-  "No se pudo completar la configuración. Consultá el estado y reintentá.": "Usanidi haukukamilika. Angalia hali na ujaribu tena."
+  "No se pudo completar la configuración. Consultá el estado y reintentá.": "Usanidi haukukamilika. Angalia hali na ujaribu tena.",
+  "Organización creada": "Shirika limeundwa",
+  "Pendiente de configuración": "Usanidi unasubiri",
+  "Reintentar configuración": "Jaribu usanidi tena",
+  "Ver configuración de acceso": "Angalia usanidi wa akaunti",
+  "Organización creada. La configuración de acceso se muestra por persona.": "Shirika limeundwa. Usanidi wa akaunti unaonyeshwa kwa kila mtu tofauti.",
+  "No se pudo cargar la configuración de acceso.": "Usanidi wa akaunti haukuweza kupakiwa.",
+  "La organización está creada. Revisá el acceso de cada persona; una invitación enviada no significa que ya se haya unido.": "Shirika limeundwa. Kagua ufikiaji wa kila mtu; kutumwa kwa mwaliko hakumaanishi kwamba tayari amejiunga.",
+  "No se pudo confirmar la configuración. Consultá el estado antes de reintentar.": "Usanidi haukuweza kuthibitishwa. Kagua hali yake kabla ya kujaribu tena.",
+  "Confirmá las contraseñas y la creación directa de cada persona.": "Thibitisha manenosiri yanayolingana na uundaji wa moja kwa moja wa akaunti ya kila mtu.",
+  "No se pudo confirmar la creación. Reintentá la misma solicitud antes de cambiar los datos.": "Uundaji haukuweza kuthibitishwa. Jaribu ombi lilelile tena kabla ya kubadilisha taarifa.",
+  "Creá la organización y configurá el acceso del propietario y del equipo inicial desde un solo lugar.": "Unda shirika na usanidi ufikiaji wa mmiliki na timu ya kwanza katika sehemu moja.",
+  "Elegí cómo configurar el acceso del propietario.": "Chagua jinsi ya kusanidi kuingia kwa mmiliki.",
+  "La organización se crea una sola vez. Los errores de acceso se reintentan por persona desde el historial.": "Shirika huundwa mara moja tu. Jaribu tena usanidi ulioshindwa wa kila mtu kupitia historia."
 }

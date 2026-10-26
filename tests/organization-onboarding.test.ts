@@ -80,7 +80,7 @@ void test("Super Admin onboarding uses the protected function and paginated hist
   const query = read("../src/queries/usePlatformOrganizationProvisioning.ts");
   const layout = read("../src/components/platform/PlatformLayout.tsx");
 
-  assert.match(component, /buildOrganizationProvisioningPayload/);
+  assert.match(component, /buildOrganizationSetupPayload/);
   assert.match(component, /DataTablePagination/);
   assert.match(query, /functions\.invoke\("organization-provisioning"/);
   assert.match(query, /list_platform_organization_provisioning_page/);
