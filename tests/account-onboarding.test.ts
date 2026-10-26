@@ -78,10 +78,11 @@ void test("setup links persist per tab across refresh, not in the global app sto
   assert.equal(first?.token_hash, "native");
   assert.equal(values.size, 1);
 });
-void test("three modes, default invitation and direct confirmation are wired", () => {
+void test("pending mode is retained but hidden; invitation default and direct confirmation remain", () => {
   const fields = read("../src/components/platform/AccountSetupFields.tsx");
   for (const mode of ["invitation", "direct", "pending"])
     assert.ok(fields.includes(`value="${mode}"`));
+  assert.match(fields, /<option value="pending" hidden disabled>/);
   assert.ok(fields.includes('initialMode: AccountSetupMode = "invitation"'));
   assert.ok(fields.includes("useState<AccountSetupMode>(initialMode)"));
   assert.ok(fields.includes('autoComplete="new-password"'));
