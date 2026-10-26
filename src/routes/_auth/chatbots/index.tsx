@@ -132,7 +132,7 @@ function ChatbotFlowList() {
   }
 
   async function submitLifecycleAction() {
-    if (!lifecycleDialog) return;
+    if (!canManage || !lifecycleDialog) return;
 
     try {
       if (lifecycleDialog.action === "archive") {
@@ -161,6 +161,21 @@ function ChatbotFlowList() {
         <button onClick={() => void permissions.refetch()}>
           {t("Reintentar")}
         </button>
+      </div>
+    );
+  if (!permissions.data.enabled)
+    return (
+      <div role="status" className="space-y-2 p-6">
+        <p>
+          {t(
+            "El constructor de chatbots no está disponible para esta organización.",
+          )}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t(
+            "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.",
+          )}
+        </p>
       </div>
     );
   if (!permissions.data.can_view)

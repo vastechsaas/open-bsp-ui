@@ -1863,5 +1863,9 @@
   "Administrador y Miembro son roles de solo lectura en esta pantalla.": "Administrateur et Membre sont en lecture seule sur cet écran.",
   "Ya existe una membresía o invitación para este correo en la organización.": "Une adhésion ou invitation existe déjà pour cet e-mail dans cette organisation.",
   "No se pudo guardar la membresía. Revisá los datos, la conexión o tus permisos.": "Impossible d’enregistrer l’adhésion. Vérifiez les données, la connexion ou vos autorisations.",
-  "Acceso a la organización eliminado": "Accès à l’organisation retiré"
+  "Acceso a la organización eliminado": "Accès à l’organisation retiré",
+  "Constructor de chatbots habilitado": "Constructeur de chatbots activé",
+  "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.": "La désactivation retire l’accès au constructeur à tous les rôles sans effacer leurs autorisations. Les chatbots actifs et les opérations déjà acceptées continuent.",
+  "El constructor de chatbots no está disponible para esta organización.": "Le constructeur de chatbots n’est pas disponible pour cette organisation.",
+  "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.": "Les chatbots actifs continuent de fonctionner. Les modifications non enregistrées n’ont pas été sauvegardées."
 }

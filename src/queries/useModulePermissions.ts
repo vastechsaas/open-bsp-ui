@@ -5,10 +5,10 @@ import useBoundStore from "@/stores/useBoundStore";
 import { supabase } from "@/supabase/client";
 import { queryKeys } from "./queryKeys";
 import type {
-  EffectiveModulePermissions,
   ModuleMatrix,
   ModulePermission,
 } from "@/utils/ModulePermissionUtils";
+import { readEffectiveModulePermissions } from "@/utils/ModulePermissionUtils";
 
 export function useChatbotPermissions() {
   const orgId = useBoundStore((s) => s.ui.activeOrgId);
@@ -24,7 +24,7 @@ export function useChatbotPermissions() {
         })
         .abortSignal(signal)
         .throwOnError();
-      return data as EffectiveModulePermissions;
+      return readEffectiveModulePermissions(data);
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -122,6 +122,7 @@ export function useSavePlatformModulePermissions(organizationId: string) {
   const userId = useBoundStore((s) => s.ui.user?.id);
   return useMutation({
     mutationFn: async (input: {
+      enabled: boolean;
       permissions: ModulePermission[];
       revision: number;
       requestId: string;
@@ -133,6 +134,7 @@ export function useSavePlatformModulePermissions(organizationId: string) {
           p_permissions: input.permissions,
           p_expected_revision: input.revision,
           p_request_id: input.requestId,
+          p_enabled: input.enabled,
         })
         .throwOnError();
       return data as ModuleMatrix;

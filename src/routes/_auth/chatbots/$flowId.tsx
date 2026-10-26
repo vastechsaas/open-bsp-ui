@@ -254,6 +254,20 @@ function ChatbotFlowEditor() {
         onAction={() => void permissions.refetch()}
       />
     );
+  if (!permissions.data.enabled) {
+    return (
+      <EditorState
+        title={t(
+          "El constructor de chatbots no está disponible para esta organización.",
+        )}
+        description={t(
+          "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.",
+        )}
+        actionLabel={t("Volver al listado")}
+        onAction={() => void goBack()}
+      />
+    );
+  }
   if (!canView) {
     return (
       <EditorState

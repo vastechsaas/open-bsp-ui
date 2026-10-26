@@ -1863,5 +1863,9 @@
   "Administrador y Miembro son roles de solo lectura en esta pantalla.": "Msimamizi na Mwanachama ni majukumu ya kusoma tu kwenye skrini hii.",
   "Ya existe una membresía o invitación para este correo en la organización.": "Uanachama au mwaliko wa barua pepe hii tayari upo katika shirika hili.",
   "No se pudo guardar la membresía. Revisá los datos, la conexión o tus permisos.": "Haikuwezekana kuhifadhi uanachama. Kagua taarifa, muunganisho au ruhusa zako.",
-  "Acceso a la organización eliminado": "Ufikiaji wa shirika umeondolewa"
+  "Acceso a la organización eliminado": "Ufikiaji wa shirika umeondolewa",
+  "Constructor de chatbots habilitado": "Kijenzi cha chatbot kimewezeshwa",
+  "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.": "Kuzima huondoa ufikiaji wa kijenzi kwa majukumu yote bila kufuta ruhusa zao. Chatbot zinazotumika na shughuli zilizokubaliwa tayari zinaendelea.",
+  "El constructor de chatbots no está disponible para esta organización.": "Kijenzi cha chatbot hakipatikani kwa shirika hili.",
+  "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.": "Chatbot zinazotumika zinaendelea kufanya kazi. Mabadiliko yasiyohifadhiwa hayajahifadhiwa."
 }

@@ -1888,5 +1888,9 @@
   "Administrador y Miembro son roles de solo lectura en esta pantalla.": "Administrator and Member are read-only roles on this screen.",
   "Ya existe una membresía o invitación para este correo en la organización.": "A membership or invitation for this email already exists in this organization.",
   "No se pudo guardar la membresía. Revisá los datos, la conexión o tus permisos.": "Could not save the membership. Check the details, connection or your permissions.",
-  "Acceso a la organización eliminado": "Organization access removed"
+  "Acceso a la organización eliminado": "Organization access removed",
+  "Constructor de chatbots habilitado": "Chatbot Builder enabled",
+  "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.": "Disabling removes builder access for every role without erasing their permissions. Active chatbots and previously accepted operations continue.",
+  "El constructor de chatbots no está disponible para esta organización.": "Chatbot Builder is unavailable for this organization.",
+  "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.": "Active chatbots continue running. Unsaved changes were not saved."
 }

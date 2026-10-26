@@ -43,10 +43,7 @@ import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppearance";
 import { useOrganizations } from "@/queries/useOrganizations";
 import PendingInvitationGate from "@/components/PendingInvitationGate";
-import {
-  useChatbotPermissions,
-  useModulePermissionRefresh,
-} from "@/queries/useModulePermissions";
+import { useModulePermissionRefresh } from "@/queries/useModulePermissions";
 import Spinner from "@/components/Spinner";
 import IntegrationManagementGate from "@/components/IntegrationManagementGate";
 import {
@@ -80,7 +77,6 @@ function AppLayout() {
   useIntegrationAvailabilityRefresh();
   const integrationAvailability = useIntegrationAvailability();
   useModulePermissionRefresh();
-  const chatbotPermissions = useChatbotPermissions();
   const { translate: t } = useTranslation();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
@@ -118,9 +114,10 @@ function AppLayout() {
   const currentRole = currentAgent?.extra?.role;
   const canAccessCurrentPath =
     !activeOrgId ||
-    (isChatbotWorkspacePath(pathname)
-      ? !chatbotPermissions.isSuccess || chatbotPermissions.data.can_view
-      : canAccessPath(currentRole, pathname));
+    // Builder routes own their loading, unavailable and permission-error states.
+    // Do not redirect away before they can explain a live access revocation.
+    isChatbotWorkspacePath(pathname) ||
+    canAccessPath(currentRole, pathname);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const menuWidth = getSidebarWidth(viewportWidth, sidebarCollapsed);
   const sidebarExpanded = isSidebarExpanded(viewportWidth, sidebarCollapsed);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Switch from "@/components/Switch";
 import { useBlocker } from "@tanstack/react-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { isVisibleMemberRole } from "@/utils/UiVisibility";
@@ -47,10 +48,13 @@ function MatrixForm({
 }) {
   const { translate: t } = useTranslation();
   const [rows, setRows] = useState(initial.permissions);
+  const [enabled, setEnabled] = useState(initial.enabled);
   const visibleRows = rows.filter((row) => isVisibleMemberRole(row.role));
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const save = useSavePlatformModulePermissions(organizationId);
-  const dirty = JSON.stringify(rows) !== JSON.stringify(initial.permissions);
+  const dirty =
+    enabled !== initial.enabled ||
+    JSON.stringify(rows) !== JSON.stringify(initial.permissions);
   const blocker = useBlocker({
     shouldBlockFn: () => dirty,
     enableBeforeUnload: dirty,
@@ -79,6 +83,26 @@ function MatrixForm({
         <h3 className="border-b border-border p-4 font-medium">
           {t("Constructor de chatbots")}
         </h3>
+        <div className="space-y-2 border-b border-border p-4">
+          <label className="flex items-center justify-between gap-4 font-medium">
+            <span>{t("Constructor de chatbots habilitado")}</span>
+            <Switch
+              role="switch"
+              checked={enabled}
+              disabled={save.isPending || conflict}
+              onCheckedChange={(checked) => {
+                setEnabled(checked);
+                setRequestId(crypto.randomUUID());
+                save.reset();
+              }}
+            />
+          </label>
+          <p className="text-sm text-muted-foreground">
+            {t(
+              "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.",
+            )}
+          </p>
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
@@ -102,7 +126,7 @@ function MatrixForm({
                       type="checkbox"
                       className="h-4 w-4 accent-primary"
                       checked={row[permission]}
-                      disabled={save.isPending || conflict}
+                      disabled={save.isPending || conflict || !enabled}
                       aria-label={`${labels[row.role]}: ${permission === "can_view" ? t("Ver") : t("Administrar")}`}
                       onChange={(event) => {
                         setRows((current) =>
@@ -150,6 +174,7 @@ function MatrixForm({
           disabled={!dirty || save.isPending || conflict}
           onClick={() =>
             save.mutate({
+              enabled,
               permissions: rows,
               revision: initial.revision,
               requestId,

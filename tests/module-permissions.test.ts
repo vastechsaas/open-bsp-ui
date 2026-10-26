@@ -4,7 +4,52 @@ import { readFileSync } from "node:fs";
 import {
   changeModulePermission,
   moduleRoles,
+  readEffectiveModulePermissions,
 } from "../src/utils/ModulePermissionUtils.ts";
+
+void test("availability overrides every effective grant without changing the stored matrix", () => {
+  const rows = moduleRoles.map((role) => ({
+    role,
+    can_view: true,
+    can_manage: true,
+  }));
+  const before = structuredClone(rows);
+  for (const row of rows) {
+    const enabled = { enabled: true, revision: 3, ...row };
+    assert.equal(readEffectiveModulePermissions(enabled).can_manage, true);
+    assert.deepEqual(
+      readEffectiveModulePermissions({ ...enabled, enabled: false }),
+      {
+        enabled: false,
+        revision: 3,
+        can_view: false,
+        can_manage: false,
+      },
+    );
+  }
+  assert.deepEqual(rows, before);
+});
+
+void test("unknown/malformed availability fails closed; Manage never bypasses View", () => {
+  for (const value of [
+    null,
+    {},
+    { revision: 1, can_view: true, can_manage: true },
+    { enabled: "true", revision: 1, can_view: true, can_manage: true },
+    { enabled: true, revision: -1, can_view: true, can_manage: true },
+  ]) {
+    assert.throws(() => readEffectiveModulePermissions(value));
+  }
+  assert.equal(
+    readEffectiveModulePermissions({
+      enabled: true,
+      revision: 1,
+      can_view: false,
+      can_manage: true,
+    }).can_manage,
+    false,
+  );
+});
 
 test("View/Manage checkbox dependencies apply to every role, including Owner/Admin", () => {
   const rows = moduleRoles.map((role) => ({
@@ -103,4 +148,65 @@ test("Super Admin form has explicit save, revision checks, stable retry IDs and 
   assert.match(form, /useBlocker/);
   assert.match(form, /"40001"/);
   assert.match(form, /Guardar cambios/);
+});
+
+void test("availability uses the existing revision-checked save and preserves disabled role choices", () => {
+  const query = source("src/queries/useModulePermissions.ts");
+  const form = source("src/components/platform/PlatformModulePermissions.tsx");
+  assert.match(query, /p_enabled: input.enabled/);
+  assert.match(query, /readEffectiveModulePermissions\(data\)/);
+  assert.match(form, /useState\(initial.enabled\)/);
+  assert.match(form, /enabled !== initial.enabled/);
+  assert.match(form, /disabled=\{save.isPending \|\| conflict \|\| !enabled\}/);
+  const toggle = form.slice(
+    form.indexOf("<Switch"),
+    form.indexOf("</label>", form.indexOf("<Switch")),
+  );
+  assert.match(toggle, /setEnabled\(checked\)/);
+  assert.doesNotMatch(toggle, /setRows/);
+  assert.match(toggle, /setRequestId\(crypto.randomUUID\(\)\)/);
+});
+
+void test("direct URLs explain unavailability and unmount the editable workspace on revocation", () => {
+  const editor = source("src/routes/_auth/chatbots/$flowId.tsx");
+  const listing = source("src/routes/_auth/chatbots/index.tsx");
+  for (const route of [editor, listing]) {
+    assert.match(route, /if \(!permissions.data.enabled\)/);
+    assert.match(route, /El constructor de chatbots no está disponible/);
+    assert.ok(
+      route.indexOf("if (permissions.isError)") <
+        route.indexOf("if (!permissions.data.enabled)"),
+    );
+  }
+  assert.ok(
+    editor.indexOf("if (!permissions.data.enabled)") <
+      editor.indexOf("<FlowEditorWorkspace"),
+  );
+  const layout = source("src/routes/_auth.tsx");
+  assert.match(
+    layout,
+    /isChatbotWorkspacePath\(pathname\)\s*\|\|\s*canAccessPath/,
+  );
+  const menu = source("src/components/Menu.tsx");
+  assert.match(
+    menu,
+    /chatbotPermissions.isSuccess && chatbotPermissions.data.can_view/,
+  );
+});
+
+void test("every shipped language has availability labels and the runtime-preservation explanation", () => {
+  for (const locale of ["en", "fr", "pt", "sw"]) {
+    const translations = JSON.parse(
+      source(`public/locales/${locale}.json`),
+    ) as Record<string, string>;
+    for (const key of [
+      "Constructor de chatbots habilitado",
+      "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.",
+      "El constructor de chatbots no está disponible para esta organización.",
+      "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.",
+    ]) {
+      assert.ok(translations[key], `${locale}: ${key}`);
+      assert.notEqual(translations[key], key);
+    }
+  }
 });

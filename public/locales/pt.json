@@ -1863,5 +1863,9 @@
   "Administrador y Miembro son roles de solo lectura en esta pantalla.": "Administrador e Membro são funções somente leitura nesta tela.",
   "Ya existe una membresía o invitación para este correo en la organización.": "Já existe um membro ou convite para este e-mail nesta organização.",
   "No se pudo guardar la membresía. Revisá los datos, la conexión o tus permisos.": "Não foi possível salvar o membro. Verifique os dados, a conexão ou suas permissões.",
-  "Acceso a la organización eliminado": "Acesso à organização removido"
+  "Acceso a la organización eliminado": "Acesso à organização removido",
+  "Constructor de chatbots habilitado": "Construtor de chatbots habilitado",
+  "Deshabilitar elimina el acceso al constructor para todos los roles sin borrar sus permisos. Los chatbots activos y las operaciones ya aceptadas continúan.": "Desabilitar remove o acesso ao construtor de todos os cargos sem apagar suas permissões. Chatbots ativos e operações já aceitas continuam.",
+  "El constructor de chatbots no está disponible para esta organización.": "O construtor de chatbots não está disponível para esta organização.",
+  "Los chatbots activos continúan funcionando. Los cambios sin guardar no se guardaron.": "Chatbots ativos continuam funcionando. Alterações não salvas não foram gravadas."
 }
