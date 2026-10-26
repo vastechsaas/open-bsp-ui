@@ -27,6 +27,8 @@ import useBoundStore from "@/stores/useBoundStore";
 import { canAccessNavigation } from "@/utils/RoleAccess";
 import { isVisibleNavigationPath } from "@/utils/UiVisibility";
 import { useChatbotPermissions } from "@/queries/useModulePermissions";
+import { useIntegrationAvailability } from "@/queries/useIntegrationAvailability";
+import { integrationEnabled } from "@/utils/IntegrationAvailabilityUtils";
 import Avatar from "./Avatar";
 import { LinkButton } from "./LinkButton";
 
@@ -54,8 +56,12 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
   const userPicture = agent?.picture || metadata?.picture;
   const role = agent?.extra?.role;
   const chatbotPermissions = useChatbotPermissions();
+  const integrationAvailability = useIntegrationAvailability();
+  const anyIntegration =
+    integrationAvailability.isSuccess &&
+    integrationAvailability.data.integrations.some((item) => item.enabled);
   const showTools =
-    canAccessNavigation(role, "integrations") ||
+    (anyIntegration && canAccessNavigation(role, "integrations")) ||
     (isVisibleNavigationPath("/stats") && canAccessNavigation(role, "stats"));
   const navigationPadding = expanded ? "px-[12px]" : "px-[7px]";
 
@@ -214,16 +220,18 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
               separated
             />
             <div className="space-y-[3px]">
-              <LinkButton
-                to="/integrations"
-                access="integrations"
-                role={role}
-                title={t("Integraciones")}
-                isActive={pathname.startsWith("/integrations")}
-                expanded={expanded}
-              >
-                <Unplug className="h-[21px] w-[21px] stroke-[2]" />
-              </LinkButton>
+              {anyIntegration && (
+                <LinkButton
+                  to="/integrations"
+                  access="integrations"
+                  role={role}
+                  title={t("Integraciones")}
+                  isActive={pathname.startsWith("/integrations")}
+                  expanded={expanded}
+                >
+                  <Unplug className="h-[21px] w-[21px] stroke-[2]" />
+                </LinkButton>
+              )}
 
               {isVisibleNavigationPath("/stats") && (
                 <LinkButton
@@ -245,16 +253,19 @@ export default function Menu({ expanded, canToggle, onToggle }: MenuProps) {
       <div
         className={`shrink-0 space-y-[3px] border-t border-sidebar-border py-[8px] ${navigationPadding}`}
       >
-        <LinkButton
-          to="/whatsapp-manager"
-          access="whatsappManager"
-          role={role}
-          title={t("Gestor de WhatsApp")}
-          isActive={pathname.startsWith("/whatsapp-manager")}
-          expanded={expanded}
-        >
-          <WhatsAppOutlined className="text-[20px]" />
-        </LinkButton>
+        {integrationAvailability.isSuccess &&
+          integrationEnabled(integrationAvailability.data, "whatsapp") && (
+            <LinkButton
+              to="/whatsapp-manager"
+              access="whatsappManager"
+              role={role}
+              title={t("Gestor de WhatsApp")}
+              isActive={pathname.startsWith("/whatsapp-manager")}
+              expanded={expanded}
+            >
+              <WhatsAppOutlined className="text-[20px]" />
+            </LinkButton>
+          )}
 
         <LinkButton
           to="/settings"

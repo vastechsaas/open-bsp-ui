@@ -16,6 +16,8 @@ import {
 } from "@/utils/PlatformWhatsAppHealthUtils";
 import { formatDate, healthLabel } from "./PlatformWhatsAppHealth";
 import PlatformWhatsAppHealthStatus from "./PlatformWhatsAppHealthStatus";
+import { usePlatformIntegrationAvailability } from "@/queries/useIntegrationAvailability";
+import { integrationEnabled } from "@/utils/IntegrationAvailabilityUtils";
 
 export default function PlatformWhatsAppHealthDetail({
   organizationId,
@@ -27,6 +29,7 @@ export default function PlatformWhatsAppHealthDetail({
   const { translate: t } = useTranslation();
   const queryClient = useQueryClient();
   const health = usePlatformWhatsAppHealth(organizationId, phoneNumberId);
+  const availability = usePlatformIntegrationAvailability(organizationId);
   const [action, setAction] = useState<WhatsAppHealthAction | null>(null);
   const activeController = useRef<AbortController | null>(null);
   const autoChecked = useRef(false);
@@ -149,13 +152,16 @@ export default function PlatformWhatsAppHealthDetail({
             icon={<TestTube2 className="h-4 w-4" />}
             onClick={() => void runAction("test_connection")}
           />
-          <ActionButton
-            label={t("Actualizar informacion")}
-            busy={action === "refresh_account"}
-            disabled={!!action}
-            icon={<RefreshCw className="h-4 w-4" />}
-            onClick={() => void runAction("refresh_account")}
-          />
+          {availability.isSuccess &&
+            integrationEnabled(availability.data, "whatsapp") && (
+              <ActionButton
+                label={t("Actualizar informacion")}
+                busy={action === "refresh_account"}
+                disabled={!!action}
+                icon={<RefreshCw className="h-4 w-4" />}
+                onClick={() => void runAction("refresh_account")}
+              />
+            )}
           <ActionButton
             label={t("Sincronizar plantillas")}
             busy={action === "sync_templates"}

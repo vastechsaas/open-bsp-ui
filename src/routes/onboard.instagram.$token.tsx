@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Button from "@/components/Button";
 import { getInstagramAuthorizeUrl } from "@/queries/useInstagramSignup";
+import type { IntegrationOnboardingInfo } from "@/utils/IntegrationAvailabilityUtils";
 
 export const Route = createFileRoute("/onboard/instagram/$token")({
   component: OnboardInstagram,
@@ -15,7 +16,8 @@ export const IG_ONBOARD_REDIRECT_PATH = "/onboard/instagram/callback";
 type TokenValidation =
   | { status: "loading" }
   | { status: "valid"; organization_name: string }
-  | { status: "invalid" };
+  | { status: "invalid" }
+  | { status: "unavailable" };
 
 function OnboardInstagram() {
   const { token } = Route.useParams();
@@ -30,8 +32,12 @@ function OnboardInstagram() {
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
     })
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<IntegrationOnboardingInfo>)
       .then((data) => {
+        if (data.cause?.code === "INTEGRATION_UNAVAILABLE") {
+          setState({ status: "unavailable" });
+          return;
+        }
         if (data.valid) {
           setState({
             status: "valid",
@@ -66,6 +72,9 @@ function OnboardInstagram() {
       <div className="flex flex-col gap-4 w-[320px] text-center">
         {state.status === "loading" && (
           <p className="text-muted-foreground">{t("Validando enlace...")}</p>
+        )}
+        {state.status === "unavailable" && (
+          <p className="text-destructive">{t("Integración no disponible")}</p>
         )}
 
         {state.status === "invalid" && (
