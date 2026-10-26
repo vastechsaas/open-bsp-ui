@@ -46,6 +46,7 @@ import { Route as PlatformOrganizationIdWabaHealthRouteImport } from './routes/p
 import { Route as PlatformOrganizationIdStorageRouteImport } from './routes/platform/$organizationId/storage'
 import { Route as PlatformOrganizationIdQueuesRouteImport } from './routes/platform/$organizationId/queues'
 import { Route as PlatformOrganizationIdModulePermissionsRouteImport } from './routes/platform/$organizationId/module-permissions'
+import { Route as PlatformOrganizationIdIntegrationsRouteImport } from './routes/platform/$organizationId/integrations'
 import { Route as PlatformOrganizationIdAutomationRouteImport } from './routes/platform/$organizationId/automation'
 import { Route as PlatformOrganizationIdAgentsRouteImport } from './routes/platform/$organizationId/agents'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
@@ -292,6 +293,12 @@ const PlatformOrganizationIdModulePermissionsRoute =
   PlatformOrganizationIdModulePermissionsRouteImport.update({
     id: '/module-permissions',
     path: '/module-permissions',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
+const PlatformOrganizationIdIntegrationsRoute =
+  PlatformOrganizationIdIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
     getParentRoute: () => PlatformOrganizationIdRoute,
   } as any)
 const PlatformOrganizationIdAutomationRoute =
@@ -662,6 +669,7 @@ export interface FileRoutesByFullPath {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
   '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
@@ -753,6 +761,7 @@ export interface FileRoutesByTo {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
   '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
@@ -849,6 +858,7 @@ export interface FileRoutesById {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
   '/platform/$organizationId/storage': typeof PlatformOrganizationIdStorageRoute
@@ -946,6 +956,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
     | '/platform/$organizationId/storage'
@@ -1037,6 +1048,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
     | '/platform/$organizationId/storage'
@@ -1132,6 +1144,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
     | '/platform/$organizationId/storage'
@@ -1459,6 +1472,13 @@ declare module '@tanstack/react-router' {
       path: '/module-permissions'
       fullPath: '/platform/$organizationId/module-permissions'
       preLoaderRoute: typeof PlatformOrganizationIdModulePermissionsRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
+    }
+    '/platform/$organizationId/integrations': {
+      id: '/platform/$organizationId/integrations'
+      path: '/integrations'
+      fullPath: '/platform/$organizationId/integrations'
+      preLoaderRoute: typeof PlatformOrganizationIdIntegrationsRouteImport
       parentRoute: typeof PlatformOrganizationIdRoute
     }
     '/platform/$organizationId/automation': {
@@ -2055,6 +2075,7 @@ const PlatformOrganizationIdWabaHealthRouteWithChildren =
 interface PlatformOrganizationIdRouteChildren {
   PlatformOrganizationIdAgentsRoute: typeof PlatformOrganizationIdAgentsRoute
   PlatformOrganizationIdAutomationRoute: typeof PlatformOrganizationIdAutomationRoute
+  PlatformOrganizationIdIntegrationsRoute: typeof PlatformOrganizationIdIntegrationsRoute
   PlatformOrganizationIdModulePermissionsRoute: typeof PlatformOrganizationIdModulePermissionsRoute
   PlatformOrganizationIdQueuesRoute: typeof PlatformOrganizationIdQueuesRoute
   PlatformOrganizationIdStorageRoute: typeof PlatformOrganizationIdStorageRoute
@@ -2067,6 +2088,8 @@ const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
     PlatformOrganizationIdAgentsRoute: PlatformOrganizationIdAgentsRoute,
     PlatformOrganizationIdAutomationRoute:
       PlatformOrganizationIdAutomationRoute,
+    PlatformOrganizationIdIntegrationsRoute:
+      PlatformOrganizationIdIntegrationsRoute,
     PlatformOrganizationIdModulePermissionsRoute:
       PlatformOrganizationIdModulePermissionsRoute,
     PlatformOrganizationIdQueuesRoute: PlatformOrganizationIdQueuesRoute,

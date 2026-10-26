@@ -4,6 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import Button from "@/components/Button";
 import type { SignupPayload } from "@/contexts/WhatsAppIntegrationContext";
 import { loadTranslations } from "@/i18n/translations";
+import type { IntegrationOnboardingInfo } from "@/utils/IntegrationAvailabilityUtils";
 
 export const Route = createFileRoute("/onboard/whatsapp/$token")({
   beforeLoad: () => loadTranslations("en"),
@@ -14,6 +15,7 @@ type TokenValidation =
   | { status: "loading" }
   | { status: "valid"; organization_name: string }
   | { status: "invalid" }
+  | { status: "unavailable" }
   | { status: "success" }
   | { status: "error"; message: string };
 
@@ -42,9 +44,11 @@ function Onboard() {
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
     })
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<IntegrationOnboardingInfo>)
       .then((data) => {
-        if (data.valid) {
+        if (data.cause?.code === "INTEGRATION_UNAVAILABLE") {
+          setState({ status: "unavailable" });
+        } else if (data.valid) {
           setState({
             status: "valid",
             organization_name: data.organization_name,
@@ -148,6 +152,9 @@ function Onboard() {
       />
 
       <div className="flex flex-col gap-4 w-[320px] text-center">
+        {state.status === "unavailable" && (
+          <p className="text-destructive">{t("Integración no disponible")}</p>
+        )}
         {state.status === "loading" && (
           <p className="text-muted-foreground">{t("Validando enlace...")}</p>
         )}
@@ -248,9 +255,13 @@ function Onboard() {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
                   },
                 })
-                  .then((res) => res.json())
+                  .then(
+                    (res) => res.json() as Promise<IntegrationOnboardingInfo>,
+                  )
                   .then((data) => {
-                    if (data.valid) {
+                    if (data.cause?.code === "INTEGRATION_UNAVAILABLE") {
+                      setState({ status: "unavailable" });
+                    } else if (data.valid) {
                       setState({
                         status: "valid",
                         organization_name: data.organization_name,

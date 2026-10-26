@@ -48,6 +48,15 @@ import {
   useModulePermissionRefresh,
 } from "@/queries/useModulePermissions";
 import Spinner from "@/components/Spinner";
+import IntegrationManagementGate from "@/components/IntegrationManagementGate";
+import {
+  useIntegrationAvailability,
+  useIntegrationAvailabilityRefresh,
+} from "@/queries/useIntegrationAvailability";
+import {
+  integrationEnabled,
+  managementIntegration,
+} from "@/utils/IntegrationAvailabilityUtils";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import {
   canAccessNavigation,
@@ -68,6 +77,8 @@ export const Route = createFileRoute("/_auth")({
 const MIN_PANEL_WIDTH = 300;
 
 function AppLayout() {
+  useIntegrationAvailabilityRefresh();
+  const integrationAvailability = useIntegrationAvailability();
   useModulePermissionRefresh();
   const chatbotPermissions = useChatbotPermissions();
   const { translate: t } = useTranslation();
@@ -94,6 +105,14 @@ function AppLayout() {
       address.service === "whatsapp" && address.status === "connected",
   );
   const pathname = location.pathname;
+  const integration = managementIntegration(pathname);
+  const routeContent = integration ? (
+    <IntegrationManagementGate integration={integration}>
+      <Outlet />
+    </IntegrationManagementGate>
+  ) : (
+    <Outlet />
+  );
   const isMessagesRoute =
     pathname === "/conversations" || pathname === "/conversations/";
   const currentRole = currentAgent?.extra?.role;
@@ -250,7 +269,7 @@ function AppLayout() {
               : "flex")
         }
       >
-        {!isWorkspaceRoute && <Outlet />}
+        {!isWorkspaceRoute && routeContent}
         {/* Resize Handle */}
         <div className="resize-handle z-[60]" onMouseDown={handleMouseDown} />
       </div>
@@ -275,7 +294,7 @@ function AppLayout() {
         {hasPendingInvitations ? (
           <PendingInvitationGate invitations={invitations.data ?? []} />
         ) : isWorkspaceRoute ? (
-          <Outlet />
+          routeContent
         ) : isStatsRoute ? (
           <div className="overflow-y-auto h-full">
             <StatsCenter />
@@ -335,17 +354,22 @@ function AppLayout() {
                   title={t("Iniciar conversación")}
                   to="/conversations/new"
                 />
-                {canAccessNavigation(currentRole, "integrations") && (
-                  <ActionCard
-                    icon={<Settings className="w-[24px] h-[24px]" />}
-                    title={t("Configurar WhatsApp")}
-                    to="/integrations/whatsapp/new"
-                    disabled={hasConnectedWhatsApp}
-                    disabledReason={t(
-                      "Solo se puede conectar un número de WhatsApp por organización.",
-                    )}
-                  />
-                )}
+                {canAccessNavigation(currentRole, "integrations") &&
+                  integrationAvailability.isSuccess &&
+                  integrationEnabled(
+                    integrationAvailability.data,
+                    "whatsapp",
+                  ) && (
+                    <ActionCard
+                      icon={<Settings className="w-[24px] h-[24px]" />}
+                      title={t("Configurar WhatsApp")}
+                      to="/integrations/whatsapp/new"
+                      disabled={hasConnectedWhatsApp}
+                      disabledReason={t(
+                        "Solo se puede conectar un número de WhatsApp por organización.",
+                      )}
+                    />
+                  )}
               </>
             )}
           </div>
