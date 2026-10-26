@@ -7,22 +7,22 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyPolicy() {
   return (
-    <LegalPage title="Privacy Policy" updated="July 4, 2026">
+    <LegalPage title="Privacy Policy" updated="October 26, 2026">
       <section>
         <p>
-          This Privacy Policy explains how <strong>Vastech Technologies</strong>
-          {" "}(&quot;Vastech,&quot; &quot;we,&quot; &quot;us,&quot; or
+          This Privacy Policy explains how <strong>Vastech Technologies</strong>{" "}
+          (&quot;Vastech,&quot; &quot;we,&quot; &quot;us,&quot; or
           &quot;our&quot;) collects, uses, stores, and shares information when
           you use <strong>Social Connect</strong>, including its website,
           dashboard, messaging tools, and integrations with the WhatsApp
-          Business Platform.
+          Business Platform and Instagram.
         </p>
         <p>
           Social Connect helps authorized businesses connect their WhatsApp
-          Business accounts, manage customer conversations, and send and
-          receive business messages. This policy applies to organization
-          administrators, team members, and individuals whose communications
-          are processed through Social Connect.
+          Business and Instagram professional accounts, manage customer
+          conversations, and send and receive business messages. This policy
+          applies to organization administrators, team members, and individuals
+          whose communications are processed through Social Connect.
         </p>
       </section>
 
@@ -33,8 +33,8 @@ function PrivacyPolicy() {
           the operation and security of the service. A business using Social
           Connect may separately determine why it communicates with its
           customers and how those communications are used. In that situation,
-          the business is also responsible for its own notices, permissions,
-          and compliance obligations.
+          the business is also responsible for its own notices, permissions, and
+          compliance obligations.
         </p>
       </section>
 
@@ -54,6 +54,15 @@ function PrivacyPolicy() {
             profile information, message templates, and integration status.
           </li>
           <li>
+            <strong>Instagram information:</strong> connected professional
+            account IDs, usernames, profile details and connection status;
+            customer Instagram-scoped identifiers, names and profile pictures;
+            and Direct Messages, attachments, reactions and read events used in
+            the shared inbox. We use the authorized connection to receive and
+            reply to customer-initiated conversations, not to publish posts or
+            manage comments in the current integration.
+          </li>
+          <li>
             <strong>Messages and contacts:</strong> sender and recipient
             identifiers, phone numbers, profile names, message text, media,
             documents, message timestamps, replies, reactions, and delivery,
@@ -63,18 +72,19 @@ function PrivacyPolicy() {
             <strong>Credentials and connection data:</strong> access tokens,
             authorization codes, webhook configuration, and other credentials
             required to connect to Meta services. We do not request or store
-            your Facebook password.
+            your Facebook or Instagram password. Authorization takes place on
+            Meta&apos;s login pages; connection credentials are handled by the
+            backend rather than exposed in public onboarding responses.
           </li>
           <li>
-            <strong>Technical and usage information:</strong> browser and
-            device information, IP address, timestamps, diagnostic events,
-            security events, function and API logs, and actions taken within
-            the service.
+            <strong>Technical and usage information:</strong> browser and device
+            information, IP address, timestamps, diagnostic events, security
+            events, function and API logs, and actions taken within the service.
           </li>
           <li>
             <strong>Information you provide:</strong> organization details,
-            member invitations, support requests, API and webhook
-            configuration, and other content submitted through the service.
+            member invitations, support requests, API and webhook configuration,
+            and other content submitted through the service.
           </li>
         </ul>
       </section>
@@ -84,7 +94,9 @@ function PrivacyPolicy() {
         <p>We use information only as reasonably necessary to:</p>
         <ul>
           <li>authenticate users and administer organizations and roles;</li>
-          <li>connect and maintain WhatsApp Business integrations;</li>
+          <li>
+            connect and maintain WhatsApp Business and Instagram integrations;
+          </li>
           <li>
             display, send, receive, route, store, and synchronize business
             communications and media;
@@ -113,13 +125,13 @@ function PrivacyPolicy() {
       <section>
         <h2>4. Legal grounds for processing</h2>
         <p>
-          Where applicable law requires a legal basis, we process information
-          to perform our contract with users and customer organizations, to
-          pursue legitimate interests such as securing and operating the
-          service, to comply with legal obligations, and with consent where
-          consent is required. A customer organization is responsible for
-          establishing an appropriate legal basis for the messages it sends and
-          for obtaining any required customer permissions.
+          Where applicable law requires a legal basis, we process information to
+          perform our contract with users and customer organizations, to pursue
+          legitimate interests such as securing and operating the service, to
+          comply with legal obligations, and with consent where consent is
+          required. A customer organization is responsible for establishing an
+          appropriate legal basis for the messages it sends and for obtaining
+          any required customer permissions.
         </p>
       </section>
 
@@ -128,9 +140,9 @@ function PrivacyPolicy() {
         <p>We may share information with:</p>
         <ul>
           <li>
-            <strong>Meta and WhatsApp:</strong> as necessary to connect accounts
-            and send or receive messages through the WhatsApp Business
-            Platform.
+            <strong>Meta, WhatsApp and Instagram:</strong> as necessary to
+            connect accounts and send or receive messages through the WhatsApp
+            Business Platform and Instagram APIs.
           </li>
           <li>
             <strong>Supabase, Inc.:</strong> our managed database,
@@ -148,9 +160,9 @@ function PrivacyPolicy() {
           </li>
           <li>
             <strong>Customer-directed integrations:</strong> webhook
-            destinations, media-processing providers, or other external
-            services that an authorized organization administrator explicitly
-            configures. Data is sent to those services only according to that
+            destinations, media-processing providers, or other external services
+            that an authorized organization administrator explicitly configures.
+            Data is sent to those services only according to that
             organization&apos;s instructions.
           </li>
           <li>
@@ -160,15 +172,15 @@ function PrivacyPolicy() {
           </li>
           <li>
             <strong>Business transfers:</strong> if all or part of the service
-            is involved in a merger, acquisition, financing, or sale, subject
-            to appropriate confidentiality and legal safeguards.
+            is involved in a merger, acquisition, financing, or sale, subject to
+            appropriate confidentiality and legal safeguards.
           </li>
         </ul>
         <p>
           Service providers may process information only to provide contracted
           services to us and are subject to contractual or legal data-protection
-          obligations. We do not permit them to use Meta Platform Data for
-          their own advertising purposes.
+          obligations. We do not permit them to use Meta Platform Data for their
+          own advertising purposes.
         </p>
       </section>
 
@@ -178,10 +190,12 @@ function PrivacyPolicy() {
           We retain account and organization information while the relevant
           account or organization remains active and retain message data for as
           long as needed to provide conversation history and the requested
-          service. Organization owners can delete an organization from the
-          dashboard. Associated active database records are deleted through the
-          service&apos;s cascading deletion process, and associated stored
-          media is normally removed by an automated cleanup process within
+          service. Archiving an organization preserves its records; it is not
+          deletion. Organization owners can request permanent deletion using the
+          instructions on our Data Deletion page. When permanent deletion is
+          completed, associated active database records are deleted through the
+          service&apos;s cascading deletion process, and associated stored media
+          is normally removed by an automated cleanup process within
           approximately one hour.
         </p>
         <p>
@@ -198,9 +212,9 @@ function PrivacyPolicy() {
         <h2>7. Security</h2>
         <p>
           We use administrative, technical, and organizational safeguards
-          designed to protect information, including encrypted transport,
-          access controls, role-based authorization, tenant-level data
-          isolation, restricted production access, and monitoring. No method of
+          designed to protect information, including encrypted transport, access
+          controls, role-based authorization, tenant-level data isolation,
+          restricted production access, and monitoring. No method of
           transmission or storage is completely secure, and we cannot guarantee
           absolute security. Users must protect their credentials and promptly
           report suspected unauthorized access.
@@ -230,8 +244,8 @@ function PrivacyPolicy() {
           Organization users should first use available dashboard controls.
           WhatsApp end users may contact the business with which they
           communicated or contact us directly. We may request information
-          necessary to verify identity, authority, and the organization or
-          phone number associated with a request.
+          necessary to verify identity, authority, and the organization or phone
+          number associated with a request.
         </p>
       </section>
 
@@ -239,9 +253,8 @@ function PrivacyPolicy() {
         <h2>10. Children</h2>
         <p>
           Social Connect is a business service and is not directed to children
-          under 18. Customer organizations must not knowingly use the service
-          to collect children&apos;s information in violation of applicable
-          law.
+          under 18. Customer organizations must not knowingly use the service to
+          collect children&apos;s information in violation of applicable law.
         </p>
       </section>
 
@@ -249,9 +262,9 @@ function PrivacyPolicy() {
         <h2>11. Changes to this policy</h2>
         <p>
           We may update this policy to reflect changes to the service, law, or
-          our data practices. We will publish the revised policy here and
-          update its effective date. Material changes may also be communicated
-          through the service or by email where appropriate.
+          our data practices. We will publish the revised policy here and update
+          its effective date. Material changes may also be communicated through
+          the service or by email where appropriate.
         </p>
       </section>
 

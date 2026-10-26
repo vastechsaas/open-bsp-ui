@@ -7,7 +7,7 @@ export const Route = createFileRoute("/terms")({
 
 function TermsOfService() {
   return (
-    <LegalPage title="Terms of Service" updated="July 4, 2026">
+    <LegalPage title="Terms of Service" updated="October 26, 2026">
       <section>
         <p>
           These Terms of Service (&quot;Terms&quot;) govern access to and use of
@@ -24,10 +24,11 @@ function TermsOfService() {
         <h2>1. The service</h2>
         <p>
           Social Connect enables authorized organizations to connect supported
-          business-messaging accounts, manage contacts and conversations, send
-          and receive messages and media, manage templates, invite team
-          members, and use related integration tools. Features may change as
-          the service and third-party platforms evolve.
+          business-messaging accounts, including WhatsApp Business and Instagram
+          professional accounts, manage contacts and conversations, send and
+          receive messages and media, manage templates, invite team members, and
+          use related integration tools. Features may change as the service and
+          third-party platforms evolve.
         </p>
       </section>
 
@@ -55,21 +56,21 @@ function TermsOfService() {
       </section>
 
       <section>
-        <h2>4. Meta and WhatsApp requirements</h2>
+        <h2>4. Meta, WhatsApp and Instagram requirements</h2>
         <p>
           Social Connect is an independent service and is not owned or endorsed
-          by Meta. Your use of Meta and WhatsApp products remains subject to
-          their applicable terms, policies, documentation, commerce rules, and
-          messaging requirements, including requirements concerning user
-          consent, message templates, service windows, opt-outs, and prohibited
-          content.
+          by Meta. Your use of Meta, WhatsApp and Instagram products remains
+          subject to their applicable terms, policies, documentation, commerce
+          rules, and messaging requirements, including requirements concerning
+          user consent, message templates, service windows, opt-outs, and
+          prohibited content.
         </p>
         <p>
-          You are responsible for maintaining an eligible WhatsApp Business
-          account and for any action Meta takes concerning that account. We do
-          not control approval, suspension, message delivery, template
-          classification, quality ratings, pricing, or availability of Meta
-          services.
+          You are responsible for maintaining an eligible WhatsApp Business or
+          Instagram professional account and for any action Meta takes
+          concerning that account. We do not control approval, suspension,
+          message delivery, template classification, quality ratings, pricing,
+          or availability of Meta services.
         </p>
       </section>
 
@@ -87,8 +88,8 @@ function TermsOfService() {
             laws;
           </li>
           <li>
-            transmit illegal, fraudulent, threatening, exploitative, hateful,
-            or malicious content;
+            transmit illegal, fraudulent, threatening, exploitative, hateful, or
+            malicious content;
           </li>
           <li>
             collect, use, or disclose sensitive or personal information without
@@ -100,8 +101,7 @@ function TermsOfService() {
           </li>
           <li>
             sell, license, scrape, or use Meta Platform Data for unauthorized
-            profiling, surveillance, advertising, or data-broker activities;
-            or
+            profiling, surveillance, advertising, or data-broker activities; or
           </li>
           <li>
             allow unauthorized persons to access the service or falsely
@@ -113,13 +113,13 @@ function TermsOfService() {
       <section>
         <h2>6. Your responsibilities</h2>
         <p>
-          You determine the purpose and content of your business
-          communications. You are responsible for providing legally required
-          privacy notices, honoring opt-outs, responding to data-subject
-          requests, maintaining records of consent where required, and ensuring
-          that your instructions and use of the service are lawful. You must
-          not instruct us to process information in a manner that violates
-          applicable law or third-party platform rules.
+          You determine the purpose and content of your business communications.
+          You are responsible for providing legally required privacy notices,
+          honoring opt-outs, responding to data-subject requests, maintaining
+          records of consent where required, and ensuring that your instructions
+          and use of the service are lawful. You must not instruct us to process
+          information in a manner that violates applicable law or third-party
+          platform rules.
         </p>
       </section>
 
@@ -170,8 +170,8 @@ function TermsOfService() {
           If you purchase a paid plan or professional service, applicable fees,
           taxes, usage limits, billing intervals, and payment terms will be
           disclosed in an order, invoice, dashboard, or separate written
-          agreement. Meta or telecommunications charges may apply separately
-          and remain your responsibility unless expressly stated otherwise.
+          agreement. Meta or telecommunications charges may apply separately and
+          remain your responsibility unless expressly stated otherwise.
         </p>
       </section>
 
@@ -190,9 +190,9 @@ function TermsOfService() {
       <section>
         <h2>12. Suspension and termination</h2>
         <p>
-          You may stop using the service at any time and organization owners
-          may delete their organization through the dashboard. We may restrict
-          or suspend access when reasonably necessary to address security risk,
+          You may stop using the service at any time and organization owners may
+          delete their organization through the dashboard. We may restrict or
+          suspend access when reasonably necessary to address security risk,
           unlawful activity, non-payment, platform-policy violations, harm to
           users or third parties, or a material breach of these Terms.
         </p>
@@ -223,8 +223,8 @@ function TermsOfService() {
           To the maximum extent permitted by law, the service is provided
           &quot;as is&quot; and &quot;as available.&quot; We disclaim implied
           warranties of merchantability, fitness for a particular purpose,
-          non-infringement, and any warranty arising from course of dealing.
-          We do not warrant that messages will be delivered, that third-party
+          non-infringement, and any warranty arising from course of dealing. We
+          do not warrant that messages will be delivered, that third-party
           approvals will be granted, or that the service will meet every legal
           or business requirement.
         </p>
@@ -235,13 +235,12 @@ function TermsOfService() {
         <p>
           To the maximum extent permitted by law, Vastech and its affiliates,
           officers, employees, and suppliers will not be liable for indirect,
-          incidental, special, consequential, exemplary, or punitive damages,
-          or for lost profits, revenue, data, goodwill, or business
-          opportunities arising from or related to the service. Any aggregate
-          liability will not exceed the amount you paid to Vastech for Social
-          Connect during the six months preceding the event giving rise to the
-          claim. Nothing in these Terms limits liability that cannot lawfully be
-          limited.
+          incidental, special, consequential, exemplary, or punitive damages, or
+          for lost profits, revenue, data, goodwill, or business opportunities
+          arising from or related to the service. Any aggregate liability will
+          not exceed the amount you paid to Vastech for Social Connect during
+          the six months preceding the event giving rise to the claim. Nothing
+          in these Terms limits liability that cannot lawfully be limited.
         </p>
       </section>
 
@@ -249,10 +248,9 @@ function TermsOfService() {
         <h2>16. Indemnity</h2>
         <p>
           To the extent permitted by law, you will defend and indemnify Vastech
-          against third-party claims, damages, and reasonable costs arising
-          from your content, your business communications, your violation of
-          law or third-party platform rules, or your material breach of these
-          Terms.
+          against third-party claims, damages, and reasonable costs arising from
+          your content, your business communications, your violation of law or
+          third-party platform rules, or your material breach of these Terms.
         </p>
       </section>
 
