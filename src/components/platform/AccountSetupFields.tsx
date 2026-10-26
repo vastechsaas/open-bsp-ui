@@ -49,7 +49,7 @@ export default function AccountSetupFields({
               {t("Enviar invitación por correo")}
             </option>
             <option value="direct">{t("Crear con correo y contraseña")}</option>
-            <option value="pending">
+            <option value="pending" hidden disabled>
               {t("Crear solo membresía pendiente")}
             </option>
           </select>
