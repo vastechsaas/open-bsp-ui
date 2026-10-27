@@ -20,6 +20,7 @@ export default function TemplatePicker() {
   const approved = templates?.filter(
     (template) =>
       template.status === "APPROVED" &&
+      !template.components.some((component) => component.type === "CAROUSEL") &&
       !template.components.some(
         (component) =>
           component.type === "HEADER" && component.format !== "TEXT",

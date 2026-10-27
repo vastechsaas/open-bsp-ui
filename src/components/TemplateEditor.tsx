@@ -45,6 +45,18 @@ import {
   type TemplateButtonValue,
 } from "@/utils/TemplateDraftUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
+import useBoundStore from "@/stores/useBoundStore";
+import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
+import { uploadCarouselImage } from "@/queries/carouselMedia";
+import {
+  carouselIssues,
+  newCarouselCard,
+  readCarouselCards,
+  supportedImageCarousel,
+} from "@/utils/CarouselUtils";
+import CarouselTemplateContent, {
+  CarouselPreview,
+} from "./CarouselTemplateContent";
 
 export default function TemplateEditor({
   existingTemplate,
@@ -72,21 +84,53 @@ export default function TemplateEditor({
     existingTemplate?.status === "draft" ? existingTemplate.id : undefined,
   );
   const [headerMediaFile, setHeaderMediaFile] = useState<File>();
+  const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const [selectedCardId, setSelectedCardId] = useState<string>();
+  const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
+  const [preparingImages, setPreparingImages] = useState(false);
+  const uploadedImages = useRef(
+    new Map<string, { file: File; asset: CarouselMediaAsset }>(),
+  );
   const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState<string>();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const createDraft = useCreateTemplateDraft();
   const updateDraft = useUpdateTemplateDraft();
   const submitDraft = useSubmitTemplateDraft();
   const editSubmittedTemplate = useEditSubmittedTemplate();
-  const { isReadOnly, lockIdentity } = getTemplateEditorAccess(
+  const access = getTemplateEditorAccess(
     existingTemplate?.status,
     submittedEdit,
   );
+  const supported = supportedImageCarousel(
+    (existingTemplate?.components || []) as unknown as TemplateComponent[],
+  );
+  const isCarousel = values.format === "CAROUSEL";
+  const isReadOnly =
+    access.isReadOnly ||
+    !supported ||
+    (isCarousel &&
+      existingTemplate?.status !== undefined &&
+      existingTemplate.status !== "draft");
+  const lockIdentity = access.lockIdentity;
+  const statusLabels: Record<string, string> = {
+    draft: "Borrador",
+    pending: "Pendiente",
+    approved: "Aprobada",
+    rejected: "Rechazada",
+    paused: "Pausada",
+    disabled: "Deshabilitada",
+    deleted: "Eliminada",
+    in_appeal: "En apelación",
+    pending_deletion: "Pendiente de eliminación",
+    limit_exceeded: "Límite excedido",
+  };
+  const cardIssues = isCarousel ? carouselIssues(values.cards || []) : [];
   const isPending =
     createDraft.isPending ||
     updateDraft.isPending ||
     submitDraft.isPending ||
-    editSubmittedTemplate.isPending;
+    editSubmittedTemplate.isPending ||
+    preparingImages;
   const detailsErrors = getTemplateDetailsErrors(values);
   const contentErrors = getTemplateContentErrors(values);
   const mediaFileError = isReadOnly
@@ -96,6 +140,14 @@ export default function TemplateEditor({
     ...detailsErrors,
     ...contentErrors,
     ...(mediaFileError ? [mediaFileError] : []),
+    ...(isCarousel &&
+    ((values.cards?.length || 0) < 2 || (values.cards?.length || 0) > 10)
+      ? ["Usá entre 2 y 10 tarjetas en el carrusel."]
+      : []),
+    ...cardIssues.map(
+      (issue) =>
+        `${t("Tarjeta")} ${(values.cards || []).findIndex((card) => card.id === issue.cardId) + 1}: ${t(issue.message)}`,
+    ),
   ];
   const bodyIndexes = useMemo(
     () => getTemplateVariableIndexes(values.body),
@@ -151,20 +203,82 @@ export default function TemplateEditor({
 
   const persistDraft = async () => {
     const template = buildTemplateDraftInput(values);
+    const mediaAssets = isCarousel
+      ? (values.cards || []).map((card) =>
+          card.asset
+            ? { ...card.asset, card_id: card.id }
+            : { card_id: card.id },
+        )
+      : [];
+    let draftId = savedDraftId;
     if (savedDraftId) {
       await updateDraft.mutateAsync({
         draftId: savedDraftId,
         organizationAddress: values.organizationAddress,
         template,
+        mediaAssets,
       });
-      return savedDraftId;
+    } else {
+      const draft = await createDraft.mutateAsync({
+        organizationAddress: values.organizationAddress,
+        template,
+        mediaAssets,
+      });
+      setSavedDraftId(draft.id);
+      draftId = draft.id;
     }
-    const draft = await createDraft.mutateAsync({
-      organizationAddress: values.organizationAddress,
-      template,
-    });
-    setSavedDraftId(draft.id);
-    return draft.id;
+    if (isCarousel) {
+      setPreparingImages(true);
+      try {
+        const cards = [...(values.cards || [])];
+        for (const [index, card] of cards.entries()) {
+          if (!card.file) continue;
+          let uploaded = uploadedImages.current.get(card.id);
+          if (uploaded?.file !== card.file) {
+            const result = await uploadCarouselImage(
+              activeOrgId!,
+              "template",
+              draftId!,
+              card.id,
+              card.file,
+            );
+            uploaded = { file: card.file, asset: result.asset };
+            uploadedImages.current.set(card.id, uploaded);
+          }
+          cards[index] = { ...card, asset: uploaded.asset, file: undefined };
+          // Retain each success immediately so a later failed upload can be retried independently.
+          setValues((current) => ({
+            ...current,
+            cards: current.cards?.map((item) =>
+              item.id === card.id ? cards[index] : item,
+            ),
+          }));
+          await updateDraft.mutateAsync({
+            draftId: draftId!,
+            organizationAddress: values.organizationAddress,
+            template,
+            mediaAssets: cards.map((item) =>
+              item.asset
+                ? { ...item.asset, card_id: item.id }
+                : { card_id: item.id },
+            ),
+          });
+        }
+        await updateDraft.mutateAsync({
+          draftId: draftId!,
+          organizationAddress: values.organizationAddress,
+          template,
+          mediaAssets: cards.map((card) =>
+            card.asset
+              ? { ...card.asset, card_id: card.id }
+              : { card_id: card.id },
+          ),
+        });
+      } finally {
+        setPreparingImages(false);
+      }
+    }
+    return draftId!;
   };
 
   const returnToList = () =>
@@ -225,6 +339,28 @@ export default function TemplateEditor({
     }
   };
 
+  const duplicateAsDraft = async () => {
+    if (!supported) return;
+    try {
+      const draft = await createDraft.mutateAsync({
+        organizationAddress: values.organizationAddress,
+        template: {
+          ...buildTemplateDraftInput(values),
+          name: `${values.name.slice(0, 480)}_copy_${Date.now()}`,
+        },
+        mediaAssets: (values.cards || []).flatMap((card) =>
+          card.asset ? [card.asset] : [],
+        ),
+      });
+      await navigate({
+        to: "/templates/$templateId/edit",
+        params: { templateId: draft.id },
+      });
+    } catch {
+      void message.error(t("No se pudo guardar el borrador"));
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="border-b border-border px-[18px] py-[18px] md:px-[28px]">
@@ -269,12 +405,60 @@ export default function TemplateEditor({
             </button>
           </div>
           <Progress step={step} readOnly={isReadOnly} />
+          <div className="mt-[12px] flex flex-wrap gap-[8px] text-[11px] text-muted-foreground">
+            <span className="rounded-full border border-border px-[9px] py-[4px]">
+              {t(
+                values.category === "UTILITY"
+                  ? "Utilidad"
+                  : values.category === "AUTHENTICATION"
+                    ? "Autenticación"
+                    : "Marketing",
+              )}
+            </span>
+            <span className="rounded-full border border-border px-[9px] py-[4px]">
+              {t(isCarousel ? "Carrusel de imágenes" : "Estándar")}
+              {isCarousel && ` · ${values.cards?.length || 0}`}
+            </span>
+            <span className="rounded-full border border-border px-[9px] py-[4px]">
+              {t(
+                statusLabels[existingTemplate?.status || "draft"] ||
+                  existingTemplate!.status,
+              )}
+            </span>
+          </div>
         </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-[16px] py-[20px] md:px-[28px]">
+        {isCarousel && (
+          <div className="mb-[14px] flex gap-[8px] xl:hidden">
+            {(["edit", "preview"] as const).map((tab) => (
+              <button
+                type="button"
+                key={tab}
+                aria-pressed={mobileTab === tab}
+                onClick={() => setMobileTab(tab)}
+                className={`rounded-lg border px-[14px] py-[8px] ${mobileTab === tab ? "border-primary text-primary" : "border-border"}`}
+              >
+                {t(tab === "edit" ? "Editar" : "Vista previa")}
+              </button>
+            ))}
+          </div>
+        )}
+        {!supported && (
+          <p
+            role="alert"
+            className="mb-[14px] rounded border border-amber-500 p-[12px]"
+          >
+            {t(
+              "Este formato de carrusel importado no admite edición ni envío.",
+            )}
+          </p>
+        )}
         <div className="mx-auto grid max-w-[1500px] gap-[20px] xl:grid-cols-[minmax(0,1fr)_380px]">
-          <main className="min-w-0">
+          <main
+            className={`min-w-0 ${isCarousel && mobileTab === "preview" ? "hidden xl:block" : ""}`}
+          >
             {step === 1 && (
               <DetailsStep
                 values={values}
@@ -284,7 +468,7 @@ export default function TemplateEditor({
                 lockIdentity={lockIdentity}
               />
             )}
-            {step === 2 && (
+            {step === 2 && !isCarousel && (
               <ContentStep
                 values={values}
                 update={update}
@@ -296,6 +480,59 @@ export default function TemplateEditor({
                 mediaError={mediaFileError}
                 onMediaFileChange={setHeaderMediaFile}
               />
+            )}
+            {step === 2 && isCarousel && (
+              <>
+                <section className="rounded-xl border border-border bg-card p-[18px]">
+                  <Field label={t("Mensaje introductorio")}>
+                    <textarea
+                      value={values.body}
+                      readOnly={isReadOnly}
+                      rows={4}
+                      className="w-full rounded-lg border border-border bg-background p-[12px]"
+                      onChange={(event) => update("body", event.target.value)}
+                    />
+                  </Field>
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    className="mt-[8px] text-[12px] text-primary"
+                    onClick={() =>
+                      update(
+                        "body",
+                        `${values.body} {{${bodyIndexes.length + 1}}}`,
+                      )
+                    }
+                  >
+                    {t("Insertar variable")}
+                  </button>
+                  {bodyIndexes.map((variable, index) => (
+                    <Field
+                      key={variable}
+                      label={`${t("Ejemplo")} {{${variable}}}`}
+                    >
+                      <input
+                        value={values.bodySamples[index] || ""}
+                        readOnly={isReadOnly}
+                        className="w-full rounded border border-border bg-background p-[8px]"
+                        onChange={(event) => {
+                          const samples = [...values.bodySamples];
+                          samples[index] = event.target.value;
+                          update("bodySamples", samples);
+                        }}
+                      />
+                    </Field>
+                  ))}
+                </section>
+                <CarouselTemplateContent
+                  cards={values.cards || []}
+                  onChange={(cards) => update("cards", cards)}
+                  selectedId={selectedCardId}
+                  onSelect={setSelectedCardId}
+                  readOnly={isReadOnly || isPending}
+                  issues={cardIssues}
+                />
+              </>
             )}
             {step === 3 && (
               <ReviewStep
@@ -309,27 +546,50 @@ export default function TemplateEditor({
                 status={existingTemplate?.status}
               />
             )}
+            {step === 3 && isReadOnly && isCarousel && supported && (
+              <CarouselTemplateContent
+                cards={values.cards || []}
+                onChange={() => undefined}
+                selectedId={selectedCardId}
+                onSelect={setSelectedCardId}
+                readOnly
+                issues={cardIssues}
+              />
+            )}
           </main>
 
-          <aside className="space-y-[16px] xl:sticky xl:top-0 xl:self-start">
+          <aside
+            className={`space-y-[16px] xl:sticky xl:top-0 xl:self-start ${isCarousel && mobileTab === "edit" ? "hidden xl:block" : ""}`}
+          >
             <section className="overflow-hidden rounded-xl border border-border bg-card">
               <div className="border-b border-border px-[16px] py-[13px] font-medium">
                 {t("Vista previa de WhatsApp")}
               </div>
               <div className="min-h-[260px] bg-chat py-[18px] [&>div]:!mx-[12px] [&>div>div>div]:!max-w-[92%]">
-                <TemplatePreview
-                  editMode
-                  template={previewTemplate}
-                  media={
-                    isMediaHeaderFormat(values.headerFormat)
-                      ? {
-                          format: values.headerFormat,
-                          url: headerMediaPreviewUrl,
-                          fileName: headerMediaFile?.name,
-                        }
-                      : undefined
-                  }
-                />
+                {isCarousel ? (
+                  <CarouselPreview
+                    introduction={values.body.replace(
+                      /\{\{\s*(\d+)\s*\}\}/g,
+                      (match, index) =>
+                        values.bodySamples[Number(index) - 1] || match,
+                    )}
+                    cards={values.cards || []}
+                  />
+                ) : (
+                  <TemplatePreview
+                    editMode
+                    template={previewTemplate}
+                    media={
+                      isMediaHeaderFormat(values.headerFormat)
+                        ? {
+                            format: values.headerFormat,
+                            url: headerMediaPreviewUrl,
+                            fileName: headerMediaFile?.name,
+                          }
+                        : undefined
+                    }
+                  />
+                )}
               </div>
             </section>
             <section className="rounded-xl border border-border bg-card p-[16px]">
@@ -343,10 +603,36 @@ export default function TemplateEditor({
               </div>
               {readinessErrors.length ? (
                 <ul className="mt-[12px] space-y-[7px] text-[12px] text-muted-foreground">
-                  {readinessErrors.slice(0, 4).map((error) => (
+                  {readinessErrors.map((error) => (
                     <li key={error} className="flex gap-[7px]">
                       <span>•</span>
-                      <span>{t(error)}</span>
+                      <button
+                        type="button"
+                        className="text-left hover:underline"
+                        onClick={() => {
+                          const issue = cardIssues.find(
+                            (item) =>
+                              error ===
+                              `${t("Tarjeta")} ${(values.cards || []).findIndex((card) => card.id === item.cardId) + 1}: ${t(item.message)}`,
+                          );
+                          setStep(
+                            issue ? 2 : detailsErrors.includes(error) ? 1 : 2,
+                          );
+                          setMobileTab("edit");
+                          if (issue) {
+                            setSelectedCardId(issue.cardId);
+                            requestAnimationFrame(() =>
+                              document
+                                .getElementById(
+                                  `carousel-${issue.cardId}-${issue.field === "samples" ? "samples-0" : issue.field}`,
+                                )
+                                ?.focus(),
+                            );
+                          }
+                        }}
+                      >
+                        {t(error)}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -363,13 +649,25 @@ export default function TemplateEditor({
       <footer className="border-t border-border bg-background px-[16px] py-[14px] md:px-[28px]">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-end gap-[10px]">
           {isReadOnly ? (
-            <button
-              type="button"
-              className="primary px-[18px] py-[10px]"
-              onClick={returnToList}
-            >
-              {t("Volver a plantillas")}
-            </button>
+            <>
+              {isCarousel && supported && (
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => void duplicateAsDraft()}
+                  className="rounded-lg border border-border px-[18px] py-[10px]"
+                >
+                  {t("Duplicar como borrador")}
+                </button>
+              )}
+              <button
+                type="button"
+                className="primary px-[18px] py-[10px]"
+                onClick={returnToList}
+              >
+                {t("Volver a plantillas")}
+              </button>
+            </>
           ) : (
             <>
               {!submittedEdit && (
@@ -495,6 +793,55 @@ function DetailsStep({
         {t("Elegí la cuenta, la categoría y el nombre interno de Meta.")}
       </p>
       <div className="mt-[22px] grid gap-[18px] md:grid-cols-2">
+        <Field label={t("Formato del mensaje")}>
+          <CampaignFilterSelect
+            ariaLabel={t("Formato del mensaje")}
+            value={values.format || "STANDARD"}
+            disabled={readOnly || lockIdentity}
+            options={[
+              { value: "STANDARD", label: t("Estándar") },
+              { value: "CAROUSEL", label: t("Carrusel de imágenes") },
+            ]}
+            onChange={(format) => {
+              if (format === values.format) return;
+              if (
+                (values.body ||
+                  values.header ||
+                  values.footer ||
+                  values.headerFormat !== "NONE" ||
+                  values.buttons.length ||
+                  values.cards?.some(
+                    (card) =>
+                      card.text ||
+                      card.label ||
+                      card.url ||
+                      card.asset ||
+                      card.file,
+                  )) &&
+                !window.confirm(
+                  t(
+                    "Cambiar el formato descartará el contenido actual. ¿Continuar?",
+                  ),
+                )
+              )
+                return;
+              update("format", format as "STANDARD" | "CAROUSEL");
+              update("body", "");
+              update("bodySamples", []);
+              update("buttons", []);
+              update("headerFormat", "NONE");
+              update("header", "");
+              update("footer", "");
+              update(
+                "cards",
+                format === "CAROUSEL"
+                  ? [newCarouselCard(), newCarouselCard()]
+                  : undefined,
+              );
+              if (format === "CAROUSEL") update("category", "MARKETING");
+            }}
+          />
+        </Field>
         <Field label={t("Cuenta de WhatsApp")}>
           <CampaignFilterSelect
             ariaLabel={t("Cuenta de WhatsApp")}
@@ -511,7 +858,7 @@ function DetailsStep({
           <CampaignFilterSelect
             ariaLabel={t("Categoría")}
             value={values.category}
-            disabled={readOnly}
+            disabled={readOnly || values.format === "CAROUSEL"}
             onChange={(value) => update("category", value as TemplateCategory)}
             options={[
               { value: "UTILITY", label: t("Utilidad") },
@@ -1143,7 +1490,13 @@ function getInitialValues(
   const body = components.find((component) => component.type === "BODY");
   const footer = components.find((component) => component.type === "FOOTER");
   const buttons = components.find((component) => component.type === "BUTTONS");
+  const cards = readCarouselCards(
+    components,
+    (existingTemplate?.media_assets || []) as unknown as CarouselMediaAsset[],
+  );
   return {
+    format: cards ? "CAROUSEL" : "STANDARD",
+    cards,
     organizationAddress:
       existingTemplate?.organization_address || organizationAddress,
     name: existingTemplate?.name || "",

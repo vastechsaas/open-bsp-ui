@@ -5,6 +5,7 @@ import type {
   TemplateComponent,
   TemplateDraftInput,
 } from "@/supabase/types/whatsapp_template_types";
+import { carouselDefinition, type CarouselCardValue } from "./CarouselUtils";
 
 export type TemplateHeaderFormat = "NONE" | "TEXT" | MediaHeaderFormat;
 
@@ -20,6 +21,8 @@ export type TemplateButtonValue =
   | { type: "PHONE_NUMBER"; text: string; phoneNumber: string };
 
 export type TemplateEditorValues = {
+  format?: "STANDARD" | "CAROUSEL";
+  cards?: CarouselCardValue[];
   organizationAddress: string;
   name: string;
   language: string;
@@ -339,6 +342,13 @@ export function getTemplateMediaFileError(
 export function buildTemplateDraftInput(
   values: TemplateEditorValues,
 ): TemplateDraftInput {
+  if (values.format === "CAROUSEL")
+    return {
+      name: values.name.trim(),
+      language: values.language,
+      category: "MARKETING",
+      components: carouselDefinition(values),
+    };
   const headerIndexes = getTemplateVariableIndexes(values.header);
   const bodyIndexes = getTemplateVariableIndexes(values.body);
   const components: TemplateComponent[] = [];

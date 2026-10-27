@@ -13,6 +13,9 @@ import {
 } from "@/utils/CampaignUtils";
 import type { DataTablePageParams } from "@/utils/DataTableUtils";
 import { queryKeys } from "./queryKeys";
+import { useRef } from "react";
+import { uploadCarouselImage } from "./carouselMedia";
+import type { CampaignCarouselMedia } from "@/supabase/types/whatsapp_template_types";
 
 export type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
 export type CampaignInsert =
@@ -34,6 +37,7 @@ export type CampaignDraftInput = Omit<
   csvRecipients?: CampaignCsvRecipient[];
   replaceCsvRecipients?: boolean;
   headerMediaFile?: File;
+  carouselMediaFiles?: Record<string, File>;
 };
 
 export type CampaignHeaderMedia = {
@@ -54,9 +58,18 @@ function toCampaignInput(input: CampaignDraftInput) {
     template: input.template,
     template_variable_mapping: input.template_variable_mapping,
     header_media: input.header_media,
+    carousel_media: Array.isArray(input.carousel_media)
+      ? input.carousel_media.filter(
+          (asset) =>
+            !!asset && typeof asset === "object" && "storage_uri" in asset,
+        )
+      : [],
   } satisfies Omit<
     CampaignDraftInput,
-    "csvRecipients" | "replaceCsvRecipients" | "headerMediaFile"
+    | "csvRecipients"
+    | "replaceCsvRecipients"
+    | "headerMediaFile"
+    | "carouselMediaFiles"
   >;
 }
 
@@ -98,15 +111,22 @@ async function deleteMetaCampaignMedia(
 }
 
 function mediaHeaderFormat(template: Json): MediaHeaderFormat | undefined {
-  if (!template || Array.isArray(template) || typeof template !== "object") return;
-  const components = Array.isArray(template.components) ? template.components : [];
-  const header = components.find((component) =>
-    component && !Array.isArray(component) && typeof component === "object" &&
-    component.type === "HEADER" && typeof component.format === "string" &&
-    ["IMAGE", "VIDEO", "DOCUMENT"].includes(component.format)
+  if (!template || Array.isArray(template) || typeof template !== "object")
+    return;
+  const components = Array.isArray(template.components)
+    ? template.components
+    : [];
+  const header = components.find(
+    (component) =>
+      component &&
+      !Array.isArray(component) &&
+      typeof component === "object" &&
+      component.type === "HEADER" &&
+      typeof component.format === "string" &&
+      ["IMAGE", "VIDEO", "DOCUMENT"].includes(component.format),
   );
   return header && !Array.isArray(header) && typeof header === "object"
-    ? header.format as MediaHeaderFormat
+    ? (header.format as MediaHeaderFormat)
     : undefined;
 }
 
@@ -233,9 +253,46 @@ export function useCampaignAudiencePreview(id: string | undefined) {
   });
 }
 
+async function persistCampaignCarousel(
+  orgId: string,
+  draftId: string,
+  value: Json | undefined,
+  files: Record<string, File> = {},
+) {
+  const media = [...((value || []) as unknown as CampaignCarouselMedia[])];
+  for (const [index, asset] of media.entries()) {
+    if (files[asset.card_id]) {
+      const result = await uploadCarouselImage(
+        orgId,
+        "campaign",
+        draftId,
+        asset.card_id,
+        files[asset.card_id],
+      );
+      media[index] = { ...result.asset, card_index: index };
+      // Keep partial successes on the draft; no customer send has happened at this stage.
+      await supabase
+        .from("campaigns")
+        .update({
+          carousel_media: media.filter(
+            (item) => !!item.storage_uri,
+          ) as unknown as Json,
+        })
+        .eq("organization_id", orgId)
+        .eq("id", draftId)
+        .eq("status", "draft")
+        .throwOnError();
+    }
+  }
+  return media as unknown as Json;
+}
+
 export function useCreateCampaign() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  const retainedDraft = useRef<{ orgId: string; id: string } | undefined>(
+    undefined,
+  );
 
   return useMutation({
     mutationFn: async (input: CampaignDraftInput) => {
@@ -244,7 +301,12 @@ export function useCreateCampaign() {
       let uploadedMedia: CampaignHeaderMedia | undefined;
       const format = mediaHeaderFormat(input.template);
       if (format && headerMediaFile) {
-        uploadedMedia = await uploadCampaignMedia(orgId, input.organization_address, format, headerMediaFile);
+        uploadedMedia = await uploadCampaignMedia(
+          orgId,
+          input.organization_address,
+          format,
+          headerMediaFile,
+        );
       }
       const campaignInput = toCampaignInput({
         ...input,
@@ -253,13 +315,32 @@ export function useCreateCampaign() {
       let createdCampaignId: string | undefined;
 
       try {
+        const isCarousel =
+          !!(input.carousel_media as unknown[])?.length ||
+          !!Object.keys(input.carouselMediaFiles || {}).length;
+        const previousDraft =
+          retainedDraft.current?.orgId === orgId
+            ? retainedDraft.current.id
+            : undefined;
         const { data: campaign } = await supabase
           .from("campaigns")
-          .insert({ ...campaignInput, organization_id: orgId })
+          .upsert({
+            ...campaignInput,
+            ...(isCarousel ? { id: previousDraft || crypto.randomUUID() } : {}),
+            organization_id: orgId,
+          })
           .select()
           .single()
           .throwOnError();
         createdCampaignId = campaign.id;
+        if (isCarousel) retainedDraft.current = { orgId, id: campaign.id };
+        if (isCarousel)
+          campaign.carousel_media = await persistCampaignCarousel(
+            orgId,
+            campaign.id,
+            input.carousel_media,
+            input.carouselMediaFiles,
+          );
         if (campaign.audience_type === "csv_upload" && csvRecipients.length) {
           await supabase
             .from("campaign_csv_recipients")
@@ -268,16 +349,28 @@ export function useCreateCampaign() {
         }
         return campaign as CampaignRow;
       } catch (error) {
-        if (createdCampaignId) {
-          await supabase.from("campaigns").delete().eq("organization_id", orgId).eq("id", createdCampaignId);
+        if (
+          createdCampaignId &&
+          retainedDraft.current?.id !== createdCampaignId
+        ) {
+          await supabase
+            .from("campaigns")
+            .delete()
+            .eq("organization_id", orgId)
+            .eq("id", createdCampaignId);
         }
         if (uploadedMedia) {
-          await deleteMetaCampaignMedia(orgId, input.organization_address, uploadedMedia.media_id).catch(() => undefined);
+          await deleteMetaCampaignMedia(
+            orgId,
+            input.organization_address,
+            uploadedMedia.media_id,
+          ).catch(() => undefined);
         }
         throw error;
       }
     },
     onSuccess: (campaign) => {
+      retainedDraft.current = undefined;
       void queryClient.invalidateQueries({
         queryKey: queryKeys.campaigns.all(orgId),
       });
@@ -303,20 +396,35 @@ export function useUpdateCampaign() {
         csvRecipients = [],
         replaceCsvRecipients = false,
         headerMediaFile,
+        carouselMediaFiles,
         ...campaignInput
       } = input;
+      if (carouselMediaFiles && Object.keys(carouselMediaFiles).length)
+        campaignInput.carousel_media = await persistCampaignCarousel(
+          orgId,
+          id,
+          input.carousel_media,
+          carouselMediaFiles,
+        );
 
-      const { data: existingCampaign } = await supabase.from("campaigns")
+      const { data: existingCampaign } = await supabase
+        .from("campaigns")
         .select("header_media")
         .eq("organization_id", orgId)
         .eq("id", id)
         .single()
         .throwOnError();
-      const previousMedia = existingCampaign.header_media as CampaignHeaderMedia | null;
+      const previousMedia =
+        existingCampaign.header_media as CampaignHeaderMedia | null;
       let uploadedMedia: CampaignHeaderMedia | undefined;
       const format = mediaHeaderFormat(campaignInput.template);
       if (format && headerMediaFile) {
-        uploadedMedia = await uploadCampaignMedia(orgId, campaignInput.organization_address, format, headerMediaFile);
+        uploadedMedia = await uploadCampaignMedia(
+          orgId,
+          campaignInput.organization_address,
+          format,
+          headerMediaFile,
+        );
         campaignInput.header_media = uploadedMedia;
       }
 
@@ -333,14 +441,26 @@ export function useUpdateCampaign() {
         campaign = result.data as CampaignRow;
       } catch (error) {
         if (uploadedMedia) {
-          await deleteMetaCampaignMedia(orgId, campaignInput.organization_address, uploadedMedia.media_id).catch(() => undefined);
+          await deleteMetaCampaignMedia(
+            orgId,
+            campaignInput.organization_address,
+            uploadedMedia.media_id,
+          ).catch(() => undefined);
         }
         throw error;
       }
 
-      const persistedMedia = campaign.header_media as CampaignHeaderMedia | null;
-      if (previousMedia?.media_id && previousMedia.media_id !== persistedMedia?.media_id) {
-        await deleteMetaCampaignMedia(orgId, campaignInput.organization_address, previousMedia.media_id).catch(() => undefined);
+      const persistedMedia =
+        campaign.header_media as CampaignHeaderMedia | null;
+      if (
+        previousMedia?.media_id &&
+        previousMedia.media_id !== persistedMedia?.media_id
+      ) {
+        await deleteMetaCampaignMedia(
+          orgId,
+          campaignInput.organization_address,
+          previousMedia.media_id,
+        ).catch(() => undefined);
       }
 
       if (campaign.audience_type !== "csv_upload" || replaceCsvRecipients) {
@@ -386,7 +506,8 @@ export function useDeleteCampaign() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!orgId) throw new Error("No active organization");
-      const { data: campaign } = await supabase.from("campaigns")
+      const { data: campaign } = await supabase
+        .from("campaigns")
         .select("organization_address, header_media")
         .eq("organization_id", orgId)
         .eq("id", id)
@@ -400,7 +521,11 @@ export function useDeleteCampaign() {
         .throwOnError();
       const media = campaign?.header_media as CampaignHeaderMedia | null;
       if (campaign && media?.media_id) {
-        await deleteMetaCampaignMedia(orgId, campaign.organization_address, media.media_id).catch(() => undefined);
+        await deleteMetaCampaignMedia(
+          orgId,
+          campaign.organization_address,
+          media.media_id,
+        ).catch(() => undefined);
       }
     },
     onSuccess: () => {
@@ -419,11 +544,14 @@ export function useStartCampaign() {
     mutationFn: async (campaignId: string) => {
       if (!orgId) throw new Error("No active organization");
 
-      const { data, error } = await supabase.functions.invoke<{ queued_count: number }>(
-        `whatsapp-management/campaigns/${campaignId}/start`,
-        { method: "POST", body: { organization_id: orgId } },
-      );
-      if (error || !data) throw error || new Error("Campaign could not be started");
+      const { data, error } = await supabase.functions.invoke<{
+        queued_count: number;
+      }>(`whatsapp-management/campaigns/${campaignId}/start`, {
+        method: "POST",
+        body: { organization_id: orgId },
+      });
+      if (error || !data)
+        throw error || new Error("Campaign could not be started");
       return data.queued_count;
     },
     onSuccess: async (_recipientCount, campaignId) => {
@@ -441,7 +569,10 @@ export function useStartCampaign() {
 
 export function useCampaignMediaPreview(campaign?: CampaignRow) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
-  const media = campaign?.header_media as CampaignHeaderMedia | null | undefined;
+  const media = campaign?.header_media as
+    | CampaignHeaderMedia
+    | null
+    | undefined;
   return useQuery({
     queryKey: [
       "campaign-media",
@@ -452,8 +583,11 @@ export function useCampaignMediaPreview(campaign?: CampaignRow) {
     ],
     queryFn: async () => {
       const path = `whatsapp-management/campaign-media/${media!.media_id}?organization_id=${encodeURIComponent(orgId!)}&organization_address=${encodeURIComponent(campaign!.organization_address)}`;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Campaign media preview requires authentication");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session)
+        throw new Error("Campaign media preview requires authentication");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${path}`,
         {

@@ -96,6 +96,9 @@ function ReviewCampaign() {
     template,
     audienceUnavailable: countError,
     headerMedia,
+    carouselMedia: Array.isArray(campaign.carousel_media)
+      ? campaign.carousel_media
+      : [],
     mediaUnavailable: !!mediaFormat && mediaPreview.isError,
   });
   const ready = readiness === "ready";
@@ -264,6 +267,9 @@ function ReviewCampaign() {
               </h2>
               <div className="rounded-xl bg-chat py-[16px] min-h-[240px]">
                 <TemplatePreview
+                  carouselMedia={
+                    campaign.carousel_media as unknown as import("@/supabase/types/whatsapp_template_types").CarouselMediaAsset[]
+                  }
                   template={template}
                   editMode
                   media={
