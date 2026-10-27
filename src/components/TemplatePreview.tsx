@@ -4,12 +4,16 @@ import { type TemplateData, type TemplateMessage } from "@/supabase/client";
 import { InMessage, OutMessage, TextMessage } from "./Message/Message";
 import { FileText, ImageIcon, Video } from "lucide-react";
 import type { MediaHeaderFormat } from "@/supabase/types/whatsapp_template_types";
+import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
+import { CarouselPreview } from "./CarouselTemplateContent";
+import { readCarouselCards } from "@/utils/CarouselUtils";
 
 export default function TemplatePreview({
-  template: { name, language, components },
+  template: { name, language, components, media_assets },
   sendTemplateMessage,
   editMode = false,
   media,
+  carouselMedia,
 }: {
   template: TemplateData;
   sendTemplateMessage?: (
@@ -19,6 +23,7 @@ export default function TemplatePreview({
     footer?: string,
   ) => void;
   editMode?: boolean;
+  carouselMedia?: CarouselMediaAsset[];
   media?: {
     format: MediaHeaderFormat;
     url?: string;
@@ -197,6 +202,15 @@ export default function TemplatePreview({
   };
 
   const Message = editMode ? InMessage : OutMessage;
+
+  const carouselCards = readCarouselCards(
+    components,
+    carouselMedia || media_assets,
+  );
+  if (carouselCards)
+    return (
+      <CarouselPreview introduction={bodyPlaceholders} cards={carouselCards} />
+    );
 
   return (
     <div className="relative mx-[16px]">

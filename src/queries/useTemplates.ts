@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Database, supabase, type TemplateData } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
-import type { TemplateDraftInput } from "@/supabase/types/whatsapp_template_types";
+import type {
+  TemplateDraftInput,
+  CarouselMediaAsset,
+} from "@/supabase/types/whatsapp_template_types";
 import type {
   DataTablePage,
   DataTablePageParams,
@@ -216,6 +219,7 @@ export function useTemplateRecord(id?: string) {
 }
 
 type TemplateDraftVariables = {
+  mediaAssets?: (CarouselMediaAsset | { card_id: string })[];
   organizationAddress: string;
   template: TemplateDraftInput;
 };
@@ -260,6 +264,7 @@ export function useCreateTemplateDraft() {
           organization_id: activeOrgId,
           organization_address: variables.organizationAddress,
           template: variables.template,
+          media_assets: variables.mediaAssets,
         },
       );
       if (error) throw error;
@@ -285,6 +290,7 @@ export function useUpdateTemplateDraft() {
           organization_address: variables.organizationAddress,
           draft_id: variables.draftId,
           template: variables.template,
+          media_assets: variables.mediaAssets,
         },
       );
       if (error) throw error;

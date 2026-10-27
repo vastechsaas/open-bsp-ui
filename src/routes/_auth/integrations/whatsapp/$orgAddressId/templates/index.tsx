@@ -309,6 +309,9 @@ export function TemplatesIndex({
                           <div className="font-medium text-[13px]">
                             {template.name}
                           </div>
+                          <TemplateFormatBadge
+                            components={template.components}
+                          />
                           {template.rejection_reason && (
                             <div className="mt-[2px] max-w-[300px] truncate text-[11px] text-destructive">
                               {template.rejection_reason}
@@ -357,6 +360,7 @@ export function TemplatesIndex({
                           {accountLabels.get(template.organization_address) ||
                             template.organization_address}
                         </div>
+                        <TemplateFormatBadge components={template.components} />
                       </div>
                       <StatusBadge status={template.status} />
                     </div>
@@ -415,7 +419,18 @@ function RowAction({
   onDelete: () => void;
 }) {
   const { translate: t } = useTranslation();
-  const actions = getTemplateActions(template.status);
+  const carousel =
+    Array.isArray(template.components) &&
+    template.components.some(
+      (part) =>
+        part &&
+        typeof part === "object" &&
+        "type" in part &&
+        part.type === "CAROUSEL",
+    );
+  const actions = getTemplateActions(template.status).filter(
+    (action) => !(carousel && template.status !== "draft" && action === "edit"),
+  );
   return (
     <div className="flex flex-wrap justify-end gap-[6px]">
       {actions.includes("view") && (
@@ -444,6 +459,36 @@ function RowAction({
         />
       )}
     </div>
+  );
+}
+
+function TemplateFormatBadge({
+  components,
+}: {
+  components: TemplateListRow["components"];
+}) {
+  const { translate: t } = useTranslation();
+  const carousel = Array.isArray(components)
+    ? components.find(
+        (part) =>
+          part &&
+          typeof part === "object" &&
+          "type" in part &&
+          part.type === "CAROUSEL",
+      )
+    : undefined;
+  const count =
+    carousel &&
+    typeof carousel === "object" &&
+    "cards" in carousel &&
+    Array.isArray(carousel.cards)
+      ? carousel.cards.length
+      : 0;
+  return (
+    <span className="mt-[5px] inline-block rounded-full bg-muted px-[8px] py-[3px] text-[10px] text-muted-foreground">
+      {t(carousel ? "Carrusel de imágenes" : "Estándar")}
+      {carousel ? ` · ${count} ${t("tarjetas")}` : ""}
+    </span>
   );
 }
 

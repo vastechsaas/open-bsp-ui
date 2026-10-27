@@ -34,6 +34,12 @@ import {
 import { getTemplateMediaFileError } from "@/utils/TemplateDraftUtils";
 import type { CampaignHeaderMedia } from "@/queries/useCampaigns";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
+import { CarouselImage } from "@/components/CarouselTemplateContent";
+import {
+  readCarouselCards,
+  supportedImageCarousel,
+} from "@/utils/CarouselUtils";
+import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
 
 type CampaignFormValues = {
   name: string;
@@ -93,6 +99,7 @@ export default function CampaignForm({
     useState<CampaignSubmitIntent>("save");
   const [headerMediaFile, setHeaderMediaFile] = useState<File>();
   const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState<string>();
+  const [carouselFiles, setCarouselFiles] = useState<Record<string, File>>({});
 
   const {
     register,
@@ -142,6 +149,32 @@ export default function CampaignForm({
     approvedTemplates.find((template) => template.id === templateId) ||
     (storedTemplate?.id === templateId ? storedTemplate : undefined);
   const templateVariables = getTemplateVariables(selectedTemplate);
+  const carousel = selectedTemplate?.components.find(
+    (part) => part.type === "CAROUSEL",
+  );
+  const initialCarouselCards = useMemo(
+    () =>
+      readCarouselCards(
+        selectedTemplate?.components || [],
+        ((campaign && storedTemplate?.id === selectedTemplate?.id
+          ? campaign.carousel_media
+          : selectedTemplate?.media_assets) ||
+          []) as unknown as CarouselMediaAsset[],
+      ),
+    [selectedTemplate, campaign, storedTemplate?.id],
+  );
+  const carouselCards = initialCarouselCards?.map((card) => ({
+    ...card,
+    file: carouselFiles[card.id],
+  }));
+  const invalidCarousel =
+    !!carousel &&
+    (!supportedImageCarousel(selectedTemplate!.components) ||
+      carouselCards?.some(
+        (card) =>
+          (!card.asset && !card.file) ||
+          (card.file && getTemplateMediaFileError("IMAGE", card.file)),
+      ));
   const mediaHeaderFormat = getTemplateMediaHeaderFormat(selectedTemplate);
   const storedHeaderMedia = campaign?.header_media as
     | CampaignHeaderMedia
@@ -242,6 +275,7 @@ export default function CampaignForm({
     !templateId ||
     !mappingIsComplete ||
     !!mediaFileError ||
+    invalidCarousel ||
     (csvIsRequired && !csvRecipients.length);
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
@@ -294,6 +328,12 @@ export default function CampaignForm({
             ? (storedHeaderMedia as unknown as Json)
             : null,
         headerMediaFile,
+        carouselMediaFiles: carouselFiles,
+        carousel_media:
+          (carouselCards?.map((card, index) => ({
+            ...(card.asset || { card_id: card.id }),
+            card_index: index,
+          })) as unknown as Json) || [],
         audience_type: values.audience_type,
         csvRecipients,
         replaceCsvRecipients,
@@ -507,6 +547,53 @@ export default function CampaignForm({
           )}
         </section>
 
+        {carouselCards && (
+          <section className={cardClass}>
+            <h2 className="font-medium">{t("Imágenes del carrusel")}</h2>
+            <p className="text-[12px] text-muted-foreground">
+              {t(
+                "Se usan las imágenes guardadas por defecto. Los reemplazos afectan solo esta campaña y se comparten entre destinatarios.",
+              )}
+            </p>
+            {carouselCards.map((card, index) => (
+              <label
+                key={card.id}
+                className="flex flex-wrap items-center gap-[12px] rounded-lg border border-border p-[12px]"
+              >
+                <div className="flex h-[64px] w-[88px] shrink-0 overflow-hidden rounded bg-muted">
+                  <CarouselImage card={card} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="block text-[12px]">
+                    {t("Tarjeta")} {index + 1} · {t("Reemplazar imagen")}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="mt-[6px] max-w-full text-[12px]"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      setCarouselFiles((current) => {
+                        const next = { ...current };
+                        if (file) next[card.id] = file;
+                        else delete next[card.id];
+                        return next;
+                      });
+                      setExternalDirty(true);
+                    }}
+                  />
+                </div>
+              </label>
+            ))}
+            {invalidCarousel && (
+              <p role="alert" className="text-[12px] text-destructive">
+                {t(
+                  "Cada tarjeta necesita una imagen JPEG o PNG de hasta 5 MB. No se pueden enviar formatos de carrusel no compatibles.",
+                )}
+              </p>
+            )}
+          </section>
+        )}
         {templateVariables.length > 0 && (
           <section className={cardClass}>
             <div>
@@ -521,6 +608,8 @@ export default function CampaignForm({
               {templateVariables.map((variable) => (
                 <label key={variable.key}>
                   <div className="label">
+                    {variable.cardIndex !== undefined &&
+                      `${t("Tarjeta")} ${variable.cardIndex + 1} · `}
                     {variable.section === "header"
                       ? t("Encabezado")
                       : variable.section === "button"
@@ -559,6 +648,9 @@ export default function CampaignForm({
             <div className="rounded-xl bg-chat py-[16px] min-h-[220px]">
               <TemplatePreview
                 template={selectedTemplate}
+                carouselMedia={carouselCards?.flatMap((card) =>
+                  card.asset ? [card.asset] : [],
+                )}
                 editMode
                 media={
                   mediaHeaderFormat

@@ -62,6 +62,15 @@ type DisplayBase = {
 };
 
 export type StructuredMessageDisplay =
+  | (DisplayBase & {
+      kind: "carousel";
+      body: string;
+      cards: {
+        text: string;
+        imageUrl?: string;
+        buttons: { label: string; url?: string }[];
+      }[];
+    })
   | (DisplayBase & { kind: "text"; text: string })
   | (DisplayBase &
       InteractiveFrame & {

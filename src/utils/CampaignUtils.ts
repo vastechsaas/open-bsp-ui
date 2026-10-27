@@ -13,6 +13,7 @@ export type ParsedCampaignCsv = {
 };
 
 export type TemplateVariable = {
+  cardIndex?: number;
   key: string;
   section: "header" | "body" | "button";
   index: number;
@@ -45,7 +46,7 @@ export function isCampaignWorkspacePath(pathname: string) {
   return (
     normalizedPath === "/campaigns" ||
     normalizedPath === "/campaigns/new" ||
-      /^\/campaigns\/[^/]+\/(?:edit|review)$/.test(normalizedPath)
+    /^\/campaigns\/[^/]+\/(?:edit|review)$/.test(normalizedPath)
   );
 }
 
@@ -66,6 +67,7 @@ export function getCampaignReadiness({
   audienceUnavailable = false,
   headerMedia,
   mediaUnavailable = false,
+  carouselMedia,
 }: {
   template: TemplateData | null | undefined;
   mapping: Record<string, unknown>;
@@ -73,6 +75,7 @@ export function getCampaignReadiness({
   audienceUnavailable?: boolean;
   headerMedia?: { format?: string; media_id?: string } | null;
   mediaUnavailable?: boolean;
+  carouselMedia?: unknown[];
 }): CampaignReadiness {
   if (audienceUnavailable) return "unavailable";
   if (audienceCount === undefined) return "loading";
@@ -87,7 +90,16 @@ export function getCampaignReadiness({
       (!headerMedia ||
         headerMedia.format !== mediaFormat ||
         !headerMedia.media_id)) ||
-    mediaUnavailable
+    mediaUnavailable ||
+    (template?.components.some((part) => part.type === "CAROUSEL") &&
+      (!carouselMedia ||
+        carouselMedia.length !==
+          template.components.find((part) => part.type === "CAROUSEL")!.cards
+            .length ||
+        carouselMedia.some(
+          (asset) =>
+            !asset || typeof asset !== "object" || !("storage_uri" in asset),
+        )))
   ) {
     return "needs_attention";
   }
@@ -227,6 +239,16 @@ export function getTemplateVariables(
   if (!template) return [];
 
   return template.components.flatMap((component): TemplateVariable[] => {
+    if (component.type === "CAROUSEL")
+      return component.cards.flatMap((card, cardIndex) =>
+        getTemplateVariables({ ...template, components: card.components }).map(
+          (variable) => ({
+            ...variable,
+            cardIndex,
+            key: `carousel.${cardIndex}.${variable.key}`,
+          }),
+        ),
+      );
     if (component.type === "BUTTONS") {
       return component.buttons.flatMap((button, buttonIndex) =>
         button.type === "URL" && button.url.endsWith("{{1}}")

@@ -36,6 +36,73 @@ function normalizeInteractive(data: Json): StructuredMessageDisplay | null {
 export function normalizeStructuredMessage(
   content: StructuredContent,
 ): StructuredMessageDisplay {
+  if (
+    content.kind === "template" &&
+    isRecord(content.data) &&
+    Array.isArray(content.data.components)
+  ) {
+    const records = (value: unknown): Record<string, unknown>[] =>
+      Array.isArray(value) ? (value as unknown[]).filter(isRecord) : [];
+    const components = records(content.data.components);
+    const carousel = components.find(
+      (part) => readString(part.type)?.toLowerCase() === "carousel",
+    );
+    if (isRecord(carousel) && Array.isArray(carousel.cards)) {
+      const https = (value: unknown) => {
+        if (typeof value !== "string" || value.includes("{{")) return undefined;
+        try {
+          const url = new URL(value);
+          return url.protocol === "https:" ? url.href : undefined;
+        } catch {
+          return undefined;
+        }
+      };
+      const cards = records(carousel.cards).map((card) => {
+        const parts = records(card.components);
+        const body = parts.find(
+          (part) => readString(part.type)?.toLowerCase() === "body",
+        );
+        const header = parts.find(
+          (part) => readString(part.type)?.toLowerCase() === "header",
+        );
+        const image = records(header?.parameters).find(
+          (part) => part.type === "image",
+        );
+        const buttons = parts.flatMap((part) =>
+          records(part.buttons).map((button) => ({
+            label: readString(button.text) || "",
+            url: https(button.url),
+          })),
+        );
+        return {
+          text:
+            readString(body?.text) ||
+            records(body?.parameters)
+              .map((part) => readString(part.text))
+              .filter(Boolean)
+              .join(" · "),
+          imageUrl:
+            isRecord(image) && isRecord(image.image)
+              ? https(image.image.link)
+              : undefined,
+          buttons,
+        };
+      });
+      return {
+        kind: "carousel",
+        body:
+          content.text ||
+          readString(
+            components.find(
+              (part) => readString(part.type)?.toLowerCase() === "body",
+            )?.text,
+          ) ||
+          "",
+        cards,
+        preview: { kind: "label", text: "Carrusel de imágenes" },
+      };
+    }
+  }
   if (typeof content.text === "string" && content.text.length > 0) {
     return {
       kind: "text",

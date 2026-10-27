@@ -89,6 +89,61 @@ export function StructuredMessageRenderer({
 }: RendererProps) {
   const { translate: t } = useTranslation();
 
+  if (display.kind === "carousel")
+    return (
+      <div className="max-w-[520px] rounded-xl border border-border bg-card p-[12px]">
+        <p className="mb-[10px] whitespace-pre-wrap text-[13px]">
+          {display.body || t("Carrusel de imágenes")}
+        </p>
+        <div className="flex gap-[10px] overflow-x-auto pb-[8px]">
+          {display.cards.map((card, index) => (
+            <div
+              key={index}
+              className="w-[220px] shrink-0 overflow-hidden rounded-lg border border-border"
+            >
+              {card.imageUrl ? (
+                <img
+                  src={card.imageUrl}
+                  alt=""
+                  className="h-[130px] w-full object-cover"
+                />
+              ) : (
+                <div className="bg-muted p-[20px] text-center text-[12px]">
+                  {t("Imagen no disponible")}
+                </div>
+              )}
+              <p className="whitespace-pre-wrap p-[10px] text-[13px]">
+                {card.text || `${t("Tarjeta")} ${index + 1}`}
+              </p>
+              {card.buttons.map((button, buttonIndex) =>
+                button.url ? (
+                  <a
+                    key={buttonIndex}
+                    className="block border-t border-border p-[10px] text-center text-[12px] text-primary"
+                    href={button.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {button.label || t("Botón de sitio web")}
+                  </a>
+                ) : (
+                  <span
+                    key={buttonIndex}
+                    className="block border-t border-border p-[10px] text-center text-[12px]"
+                  >
+                    {button.label || t("Botón de sitio web")}
+                  </span>
+                ),
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="mt-[4px] text-right text-[10px] text-muted-foreground">
+          {props.timestamp}
+        </p>
+      </div>
+    );
+
   if (display.kind === "text" || display.kind === "selected_reply") {
     return (
       <TextMessage

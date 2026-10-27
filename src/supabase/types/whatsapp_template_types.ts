@@ -1,15 +1,14 @@
 //===================================
 // Mirrored from open-bsp-api/.../_shared/types/whatsapp_template_types.ts
-//
-// To re-sync: paste the API file over this one, then re-apply each line tagged
-// `// @ui-divergence` below (run `scripts/check-type-sync.sh` to list them).
+// Re-apply any @ui-divergence markers after synchronization.
 //===================================
-
 import type {
   OutgoingDocument,
   OutgoingImage,
   OutgoingVideo,
 } from "./whatsapp_endpoint_types";
+
+// TEMPLATE
 
 // Template data, used to create or update a template message
 
@@ -35,6 +34,8 @@ export type TemplateData = {
   components: TemplateComponent[];
   sub_category?: "CUSTOM";
   rejected_reason?: string;
+  // Local inspection/campaign defaults only; excluded from all Meta requests.
+  media_assets?: CarouselMediaAsset[];
 };
 
 export type TemplateDraftInput = Pick<
@@ -108,7 +109,28 @@ export type TemplateComponent =
   | BodyComponent
   | HeaderComponent
   | FooterComponent
-  | ButtonsComponent;
+  | ButtonsComponent
+  | CarouselComponent;
+
+export type CarouselComponent = {
+  type: "CAROUSEL";
+  cards: {
+    components: (HeaderComponent | BodyComponent | ButtonsComponent)[];
+  }[];
+};
+
+export type CarouselMediaAsset = {
+  card_id: string;
+  storage_uri: string;
+  file_name: string;
+  mime_type: string;
+  size: number;
+};
+
+export type CampaignCarouselMedia = CarouselMediaAsset & {
+  card_index: number;
+  media_id?: string;
+};
 
 // Template message, used to send a template message
 
@@ -173,7 +195,12 @@ type TemplateButton = {
 );
 
 export type Template = {
-  components?: (TemplateHeader | TemplateBody | TemplateButton)[];
+  components?: (
+    | TemplateHeader
+    | TemplateBody
+    | TemplateButton
+    | TemplateCarousel
+  )[];
   language: {
     code: string; // es, es_AR, etc
     policy: "deterministic";
@@ -181,7 +208,17 @@ export type Template = {
   name: string;
 };
 
+export type TemplateCarousel = {
+  type: "carousel";
+  cards: {
+    card_index: number;
+    components: (TemplateHeader | TemplateBody | TemplateButton)[];
+  }[];
+};
+
 export type TemplateMessage = {
   type: "template";
   template: Template;
 };
+
+// TODO: InteractiveMessage
