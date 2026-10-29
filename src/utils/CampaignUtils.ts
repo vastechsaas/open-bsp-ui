@@ -31,14 +31,21 @@ export type CampaignExecutionStatus =
   | "queued"
   | "running"
   | "completed"
-  | "failed";
+  | "failed"
+  | "needs_review";
+
+export function campaignNeedsReview(status: string) {
+  return status === "needs_review";
+}
 
 export function canStartCampaign(status: string, readiness: CampaignReadiness) {
   return status === "draft" && readiness === "ready";
 }
 
 export function isCampaignProcessing(status: string) {
-  return status === "queued" || status === "running";
+  return (
+    status === "queued" || status === "running" || campaignNeedsReview(status)
+  );
 }
 
 export function isCampaignWorkspacePath(pathname: string) {

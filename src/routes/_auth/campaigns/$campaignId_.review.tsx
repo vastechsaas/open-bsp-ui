@@ -9,6 +9,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   type CampaignAudienceType,
   useCampaign,
+  useCampaignReviewIssues,
   useCampaignAudienceCount,
   useCampaignAudiencePreview,
   useCampaignMediaPreview,
@@ -44,6 +45,10 @@ function ReviewCampaign() {
   const { campaignId } = Route.useParams();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { data: campaign, isLoading, isError } = useCampaign(campaignId);
+  const reviewIssues = useCampaignReviewIssues(
+    campaignId,
+    (campaign?.needs_review_count ?? 0) > 0,
+  );
   const startCampaign = useStartCampaign();
   const {
     data: audienceCount,
@@ -103,13 +108,15 @@ function ReviewCampaign() {
   });
   const ready = readiness === "ready";
   const canRun = canStartCampaign(campaign.status, readiness);
-  const processing = isCampaignProcessing(campaign.status);
+  const needsReview = campaign.status === "needs_review";
+  const processing = !needsReview && isCampaignProcessing(campaign.status);
   const statusLabels: Record<string, string> = {
     draft: t("Borrador"),
     queued: t("En cola"),
     running: t("En ejecución"),
     completed: t("Completada"),
     failed: t("Fallida"),
+    needs_review: t("Requiere revisión"),
   };
   const statusLabel = statusLabels[campaign.status] || campaign.status;
 
@@ -194,7 +201,9 @@ function ReviewCampaign() {
 
             <section className="campaign-review-card">
               <div className="flex items-center gap-[9px]">
-                {processing ? (
+                {needsReview ? (
+                  <AlertCircle className="w-[20px] h-[20px] text-amber-600 dark:text-amber-400" />
+                ) : processing ? (
                   <LoaderCircle className="w-[20px] h-[20px] text-primary animate-spin" />
                 ) : campaign.status === "completed" ? (
                   <CheckCircle2 className="w-[20px] h-[20px] text-green-500" />
@@ -206,29 +215,35 @@ function ReviewCampaign() {
                   <AlertCircle className="w-[20px] h-[20px] text-amber-500" />
                 )}
                 <h2 className="font-medium">
-                  {processing
-                    ? t("La campaña se está procesando")
-                    : campaign.status === "completed"
-                      ? t("La campaña finalizó")
-                      : campaign.status === "failed"
-                        ? t("La campaña falló")
-                        : ready
-                          ? t("La campaña está lista para ejecutar")
-                          : t("La campaña requiere atención")}
+                  {needsReview
+                    ? t("Requiere revisión")
+                    : processing
+                      ? t("La campaña se está procesando")
+                      : campaign.status === "completed"
+                        ? t("La campaña finalizó")
+                        : campaign.status === "failed"
+                          ? t("La campaña falló")
+                          : ready
+                            ? t("La campaña está lista para ejecutar")
+                            : t("La campaña requiere atención")}
                 </h2>
               </div>
               <p className="text-[12px] text-muted-foreground mt-[8px]">
-                {processing
-                  ? t("Los resultados se actualizan automáticamente.")
-                  : campaign.status === "completed"
-                    ? t("Todos los destinatarios fueron procesados.")
-                    : campaign.status === "failed"
-                      ? t("La ejecución no pudo completarse.")
-                      : ready
-                        ? t(
-                            "Confirmá la ejecución para agregar los destinatarios a la cola.",
-                          )
-                        : t("Corregí la configuración antes de ejecutar.")}
+                {needsReview
+                  ? t(
+                      "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.",
+                    )
+                  : processing
+                    ? t("Los resultados se actualizan automáticamente.")
+                    : campaign.status === "completed"
+                      ? t("Todos los destinatarios fueron procesados.")
+                      : campaign.status === "failed"
+                        ? t("La ejecución no pudo completarse.")
+                        : ready
+                          ? t(
+                              "Confirmá la ejecución para agregar los destinatarios a la cola.",
+                            )
+                          : t("Corregí la configuración antes de ejecutar.")}
               </p>
             </section>
           </div>
@@ -258,7 +273,46 @@ function ReviewCampaign() {
                   label={t("Fallidos")}
                   value={campaign.failed_count}
                 />
+                {campaign.needs_review_count > 0 && (
+                  <ExecutionCount
+                    label={t("Requiere revisión")}
+                    value={campaign.needs_review_count}
+                  />
+                )}
               </div>
+              {reviewIssues.isError && (
+                <p className="text-sm mt-3">
+                  {t("No se pudieron cargar las referencias.")}{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => void reviewIssues.refetch()}
+                  >
+                    {t("Reintentar")}
+                  </button>
+                </p>
+              )}
+              {reviewIssues.data?.map((issue) => {
+                const detail =
+                  issue.error &&
+                  typeof issue.error === "object" &&
+                  !Array.isArray(issue.error)
+                    ? issue.error
+                    : {};
+                const code =
+                  typeof detail.code === "string" &&
+                  /^[a-zA-Z0-9_.:-]{1,100}$/.test(detail.code)
+                    ? detail.code
+                    : "submission_outcome_unknown";
+                return (
+                  <p
+                    key={issue.id}
+                    className="text-xs text-muted-foreground mt-3 break-all"
+                  >
+                    {t("Referencia")}: {issue.id} · {code}
+                  </p>
+                );
+              })}
             </section>
 
             <section className="campaign-review-card overflow-hidden">

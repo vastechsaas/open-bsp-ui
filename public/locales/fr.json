@@ -1,4 +1,8 @@
 {
+  "Referencia": "Référence",
+  "Requiere revisión": "Vérification requise",
+  "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Le résultat de certains envois est incertain. Ils ne seront pas renvoyés automatiquement. Contactez votre administrateur avec la référence.",
+  "No se pudieron cargar las referencias.": "Impossible de charger les références.",
   "Organización creada": "Organisation créée",
   "Pendiente de configuración": "Configuration en attente",
   "Continuar configuración": "Continuer la configuration",

@@ -1,4 +1,8 @@
 {
+  "Referencia": "Reference",
+  "Requiere revisión": "Needs review",
+  "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Some sends have an uncertain outcome. They will not be resent automatically. Contact your administrator with the reference.",
+  "No se pudieron cargar las referencias.": "References could not be loaded.",
   "Organización creada": "Organization created",
   "Pendiente de configuración": "Setup pending",
   "Continuar configuración": "Continue setup",
