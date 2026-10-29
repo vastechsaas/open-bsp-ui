@@ -199,6 +199,29 @@ export function useCampaign(id: string | undefined) {
   });
 }
 
+export function useCampaignReviewIssues(id: string, enabled: boolean) {
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+  return useQuery({
+    queryKey: [...queryKeys.campaigns.detail(orgId, id), "review-issues"],
+    enabled: !!orgId && enabled,
+    queryFn: async ({ signal }) => {
+      const { data } = await supabase
+        .from("campaign_deliveries")
+        .select("id,error")
+        .eq("organization_id", orgId!)
+        .eq("campaign_id", id)
+        .eq("status", "needs_review")
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(5)
+        .abortSignal(signal)
+        .throwOnError();
+      return data;
+    },
+    refetchInterval: enabled ? 5_000 : false,
+  });
+}
+
 export function useCampaignAudienceCount(id: string | undefined) {
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
 

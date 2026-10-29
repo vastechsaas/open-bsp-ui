@@ -46,8 +46,7 @@ function CampaignList() {
     pageSize,
     search: debouncedSearch || undefined,
     audienceType: audienceFilter === "all" ? undefined : audienceFilter,
-    readiness:
-      readinessFilter === "all" ? undefined : readinessFilter,
+    readiness: readinessFilter === "all" ? undefined : readinessFilter,
   });
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
@@ -383,6 +382,7 @@ function getCampaignStatusLabel(status: string, t: (value: string) => string) {
     running: t("En ejecución"),
     completed: t("Completada"),
     failed: t("Fallida"),
+    needs_review: t("Requiere revisión"),
   };
   return labels[status] || status;
 }
@@ -394,6 +394,7 @@ function CampaignStatusBadge({ status }: { status: string }) {
     running: "bg-primary/15 text-primary",
     completed: "bg-green-500/15 text-green-500",
     failed: "bg-destructive/15 text-destructive",
+    needs_review: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   };
 
   return (

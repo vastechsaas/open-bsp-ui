@@ -1,4 +1,8 @@
 {
+  "Referencia": "Référence",
+  "Requiere revisión": "Vérification requise",
+  "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Le résultat de certains envois est incertain. Ils ne seront pas renvoyés automatiquement. Contactez votre administrateur avec la référence.",
+  "No se pudieron cargar las referencias.": "Impossible de charger les références.",
   "Cargando integraciones…": "Chargement des intégrations…",
   "No se pudieron cargar las integraciones.": "Impossible de charger les intégrations.",
   "No se pudo comprobar la disponibilidad de las integraciones.": "Impossible de vérifier la disponibilité des intégrations.",

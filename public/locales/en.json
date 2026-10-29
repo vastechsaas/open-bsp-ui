@@ -1,4 +1,8 @@
 {
+  "Referencia": "Reference",
+  "Requiere revisión": "Needs review",
+  "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Some sends have an uncertain outcome. They will not be resent automatically. Contact your administrator with the reference.",
+  "No se pudieron cargar las referencias.": "References could not be loaded.",
   "Cargando integraciones…": "Loading integrations…",
   "No se pudieron cargar las integraciones.": "Integrations could not be loaded.",
   "No se pudo comprobar la disponibilidad de las integraciones.": "Integration availability could not be checked.",

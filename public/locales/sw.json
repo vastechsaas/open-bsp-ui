@@ -1,4 +1,8 @@
 {
+  "Referencia": "Rejeleo",
+  "Requiere revisión": "Inahitaji ukaguzi",
+  "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Baadhi ya ujumbe una matokeo yasiyo na uhakika. Hautatumwa tena kiotomatiki. Wasiliana na msimamizi ukitumia rejeleo.",
+  "No se pudieron cargar las referencias.": "Imeshindikana kupakia marejeleo.",
   "Cargando integraciones…": "Inapakia miunganisho…",
   "No se pudieron cargar las integraciones.": "Miunganisho haikuweza kupakiwa.",
   "No se pudo comprobar la disponibilidad de las integraciones.": "Upatikanaji wa miunganisho haukuweza kukaguliwa.",
