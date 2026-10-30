@@ -160,3 +160,20 @@ void test("stored carousel renders read-only without adding campaign ingestion",
     /!template\.components\.some\(\(component\) => component.type === "CAROUSEL"\)/,
   );
 });
+
+void test("editor carousel previews show the whole image in square frames", () => {
+  const source = readFileSync(
+    new URL("../src/components/CarouselTemplateContent.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /className="h-full w-full object-contain"/);
+  assert.doesNotMatch(source, /object-cover/);
+  // Keep thumbnails and the larger preview consistent for square artwork.
+  assert.equal(
+    source.match(/className="flex aspect-square w-full bg-muted"/g)?.length,
+    2,
+  );
+  assert.doesNotMatch(source, /h-\[(?:58|140)px\]/);
+  assert.match(source, /card\.text\.replace/);
+  assert.match(source, /card\.label \|\| t\("Botón de sitio web"\)/);
+});
