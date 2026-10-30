@@ -34,7 +34,7 @@ export function CarouselImage({ card }: { card: CarouselCardValue }) {
     };
   }, [card.file, card.asset]);
   return url ? (
-    <img src={url} alt="" className="h-full w-full object-cover" />
+    <img src={url} alt="" className="h-full w-full object-contain" />
   ) : (
     <ImageIcon className="m-auto h-[28px] w-[28px] text-muted-foreground" />
   );
@@ -126,7 +126,7 @@ export default function CarouselTemplateContent({
             onClick={() => onSelect(card.id)}
             className={`w-[88px] shrink-0 overflow-hidden rounded-lg border ${card.id === selected.id ? "border-primary ring-1 ring-primary" : "border-border"}`}
           >
-            <div className="flex h-[58px] bg-muted">
+            <div className="flex aspect-square w-full bg-muted">
               <CarouselImage card={card} />
             </div>
             <span className="block p-[5px] text-[11px]">
@@ -300,7 +300,7 @@ export function CarouselPreview({
             key={card.id}
             className="w-[240px] shrink-0 snap-start overflow-hidden rounded-lg border border-border bg-card"
           >
-            <div className="flex h-[140px] bg-muted">
+            <div className="flex aspect-square w-full bg-muted">
               <CarouselImage card={card} />
             </div>
             <p className="min-h-[72px] whitespace-pre-wrap p-[12px] text-[13px]">
