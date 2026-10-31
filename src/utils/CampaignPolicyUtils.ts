@@ -57,12 +57,10 @@ export type CampaignSchedule = {
 export type CampaignScheduleDraft = {
   later: boolean;
   start: string;
-  expiry: string;
   timezone: string;
   window: boolean;
   windowStart: string;
   windowEnd: string;
-  speed: string;
 };
 export function zonedDateTimeInput(
   iso: string | null | undefined,
@@ -113,12 +111,10 @@ export function campaignScheduleDraft(
   return {
     later: !!c?.scheduled_start_at,
     start: zonedDateTimeInput(c?.scheduled_start_at, timezone),
-    expiry: zonedDateTimeInput(c?.expires_at, timezone),
     timezone,
     window: !!c?.send_window_start,
     windowStart: c?.send_window_start?.slice(0, 5) ?? "09:00",
     windowEnd: c?.send_window_end?.slice(0, 5) ?? "18:00",
-    speed: c?.max_sends_per_minute?.toString() ?? "",
   };
 }
 export function campaignScheduleInput(
@@ -127,16 +123,12 @@ export function campaignScheduleInput(
   now = Date.now(),
 ): CampaignSchedule {
   const start = d.later ? zonedDateTimeToUtc(d.start, d.timezone) : null;
-  const expiry = d.expiry ? zonedDateTimeToUtc(d.expiry, d.timezone) : null;
   if (d.later && Date.parse(start!) <= now)
     throw new Error("La fecha de inicio debe ser futura.");
-  if ((policy.enabled || d.later || d.window) && !expiry)
-    throw new Error("Definí cuándo debe dejar de enviar la campaña.");
-  if (
-    expiry &&
-    Date.parse(expiry) <= Math.max(now, start ? Date.parse(start) : now)
-  )
-    throw new Error("El vencimiento debe ser posterior al inicio.");
+  if ((policy.enabled || d.later || d.window) && !policy.cloudamqp_enabled)
+    throw new Error(
+      "La programación requiere procesamiento CloudAMQP habilitado por la plataforma.",
+    );
   if (
     d.window &&
     (!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.windowStart) ||
@@ -144,24 +136,13 @@ export function campaignScheduleInput(
       d.windowStart === d.windowEnd)
   )
     throw new Error("Definí un horario de envío válido.");
-  const speed = d.speed ? Number(d.speed) : null;
-  if (
-    speed !== null &&
-    (!Number.isInteger(speed) ||
-      speed < 1 ||
-      speed > 60000 ||
-      (policy.enabled && speed > policy.max_sends_per_minute!))
-  )
-    throw new Error(
-      "La velocidad no puede superar el límite de la organización.",
-    );
   return {
     scheduled_start_at: start,
-    expires_at: expiry,
+    expires_at: null,
     schedule_timezone: d.timezone,
     send_window_start: d.window ? d.windowStart : null,
     send_window_end: d.window ? d.windowEnd : null,
-    max_sends_per_minute: speed,
+    max_sends_per_minute: null,
   };
 }
 export const campaignWaitingLabels: Record<string, string> = {
@@ -217,7 +198,7 @@ export function campaignScheduleReady(
   now = Date.now(),
 ) {
   return (
-    (!policy.enabled || (!!c.expires_at && policy.cloudamqp_enabled)) &&
+    (!policy.enabled || policy.cloudamqp_enabled) &&
     (!c.expires_at || Date.parse(c.expires_at) > now) &&
     (!c.scheduled_start_at || Date.parse(c.scheduled_start_at) > now)
   );
