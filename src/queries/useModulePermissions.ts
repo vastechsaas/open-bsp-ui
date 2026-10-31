@@ -41,6 +41,9 @@ export function useModulePermissionRefresh() {
     if (!orgId || !userId) return;
     const refresh = () => {
       void client.invalidateQueries({
+        queryKey: [orgId, "campaign-policy", userId],
+      });
+      void client.invalidateQueries({
         queryKey: [orgId, "module-permissions", userId],
       });
       // Team mutations use this existing private channel as well. Refresh the

@@ -15,6 +15,7 @@ import type { TemplateData } from "@/supabase/client";
 import type { CampaignReadiness } from "@/utils/CampaignUtils";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
+import { campaignStatusLabel } from "@/utils/CampaignPolicyUtils";
 
 export const Route = createFileRoute("/_auth/campaigns/")({
   component: CampaignList,
@@ -234,7 +235,7 @@ function CampaignTableRow({
         <div className="text-[11px] text-muted-foreground mt-[2px]">
           {campaign.status === "draft"
             ? t("Borrador")
-            : getCampaignStatusLabel(campaign.status, t)}
+            : t(campaignStatusLabel(campaign))}
         </div>
       </td>
       <td className="px-[16px] py-[14px] text-[12px]">
@@ -257,7 +258,7 @@ function CampaignTableRow({
         {campaign.status === "draft" ? (
           <ReadinessBadge readiness={campaign.readiness} />
         ) : (
-          <CampaignStatusBadge status={campaign.status} />
+          <CampaignStatusBadge campaign={campaign} />
         )}
       </td>
       <td className="px-[16px] py-[14px]">
@@ -290,7 +291,7 @@ function CampaignCard({
         {campaign.status === "draft" ? (
           <ReadinessBadge readiness={campaign.readiness} />
         ) : (
-          <CampaignStatusBadge status={campaign.status} />
+          <CampaignStatusBadge campaign={campaign} />
         )}
       </div>
       <div className="grid grid-cols-2 gap-[12px] mt-[16px] text-[12px]">
@@ -376,19 +377,9 @@ function CampaignActions({ campaign }: { campaign: CampaignListItem }) {
   );
 }
 
-function getCampaignStatusLabel(status: string, t: (value: string) => string) {
-  const labels: Record<string, string> = {
-    queued: t("En cola"),
-    running: t("En ejecución"),
-    completed: t("Completada"),
-    failed: t("Fallida"),
-    needs_review: t("Requiere revisión"),
-  };
-  return labels[status] || status;
-}
-
-function CampaignStatusBadge({ status }: { status: string }) {
+function CampaignStatusBadge({ campaign }: { campaign: CampaignListRow }) {
   const { translate: t } = useTranslation();
+  const status = campaign.status;
   const styles: Record<string, string> = {
     queued: "bg-primary/15 text-primary",
     running: "bg-primary/15 text-primary",
@@ -401,7 +392,7 @@ function CampaignStatusBadge({ status }: { status: string }) {
     <span
       className={`inline-flex px-[9px] py-[4px] rounded-full text-[11px] whitespace-nowrap ${styles[status] || "bg-muted text-muted-foreground"}`}
     >
-      {getCampaignStatusLabel(status, t)}
+      {t(campaignStatusLabel(campaign))}
     </span>
   );
 }

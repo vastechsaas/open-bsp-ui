@@ -47,6 +47,7 @@ import { Route as PlatformOrganizationIdStorageRouteImport } from './routes/plat
 import { Route as PlatformOrganizationIdQueuesRouteImport } from './routes/platform/$organizationId/queues'
 import { Route as PlatformOrganizationIdModulePermissionsRouteImport } from './routes/platform/$organizationId/module-permissions'
 import { Route as PlatformOrganizationIdIntegrationsRouteImport } from './routes/platform/$organizationId/integrations'
+import { Route as PlatformOrganizationIdCampaignControlsRouteImport } from './routes/platform/$organizationId/campaign-controls'
 import { Route as PlatformOrganizationIdAutomationRouteImport } from './routes/platform/$organizationId/automation'
 import { Route as PlatformOrganizationIdAgentsRouteImport } from './routes/platform/$organizationId/agents'
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
@@ -299,6 +300,12 @@ const PlatformOrganizationIdIntegrationsRoute =
   PlatformOrganizationIdIntegrationsRouteImport.update({
     id: '/integrations',
     path: '/integrations',
+    getParentRoute: () => PlatformOrganizationIdRoute,
+  } as any)
+const PlatformOrganizationIdCampaignControlsRoute =
+  PlatformOrganizationIdCampaignControlsRouteImport.update({
+    id: '/campaign-controls',
+    path: '/campaign-controls',
     getParentRoute: () => PlatformOrganizationIdRoute,
   } as any)
 const PlatformOrganizationIdAutomationRoute =
@@ -669,6 +676,7 @@ export interface FileRoutesByFullPath {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/campaign-controls': typeof PlatformOrganizationIdCampaignControlsRoute
   '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
@@ -761,6 +769,7 @@ export interface FileRoutesByTo {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/campaign-controls': typeof PlatformOrganizationIdCampaignControlsRoute
   '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
@@ -858,6 +867,7 @@ export interface FileRoutesById {
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
   '/platform/$organizationId/agents': typeof PlatformOrganizationIdAgentsRoute
   '/platform/$organizationId/automation': typeof PlatformOrganizationIdAutomationRoute
+  '/platform/$organizationId/campaign-controls': typeof PlatformOrganizationIdCampaignControlsRoute
   '/platform/$organizationId/integrations': typeof PlatformOrganizationIdIntegrationsRoute
   '/platform/$organizationId/module-permissions': typeof PlatformOrganizationIdModulePermissionsRoute
   '/platform/$organizationId/queues': typeof PlatformOrganizationIdQueuesRoute
@@ -956,6 +966,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/campaign-controls'
     | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
@@ -1048,6 +1059,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/campaign-controls'
     | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
@@ -1144,6 +1156,7 @@ export interface FileRouteTypes {
     | '/onboard/whatsapp/$token'
     | '/platform/$organizationId/agents'
     | '/platform/$organizationId/automation'
+    | '/platform/$organizationId/campaign-controls'
     | '/platform/$organizationId/integrations'
     | '/platform/$organizationId/module-permissions'
     | '/platform/$organizationId/queues'
@@ -1479,6 +1492,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/platform/$organizationId/integrations'
       preLoaderRoute: typeof PlatformOrganizationIdIntegrationsRouteImport
+      parentRoute: typeof PlatformOrganizationIdRoute
+    }
+    '/platform/$organizationId/campaign-controls': {
+      id: '/platform/$organizationId/campaign-controls'
+      path: '/campaign-controls'
+      fullPath: '/platform/$organizationId/campaign-controls'
+      preLoaderRoute: typeof PlatformOrganizationIdCampaignControlsRouteImport
       parentRoute: typeof PlatformOrganizationIdRoute
     }
     '/platform/$organizationId/automation': {
@@ -2075,6 +2095,7 @@ const PlatformOrganizationIdWabaHealthRouteWithChildren =
 interface PlatformOrganizationIdRouteChildren {
   PlatformOrganizationIdAgentsRoute: typeof PlatformOrganizationIdAgentsRoute
   PlatformOrganizationIdAutomationRoute: typeof PlatformOrganizationIdAutomationRoute
+  PlatformOrganizationIdCampaignControlsRoute: typeof PlatformOrganizationIdCampaignControlsRoute
   PlatformOrganizationIdIntegrationsRoute: typeof PlatformOrganizationIdIntegrationsRoute
   PlatformOrganizationIdModulePermissionsRoute: typeof PlatformOrganizationIdModulePermissionsRoute
   PlatformOrganizationIdQueuesRoute: typeof PlatformOrganizationIdQueuesRoute
@@ -2088,6 +2109,8 @@ const PlatformOrganizationIdRouteChildren: PlatformOrganizationIdRouteChildren =
     PlatformOrganizationIdAgentsRoute: PlatformOrganizationIdAgentsRoute,
     PlatformOrganizationIdAutomationRoute:
       PlatformOrganizationIdAutomationRoute,
+    PlatformOrganizationIdCampaignControlsRoute:
+      PlatformOrganizationIdCampaignControlsRoute,
     PlatformOrganizationIdIntegrationsRoute:
       PlatformOrganizationIdIntegrationsRoute,
     PlatformOrganizationIdModulePermissionsRoute:

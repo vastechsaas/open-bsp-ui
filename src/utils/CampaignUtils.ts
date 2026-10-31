@@ -32,6 +32,8 @@ export type CampaignExecutionStatus =
   | "running"
   | "completed"
   | "failed"
+  | "expired"
+  | "cancelled"
   | "needs_review";
 
 export function campaignNeedsReview(status: string) {
