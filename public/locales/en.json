@@ -1974,5 +1974,9 @@
   "La política cambió. Recargá antes de guardar.": "The policy changed. Reload before saving.",
   "Esperá a que terminen los envíos activos antes de cambiar la aplicación de límites.": "Drain or reconcile active campaigns before changing enforcement.",
   "La zona del cupo no puede cambiar durante 48 horas después de enviar.": "The budget time zone cannot change for 48 hours after sending.",
-  "No se pudo guardar la política de campañas.": "Could not save the campaign policy."
+  "No se pudo guardar la política de campañas.": "Could not save the campaign policy.",
+  "El inicio y el horario diario usan esta zona. El cupo usa la zona definida por Super Admin.": "The start and daily sending hours use this time zone. The budget uses the time zone set by Super Admin.",
+  "La campaña continúa en el próximo horario permitido hasta procesar todos los destinatarios. Los límites los define Super Admin.": "The campaign continues during the next allowed window until all recipients are processed. Super Admin sets the sending limits.",
+  "Al guardar este borrador se eliminarán su vencimiento y velocidad personalizados. Usará los límites de la organización.": "Saving this draft removes its previous deadline and custom speed. It will use the organization's limits.",
+  "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan.": "When the budget is exhausted, sending waits and resumes automatically when the hours and limits allow."
 }

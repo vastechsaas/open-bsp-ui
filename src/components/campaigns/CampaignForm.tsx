@@ -287,10 +287,12 @@ export default function CampaignForm({
   const csvIsRequired =
     audienceType === "csv_upload" &&
     (!campaign || campaign.audience_type !== "csv_upload");
+  const legacySchedule =
+    !!campaign?.expires_at || campaign?.max_sends_per_minute != null;
   const submitDisabled =
     policy.isPending ||
     policy.isError ||
-    (!isDirty && !externalDirty && !!campaign) ||
+    (!isDirty && !externalDirty && !!campaign && !legacySchedule) ||
     !organizationAddress ||
     !templateId ||
     !mappingIsComplete ||
@@ -419,6 +421,13 @@ export default function CampaignForm({
         {scheduleError && (
           <p role="alert" className="text-sm text-destructive">
             {t(scheduleError)}
+          </p>
+        )}
+        {legacySchedule && (
+          <p className="rounded-lg border border-border p-3 text-sm text-muted-foreground">
+            {t(
+              "Al guardar este borrador se eliminarán su vencimiento y velocidad personalizados. Usará los límites de la organización.",
+            )}
           </p>
         )}
         <section className={cardClass}>

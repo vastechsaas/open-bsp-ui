@@ -1953,5 +1953,9 @@
   "La política cambió. Recargá antes de guardar.": "Sera imebadilika. Pakia upya kabla ya kuhifadhi.",
   "Esperá a que terminen los envíos activos antes de cambiar la aplicación de límites.": "Maliza au patanisha kampeni zinazoendelea kabla ya kubadili utekelezaji.",
   "La zona del cupo no puede cambiar durante 48 horas después de enviar.": "Ukanda wa bajeti hauwezi kubadilika kwa saa 48 baada ya kutuma.",
-  "No se pudo guardar la política de campañas.": "Imeshindwa kuhifadhi sera ya kampeni."
+  "No se pudo guardar la política de campañas.": "Imeshindwa kuhifadhi sera ya kampeni.",
+  "El inicio y el horario diario usan esta zona. El cupo usa la zona definida por Super Admin.": "Mwanzo na saa za kila siku hutumia ukanda huu. Bajeti hutumia ukanda uliowekwa na Super Admin.",
+  "La campaña continúa en el próximo horario permitido hasta procesar todos los destinatarios. Los límites los define Super Admin.": "Kampeni huendelea wakati unaofuata unaoruhusiwa hadi wapokeaji wote wachakatwe. Super Admin huweka viwango vya utumaji.",
+  "Al guardar este borrador se eliminarán su vencimiento y velocidad personalizados. Usará los límites de la organización.": "Kuhifadhi rasimu hii huondoa muda wake wa mwisho na kasi maalum. Itatumia viwango vya shirika.",
+  "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan.": "Bajeti ikiisha, utumaji husubiri na kuendelea kiotomatiki saa na viwango vikiruhusu."
 }

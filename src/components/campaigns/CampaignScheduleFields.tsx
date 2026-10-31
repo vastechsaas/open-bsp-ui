@@ -56,7 +56,7 @@ export default function CampaignScheduleFields({
         disabled={disabled}
         translate={t}
         helpText={t(
-          "El inicio, vencimiento y horario diario usan esta zona. El cupo usa la zona definida por Super Admin.",
+          "El inicio y el horario diario usan esta zona. El cupo usa la zona definida por Super Admin.",
         )}
       />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -73,20 +73,6 @@ export default function CampaignScheduleFields({
             />
           </label>
         )}
-        <label className="space-y-2 text-sm">
-          <span className="block">
-            {t("Dejar de enviar después de")}
-            {policy.enabled || value.later || value.window ? " *" : ""}
-          </span>
-          <input
-            className={input}
-            type="datetime-local"
-            value={value.expiry}
-            disabled={disabled}
-            required={policy.enabled || value.later || value.window}
-            onChange={(e) => update({ expiry: e.target.value })}
-          />
-        </label>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -126,22 +112,6 @@ export default function CampaignScheduleFields({
           {t("La hora de fin corresponde al día siguiente.")}
         </p>
       )}
-      <label className="block max-w-sm space-y-2 text-sm">
-        <span className="block">
-          {t("Velocidad opcional: envíos por minuto")}
-        </span>
-        <input
-          className={input}
-          type="number"
-          min={1}
-          max={policy.enabled ? policy.max_sends_per_minute! : 60000}
-          step={1}
-          value={value.speed}
-          disabled={disabled}
-          placeholder={policy.max_sends_per_minute?.toString() ?? ""}
-          onChange={(e) => update({ speed: e.target.value })}
-        />
-      </label>
       {policy.enabled && (
         <p className="text-sm">
           {t("Cupo diario compartido")}: {policy.used} / {policy.daily_limit} ·{" "}
@@ -151,7 +121,7 @@ export default function CampaignScheduleFields({
       )}
       <p className="text-sm text-muted-foreground">
         {t(
-          "El fin del horario diario pausa hasta el próximo horario permitido. El vencimiento detiene definitivamente los envíos pendientes.",
+          "La campaña continúa en el próximo horario permitido hasta procesar todos los destinatarios. Los límites los define Super Admin.",
         )}
       </p>
     </section>
