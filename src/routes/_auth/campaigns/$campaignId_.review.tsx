@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
 import { AlertCircle, CheckCircle2, LoaderCircle, Users } from "lucide-react";
 import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
+import CampaignSendingSummary from "@/components/campaigns/CampaignSendingSummary";
 import Spinner from "@/components/Spinner";
 import TemplatePreview from "@/components/TemplatePreview";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -25,6 +26,8 @@ import {
   isCampaignProcessing,
 } from "@/utils/CampaignUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
+import { useCampaignPolicy } from "@/queries/useCampaignPolicy";
+import { campaignScheduleReady } from "@/utils/CampaignPolicyUtils";
 
 export const Route = createFileRoute("/_auth/campaigns/$campaignId_/review")({
   component: ReviewCampaign,
@@ -50,6 +53,7 @@ function ReviewCampaign() {
     (campaign?.needs_review_count ?? 0) > 0,
   );
   const startCampaign = useStartCampaign();
+  const policy = useCampaignPolicy();
   const {
     data: audienceCount,
     isLoading: countLoading,
@@ -107,7 +111,13 @@ function ReviewCampaign() {
     mediaUnavailable: !!mediaFormat && mediaPreview.isError,
   });
   const ready = readiness === "ready";
-  const canRun = canStartCampaign(campaign.status, readiness);
+  const scheduleReady =
+    !!policy.data &&
+    !policy.isError &&
+    campaignScheduleReady(campaign, policy.data);
+  const canRun = canStartCampaign(campaign.status, readiness) && scheduleReady;
+  const stopped =
+    campaign.status === "expired" || campaign.status === "cancelled";
   const needsReview = campaign.status === "needs_review";
   const processing = !needsReview && isCampaignProcessing(campaign.status);
   const statusLabels: Record<string, string> = {
@@ -117,6 +127,8 @@ function ReviewCampaign() {
     completed: t("Completada"),
     failed: t("Fallida"),
     needs_review: t("Requiere revisión"),
+    expired: t("Vencida"),
+    cancelled: t("Cancelada"),
   };
   const statusLabel = statusLabels[campaign.status] || campaign.status;
 
@@ -139,6 +151,7 @@ function ReviewCampaign() {
       <div className="flex-1 min-h-0 overflow-y-auto bg-background p-[16px] md:p-[24px]">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-[16px]">
           <div className="flex flex-col gap-[16px] min-w-0">
+            <CampaignSendingSummary campaign={campaign} />
             <section className="campaign-review-card">
               <div className="flex items-start justify-between gap-[16px]">
                 <div>
@@ -207,7 +220,7 @@ function ReviewCampaign() {
                   <LoaderCircle className="w-[20px] h-[20px] text-primary animate-spin" />
                 ) : campaign.status === "completed" ? (
                   <CheckCircle2 className="w-[20px] h-[20px] text-green-500" />
-                ) : campaign.status === "failed" ? (
+                ) : campaign.status === "failed" || stopped ? (
                   <AlertCircle className="w-[20px] h-[20px] text-destructive" />
                 ) : ready ? (
                   <CheckCircle2 className="w-[20px] h-[20px] text-green-500" />
@@ -223,9 +236,11 @@ function ReviewCampaign() {
                         ? t("La campaña finalizó")
                         : campaign.status === "failed"
                           ? t("La campaña falló")
-                          : ready
-                            ? t("La campaña está lista para ejecutar")
-                            : t("La campaña requiere atención")}
+                          : stopped
+                            ? statusLabel
+                            : ready && scheduleReady
+                              ? t("La campaña está lista para ejecutar")
+                              : t("La campaña requiere atención")}
                 </h2>
               </div>
               <p className="text-[12px] text-muted-foreground mt-[8px]">
@@ -239,11 +254,19 @@ function ReviewCampaign() {
                       ? t("Todos los destinatarios fueron procesados.")
                       : campaign.status === "failed"
                         ? t("La ejecución no pudo completarse.")
-                        : ready
-                          ? t(
-                              "Confirmá la ejecución para agregar los destinatarios a la cola.",
-                            )
-                          : t("Corregí la configuración antes de ejecutar.")}
+                        : stopped
+                          ? t("Los mensajes no enviados permanecen detenidos.")
+                          : !scheduleReady
+                            ? t(
+                                "Revisá la programación y la política antes de ejecutar.",
+                              )
+                            : ready
+                              ? t(
+                                  "Confirmá la ejecución para agregar los destinatarios a la cola.",
+                                )
+                              : t(
+                                  "Corregí la configuración antes de ejecutar.",
+                                )}
               </p>
             </section>
           </div>

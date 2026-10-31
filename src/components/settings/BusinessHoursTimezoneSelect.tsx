@@ -7,11 +7,13 @@ export default function BusinessHoursTimezoneSelect({
   onChange,
   disabled,
   translate: t,
+  helpText,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
   translate: (label: string) => string;
+  helpText?: string;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -96,9 +98,10 @@ export default function BusinessHoursTimezoneSelect({
         />
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        {t(
-          "Busca por ciudad o región. Los horarios y festivos usan esta zona horaria.",
-        )}
+        {helpText ??
+          t(
+            "Busca por ciudad o región. Los horarios y festivos usan esta zona horaria.",
+          )}
       </p>
       {open && !disabled && (
         <div

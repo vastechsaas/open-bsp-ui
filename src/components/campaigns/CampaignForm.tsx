@@ -40,6 +40,12 @@ import {
   supportedImageCarousel,
 } from "@/utils/CarouselUtils";
 import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
+import { useCampaignPolicy } from "@/queries/useCampaignPolicy";
+import {
+  campaignScheduleDraft,
+  campaignScheduleInput,
+} from "@/utils/CampaignPolicyUtils";
+import CampaignScheduleFields from "./CampaignScheduleFields";
 
 type CampaignFormValues = {
   name: string;
@@ -100,6 +106,18 @@ export default function CampaignForm({
   const [headerMediaFile, setHeaderMediaFile] = useState<File>();
   const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState<string>();
   const [carouselFiles, setCarouselFiles] = useState<Record<string, File>>({});
+  const policy = useCampaignPolicy();
+  const [schedule, setSchedule] = useState(() =>
+    campaignScheduleDraft(campaign),
+  );
+  const [scheduleError, setScheduleError] = useState<string>();
+  useEffect(() => {
+    if (!campaign && !externalDirty && policy.data)
+      setSchedule((current) => ({
+        ...current,
+        timezone: policy.data.budget_timezone,
+      }));
+  }, [campaign, externalDirty, policy.data]);
 
   const {
     register,
@@ -270,6 +288,8 @@ export default function CampaignForm({
     audienceType === "csv_upload" &&
     (!campaign || campaign.audience_type !== "csv_upload");
   const submitDisabled =
+    policy.isPending ||
+    policy.isError ||
     (!isDirty && !externalDirty && !!campaign) ||
     !organizationAddress ||
     !templateId ||
@@ -302,6 +322,19 @@ export default function CampaignForm({
   }
 
   function submit(values: CampaignFormValues) {
+    if (!policy.data || policy.isError) return;
+    let scheduleInput;
+    try {
+      scheduleInput = campaignScheduleInput(schedule, policy.data);
+      setScheduleError(undefined);
+    } catch (error) {
+      setScheduleError(
+        error instanceof Error
+          ? error.message
+          : "Definí un horario de envío válido.",
+      );
+      return;
+    }
     if (!selectedTemplate) {
       void message.error(t("Seleccioná una plantilla aprobada"));
       return;
@@ -317,6 +350,7 @@ export default function CampaignForm({
 
     onSubmit(
       {
+        ...scheduleInput,
         name: values.name.trim(),
         organization_address: values.organization_address,
         service: "whatsapp",
@@ -357,6 +391,36 @@ export default function CampaignForm({
       }
     >
       <div className="flex flex-col gap-[16px] min-w-0">
+        {policy.isPending && <p>{t("Cargando política de campañas…")}</p>}
+        {policy.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {t("No se pudo cargar la política de campañas.")}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => void policy.refetch()}
+            >
+              {t("Reintentar")}
+            </button>
+          </p>
+        )}
+        {policy.data && (
+          <CampaignScheduleFields
+            policy={policy.data}
+            value={schedule}
+            disabled={loading}
+            onChange={(next) => {
+              setSchedule(next);
+              setExternalDirty(true);
+              setScheduleError(undefined);
+            }}
+          />
+        )}
+        {scheduleError && (
+          <p role="alert" className="text-sm text-destructive">
+            {t(scheduleError)}
+          </p>
+        )}
         <section className={cardClass}>
           {isWorkspace && (
             <div>

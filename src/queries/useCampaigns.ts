@@ -50,6 +50,12 @@ export type CampaignHeaderMedia = {
 
 function toCampaignInput(input: CampaignDraftInput) {
   return {
+    scheduled_start_at: input.scheduled_start_at,
+    expires_at: input.expires_at,
+    schedule_timezone: input.schedule_timezone,
+    send_window_start: input.send_window_start,
+    send_window_end: input.send_window_end,
+    max_sends_per_minute: input.max_sends_per_minute,
     audience_type: input.audience_type,
     created_by: input.created_by,
     name: input.name,
@@ -168,8 +174,10 @@ export function useCampaigns(params: CampaignPageParams) {
     },
     enabled: !!orgId,
     refetchInterval: (query) => {
-      return query.state.data?.rows.some((campaign) =>
-        isCampaignProcessing(campaign.status),
+      return query.state.data?.rows.some(
+        (campaign) =>
+          isCampaignProcessing(campaign.status) ||
+          campaign.queued_count + campaign.processing_count > 0,
       )
         ? 3_000
         : false;
@@ -193,7 +201,10 @@ export function useCampaign(id: string | undefined) {
     enabled: !!orgId && !!id,
     select: (result) => result.data as CampaignRow,
     refetchInterval: (query) =>
-      isCampaignProcessing(query.state.data?.data?.status || "")
+      isCampaignProcessing(query.state.data?.data?.status || "") ||
+      (query.state.data?.data?.queued_count ?? 0) +
+        (query.state.data?.data?.processing_count ?? 0) >
+        0
         ? 3_000
         : false,
   });
