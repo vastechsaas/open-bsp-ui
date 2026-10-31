@@ -61,44 +61,79 @@ void test("nonexistent and repeated DST local start times require correction", (
     "2026-11-01T08:30:00.000Z",
   );
 });
-void test("schedule requires future expiry and cannot raise organization speed", () => {
+void test("schedule uses organization speed and needs no final deadline", () => {
   const draft = {
     ...campaignScheduleDraft(),
     timezone: "Asia/Karachi",
     later: true,
     start: "2026-11-02T09:00",
-    expiry: "2026-11-04T18:00",
     window: true,
     windowStart: "22:00",
     windowEnd: "06:00",
-    speed: "5",
   };
   const value = campaignScheduleInput(draft, policy, now);
   assert.equal(value.scheduled_start_at, "2026-11-02T04:00:00.000Z");
   assert.equal(value.send_window_end, "06:00");
-  assert.equal(value.max_sends_per_minute, 5);
+  assert.equal(value.max_sends_per_minute, null);
+  assert.equal(value.expires_at, null);
   assert.equal(campaignScheduleReady(value, policy, now), true);
   assert.deepEqual(campaignScheduleDraft(value), draft);
-  for (const patch of [
-    { expiry: "" },
-    { speed: "11" },
-    { speed: "0" },
-    { speed: "1.5" },
-    { start: "2026-10-31T01:00" },
-    { expiry: "2026-11-02T08:59" },
-    { windowEnd: "22:00" },
-  ])
+  for (const patch of [{ start: "2026-10-31T01:00" }, { windowEnd: "22:00" }])
     assert.throws(() =>
       campaignScheduleInput({ ...draft, ...patch }, policy, now),
     );
   assert.equal(
     campaignScheduleReady({ ...value, expires_at: null }, policy, now),
-    false,
+    true,
   );
   assert.equal(
     campaignScheduleReady(value, { ...policy, cloudamqp_enabled: false }, now),
     false,
   );
+  assert.equal(
+    campaignScheduleReady(
+      { ...value, expires_at: "2026-10-31T00:00:00Z" },
+      policy,
+      now,
+    ),
+    false,
+    "Existing explicit deadlines remain honored before a draft is edited",
+  );
+  const legacyDraft = campaignScheduleDraft({
+    ...value,
+    expires_at: "2026-11-03T00:00:00Z",
+    max_sends_per_minute: 2,
+  });
+  const simplified = campaignScheduleInput(legacyDraft, policy, now);
+  assert.equal(
+    simplified.expires_at,
+    null,
+    "Saving through the simplified editor removes a legacy draft deadline",
+  );
+  assert.equal(simplified.max_sends_per_minute, null);
+});
+void test("create campaign exposes start and daily window, not deadline or custom speed", () => {
+  const source = readFileSync(
+    new URL(
+      "../src/components/campaigns/CampaignScheduleFields.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(source, /Fecha y hora de inicio/);
+  assert.match(source, /Enviar solo en un horario diario/);
+  assert.match(source, /value.windowStart/);
+  assert.match(source, /value.windowEnd/);
+  assert.doesNotMatch(
+    source,
+    /Dejar de enviar después de|Velocidad opcional|value.expiry|value.speed/,
+  );
+  const form = readFileSync(
+    new URL("../src/components/campaigns/CampaignForm.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(form, /Al guardar este borrador se eliminarán/);
+  assert.match(form, /!!campaign && !legacySchedule/);
 });
 void test("waiting labels never hide uncertain or terminal results", () => {
   const sending_state = { waiting_count: 3, reason: "daily_allowance" };
@@ -160,6 +195,10 @@ void test("new policy and scheduling messages have every supported translation",
     "Cancelar envíos pendientes",
     "La política cambió. Recargá antes de guardar.",
     "La velocidad no puede superar el límite de la organización.",
+    "El inicio y el horario diario usan esta zona. El cupo usa la zona definida por Super Admin.",
+    "La campaña continúa en el próximo horario permitido hasta procesar todos los destinatarios. Los límites los define Super Admin.",
+    "Al guardar este borrador se eliminarán su vencimiento y velocidad personalizados. Usará los límites de la organización.",
+    "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan.",
   ];
   for (const lang of ["en", "pt", "fr", "sw"]) {
     const locale = JSON.parse(

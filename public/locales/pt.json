@@ -1969,5 +1969,9 @@
   "La política cambió. Recargá antes de guardar.": "A política mudou. Recarregue antes de salvar.",
   "Esperá a que terminen los envíos activos antes de cambiar la aplicación de límites.": "Aguarde ou reconcilie campanhas ativas antes de alterar a aplicação dos limites.",
   "La zona del cupo no puede cambiar durante 48 horas después de enviar.": "O fuso da cota não pode mudar por 48 horas após enviar.",
-  "No se pudo guardar la política de campañas.": "Não foi possível salvar a política de campanhas."
+  "No se pudo guardar la política de campañas.": "Não foi possível salvar a política de campanhas.",
+  "El inicio y el horario diario usan esta zona. El cupo usa la zona definida por Super Admin.": "O início e o horário diário usam este fuso. A cota usa o fuso definido pelo Super Admin.",
+  "La campaña continúa en el próximo horario permitido hasta procesar todos los destinatarios. Los límites los define Super Admin.": "A campanha continua no próximo horário permitido até processar todos os destinatários. O Super Admin define os limites.",
+  "Al guardar este borrador se eliminarán su vencimiento y velocidad personalizados. Usará los límites de la organización.": "Salvar este rascunho remove seu vencimento e velocidade personalizados. Ele usará os limites da organização.",
+  "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan.": "Ao esgotar a cota, os envios aguardam e continuam automaticamente quando o horário e os limites permitirem."
 }

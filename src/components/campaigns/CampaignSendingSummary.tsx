@@ -104,7 +104,7 @@ export default function CampaignSendingSummary({
       )}
       <p className="text-muted-foreground">
         {t(
-          "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan. Nunca después del vencimiento.",
+          "Al agotar el cupo, los envíos esperan y continúan automáticamente cuando el horario y los límites lo permitan.",
         )}
       </p>
       {active &&
