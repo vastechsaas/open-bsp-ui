@@ -28,6 +28,7 @@ export type CampaignListRow =
 export type CampaignPageParams = DataTablePageParams & {
   audienceType?: CampaignAudienceType;
   readiness?: "ready" | "needs_attention";
+  status?: "paused";
 };
 
 export type CampaignDraftInput = Omit<
@@ -164,6 +165,7 @@ export function useCampaigns(params: CampaignPageParams) {
           p_search: params.search || undefined,
           p_audience_type: params.audienceType,
           p_readiness: params.readiness,
+          p_status: params.status,
         })
         .throwOnError();
 

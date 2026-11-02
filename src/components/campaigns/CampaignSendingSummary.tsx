@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   useCampaignPolicy,
   useCampaignSendingState,
@@ -7,11 +7,16 @@ import {
 import type { CampaignRow } from "@/queries/useCampaigns";
 import { useTranslation } from "@/hooks/useTranslation";
 import { campaignWaitingLabels } from "@/utils/CampaignPolicyUtils";
+import CampaignControls from "./CampaignControls";
+import useBoundStore from "@/stores/useBoundStore";
+import { isCampaignManuallyPaused } from "@/utils/CampaignControlUtils";
 
 export default function CampaignSendingSummary({
   campaign,
+  runControl,
 }: {
   campaign: CampaignRow;
+  runControl?: ReactNode;
 }) {
   const { translate: t } = useTranslation();
   const policy = useCampaignPolicy();
@@ -22,6 +27,8 @@ export default function CampaignSendingSummary({
   );
   const cancel = useCancelCampaign();
   const [confirm, setConfirm] = useState(false);
+  const userId = useBoundStore((s) => s.ui.user?.id);
+  const paused = isCampaignManuallyPaused(campaign);
   const date = (iso: string) =>
     new Intl.DateTimeFormat(undefined, {
       timeZone: campaign.schedule_timezone,
@@ -30,7 +37,39 @@ export default function CampaignSendingSummary({
     }).format(new Date(iso));
   return (
     <section className="campaign-review-card space-y-3 text-sm">
-      <h2 className="font-medium">{t("Programación y envío")}</h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="font-medium">{t("Programación y envío")}</h2>
+        {campaign.status === "draft" ? (
+          runControl
+        ) : (
+          <CampaignControls
+            key={`${userId}:${campaign.organization_id}:${campaign.id}`}
+            campaign={campaign}
+          />
+        )}
+      </div>
+      {paused && (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-foreground"
+        >
+          <p className="font-medium">{t("Campaña pausada")}</p>
+          <p>
+            {t(
+              "No se enviarán mensajes nuevos. Los mensajes ya en curso pueden finalizar.",
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("Pausada por")}: {campaign.paused_by_name} ·{" "}
+            {date(campaign.paused_at!)}
+          </p>
+          <p className="text-xs mt-2">
+            {t(
+              "Al reanudar, continuará con los destinatarios pendientes según el horario y los límites.",
+            )}
+          </p>
+        </div>
+      )}
       <p>
         {t("Zona horaria")}: {campaign.schedule_timezone}
       </p>
@@ -77,7 +116,7 @@ export default function CampaignSendingSummary({
           </button>
         </p>
       )}
-      {!!state.data?.waiting_count && (
+      {!paused && !!state.data?.waiting_count && (
         <p role="status">
           {t("Destinatarios en espera")}: {state.data.waiting_count} ·{" "}
           {t(
