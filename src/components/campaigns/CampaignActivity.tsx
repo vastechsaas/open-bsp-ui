@@ -91,6 +91,11 @@ export default function CampaignActivity({
               <time dateTime={event.recorded_at}>
                 {new Date(event.recorded_at).toLocaleString()}
               </time>
+              {event.actor_name && (
+                <div className="text-muted-foreground">
+                  {t("Responsable")}: {event.actor_name}
+                </div>
+              )}
               {event.provider_at && event.provider_at !== event.recorded_at && (
                 <div className="text-muted-foreground">
                   {t("Hora del proveedor")}:{" "}

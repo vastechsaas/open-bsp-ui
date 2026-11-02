@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
-import { AlertCircle, CheckCircle2, LoaderCircle, Users } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  LoaderCircle,
+  Users,
+  Play,
+} from "lucide-react";
 import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
 import CampaignSendingSummary from "@/components/campaigns/CampaignSendingSummary";
 import CampaignActivity from "@/components/campaigns/CampaignActivity";
@@ -29,6 +35,7 @@ import {
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { useCampaignPolicy } from "@/queries/useCampaignPolicy";
 import { campaignScheduleReady } from "@/utils/CampaignPolicyUtils";
+import { isCampaignManuallyPaused } from "@/utils/CampaignControlUtils";
 
 export const Route = createFileRoute("/_auth/campaigns/$campaignId_/review")({
   component: ReviewCampaign,
@@ -152,7 +159,21 @@ function ReviewCampaign() {
       <div className="flex-1 min-h-0 overflow-y-auto bg-background p-[16px] md:p-[24px]">
         <div className="max-w-[1400px] mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-[16px]">
           <div className="flex flex-col gap-[16px] min-w-0">
-            <CampaignSendingSummary campaign={campaign} />
+            <CampaignSendingSummary
+              campaign={campaign}
+              runControl={
+                <button
+                  className="primary px-4 py-2 inline-flex items-center gap-2 disabled:opacity-50"
+                  disabled={!canRun || startCampaign.isPending}
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  <Play size={16} />
+                  {startCampaign.isPending
+                    ? t("Iniciando…")
+                    : t("Ejecutar campaña")}
+                </button>
+              }
+            />
             <section className="campaign-review-card">
               <div className="flex items-start justify-between gap-[16px]">
                 <div>
@@ -163,9 +184,18 @@ function ReviewCampaign() {
                     {campaign.name}
                   </h2>
                 </div>
-                <span className="px-[10px] py-[5px] rounded-full bg-muted text-[11px]">
-                  {statusLabel}
-                </span>
+                <div className="flex flex-wrap justify-end gap-2">
+                  {isCampaignManuallyPaused(campaign) && (
+                    <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[11px]">
+                      {t("Pausada")}
+                    </span>
+                  )}
+                  {(!isCampaignManuallyPaused(campaign) || needsReview) && (
+                    <span className="px-[10px] py-[5px] rounded-full bg-muted text-[11px]">
+                      {statusLabel}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="grid sm:grid-cols-3 gap-[14px] mt-[20px]">
                 <SummaryField
@@ -424,20 +454,6 @@ function ReviewCampaign() {
           {campaign.status === "draft"
             ? t("Volver a configuración")
             : t("Volver a campañas")}
-        </button>
-        <button
-          className="primary px-[28px] py-[10px] disabled:opacity-50"
-          disabled={!canRun || startCampaign.isPending}
-          title={
-            campaign.status !== "draft"
-              ? t("Esta campaña ya fue ejecutada")
-              : !ready
-                ? t("Completá la configuración antes de ejecutar")
-                : undefined
-          }
-          onClick={() => setConfirmOpen(true)}
-        >
-          {startCampaign.isPending ? t("Iniciando…") : t("Ejecutar campaña")}
         </button>
       </footer>
 

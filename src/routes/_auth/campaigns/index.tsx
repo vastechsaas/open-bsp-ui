@@ -16,12 +16,13 @@ import type { CampaignReadiness } from "@/utils/CampaignUtils";
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from "@/utils/DataTableUtils";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { campaignStatusLabel } from "@/utils/CampaignPolicyUtils";
+import { isCampaignManuallyPaused } from "@/utils/CampaignControlUtils";
 
 export const Route = createFileRoute("/_auth/campaigns/")({
   component: CampaignList,
 });
 
-type ReadinessFilter = "all" | "ready" | "needs_attention";
+type ReadinessFilter = "all" | "ready" | "needs_attention" | "paused";
 type AudienceFilter = "all" | CampaignAudienceType;
 type CampaignListItem = CampaignListRow & {
   readiness: CampaignReadiness;
@@ -47,7 +48,11 @@ function CampaignList() {
     pageSize,
     search: debouncedSearch || undefined,
     audienceType: audienceFilter === "all" ? undefined : audienceFilter,
-    readiness: readinessFilter === "all" ? undefined : readinessFilter,
+    readiness:
+      readinessFilter === "all" || readinessFilter === "paused"
+        ? undefined
+        : readinessFilter,
+    status: readinessFilter === "paused" ? "paused" : undefined,
   });
 
   const audienceLabels: Record<CampaignAudienceType, string> = {
@@ -122,6 +127,7 @@ function CampaignList() {
               options={[
                 { value: "all", label: t("Todos los estados") },
                 { value: "ready", label: t("Listas para revisar") },
+                { value: "paused", label: t("Pausadas") },
                 {
                   value: "needs_attention",
                   label: t("Requieren atención"),
@@ -379,6 +385,7 @@ function CampaignActions({ campaign }: { campaign: CampaignListItem }) {
 
 function CampaignStatusBadge({ campaign }: { campaign: CampaignListRow }) {
   const { translate: t } = useTranslation();
+  const paused = isCampaignManuallyPaused(campaign);
   const status = campaign.status;
   const styles: Record<string, string> = {
     queued: "bg-primary/15 text-primary",
@@ -389,11 +396,20 @@ function CampaignStatusBadge({ campaign }: { campaign: CampaignListRow }) {
   };
 
   return (
-    <span
-      className={`inline-flex px-[9px] py-[4px] rounded-full text-[11px] whitespace-nowrap ${styles[status] || "bg-muted text-muted-foreground"}`}
-    >
-      {t(campaignStatusLabel(campaign))}
-    </span>
+    <div className="flex flex-wrap gap-1">
+      {paused && (
+        <span className="inline-flex px-2 py-1 rounded-full text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-400">
+          {t("Pausada")}
+        </span>
+      )}
+      {(!paused || status === "needs_review") && (
+        <span
+          className={`inline-flex px-[9px] py-[4px] rounded-full text-[11px] whitespace-nowrap ${styles[status] || "bg-muted text-muted-foreground"}`}
+        >
+          {t(campaignStatusLabel(campaign))}
+        </span>
+      )}
+    </div>
   );
 }
 

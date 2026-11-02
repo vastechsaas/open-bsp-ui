@@ -1,5 +1,7 @@
 export const activityLabels: Record<string, string> = {
   campaign_started: "Campaña iniciada",
+  campaign_paused: "Campaña pausada",
+  campaign_resumed: "Campaña reanudada",
   dispatch_finished: "Envíos finalizados",
   submission_started: "Envío iniciado",
   accepted: "Aceptado por Meta",
@@ -20,6 +22,7 @@ export const activityReasons: Record<string, string> = {
   number_rate: "Límite por minuto",
   recipient_frequency: "Límite por destinatario",
   policy_unavailable: "Política no disponible",
+  manual_pause: "Pausa manual",
   completed: "Procesamiento finalizado",
   cancelled: "Cancelado",
   expired: "Vencida",
