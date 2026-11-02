@@ -5,6 +5,7 @@ import {
   canControlCampaign,
   isCampaignManuallyPaused,
 } from "../src/utils/CampaignControlUtils.ts";
+import { campaignStatusLabel } from "../src/utils/CampaignPolicyUtils.ts";
 
 const campaign = {
   status: "queued",
@@ -41,6 +42,24 @@ void test("controls cover queued/running/uncertain with unfinished work, never t
   );
 });
 void test("pause badge derives list state and preserves independent needs-review status", () => {
+  assert.equal(
+    campaignStatusLabel({
+      status: "queued",
+      sending_state: {
+        paused_at: "2026-01-01",
+        reason: "scheduled",
+        waiting_count: 1,
+      },
+    }),
+    "Pausada",
+  );
+  assert.equal(
+    campaignStatusLabel({
+      status: "needs_review",
+      sending_state: { paused_at: "2026-01-01" },
+    }),
+    "Requiere revisión",
+  );
   assert.equal(isCampaignManuallyPaused(campaign), false);
   assert.ok(isCampaignManuallyPaused({ ...campaign, paused_at: "2026-01-01" }));
   assert.ok(

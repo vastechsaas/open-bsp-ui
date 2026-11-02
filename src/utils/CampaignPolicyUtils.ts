@@ -166,9 +166,14 @@ export function campaignStatusLabel(campaign: {
   )
     return "Cancelando envíos";
   const waiting = campaign.sending_state as
-    | { waiting_count?: number; reason?: string }
+    | { waiting_count?: number; reason?: string; paused_at?: string | null }
     | null
     | undefined;
+  if (
+    (campaign.status === "queued" || campaign.status === "running") &&
+    waiting?.paused_at
+  )
+    return "Pausada";
   if (
     (campaign.status === "queued" || campaign.status === "running") &&
     waiting?.waiting_count &&

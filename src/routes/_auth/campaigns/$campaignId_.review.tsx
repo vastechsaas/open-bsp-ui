@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   Users,
   Play,
+  Pause,
 } from "lucide-react";
 import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
 import CampaignSendingSummary from "@/components/campaigns/CampaignSendingSummary";
@@ -127,7 +128,9 @@ function ReviewCampaign() {
   const stopped =
     campaign.status === "expired" || campaign.status === "cancelled";
   const needsReview = campaign.status === "needs_review";
-  const processing = !needsReview && isCampaignProcessing(campaign.status);
+  const manuallyPaused = isCampaignManuallyPaused(campaign);
+  const processing =
+    !needsReview && !manuallyPaused && isCampaignProcessing(campaign.status);
   const statusLabels: Record<string, string> = {
     draft: t("Borrador"),
     queued: t("En cola"),
@@ -138,7 +141,10 @@ function ReviewCampaign() {
     expired: t("Vencida"),
     cancelled: t("Cancelada"),
   };
-  const statusLabel = statusLabels[campaign.status] || campaign.status;
+  const statusLabel =
+    manuallyPaused && !needsReview
+      ? t("Pausada")
+      : statusLabels[campaign.status] || campaign.status;
 
   const runCampaign = async () => {
     try {
@@ -247,6 +253,8 @@ function ReviewCampaign() {
               <div className="flex items-center gap-[9px]">
                 {needsReview ? (
                   <AlertCircle className="w-[20px] h-[20px] text-amber-600 dark:text-amber-400" />
+                ) : manuallyPaused ? (
+                  <Pause className="w-[20px] h-[20px] text-amber-600 dark:text-amber-400" />
                 ) : processing ? (
                   <LoaderCircle className="w-[20px] h-[20px] text-primary animate-spin" />
                 ) : campaign.status === "completed" ? (
@@ -261,17 +269,19 @@ function ReviewCampaign() {
                 <h2 className="font-medium">
                   {needsReview
                     ? t("Requiere revisión")
-                    : processing
-                      ? t("La campaña se está procesando")
-                      : campaign.status === "completed"
-                        ? t("La campaña finalizó")
-                        : campaign.status === "failed"
-                          ? t("La campaña falló")
-                          : stopped
-                            ? statusLabel
-                            : ready && scheduleReady
-                              ? t("La campaña está lista para ejecutar")
-                              : t("La campaña requiere atención")}
+                    : manuallyPaused
+                      ? t("Campaña pausada")
+                      : processing
+                        ? t("La campaña se está procesando")
+                        : campaign.status === "completed"
+                          ? t("La campaña finalizó")
+                          : campaign.status === "failed"
+                            ? t("La campaña falló")
+                            : stopped
+                              ? statusLabel
+                              : ready && scheduleReady
+                                ? t("La campaña está lista para ejecutar")
+                                : t("La campaña requiere atención")}
                 </h2>
               </div>
               <p className="text-[12px] text-muted-foreground mt-[8px]">
@@ -279,25 +289,31 @@ function ReviewCampaign() {
                   ? t(
                       "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.",
                     )
-                  : processing
-                    ? t("Los resultados se actualizan automáticamente.")
-                    : campaign.status === "completed"
-                      ? t("Todos los destinatarios fueron procesados.")
-                      : campaign.status === "failed"
-                        ? t("La ejecución no pudo completarse.")
-                        : stopped
-                          ? t("Los mensajes no enviados permanecen detenidos.")
-                          : !scheduleReady
+                  : manuallyPaused
+                    ? t(
+                        "Al reanudar, continuará con los destinatarios pendientes según el horario y los límites.",
+                      )
+                    : processing
+                      ? t("Los resultados se actualizan automáticamente.")
+                      : campaign.status === "completed"
+                        ? t("Todos los destinatarios fueron procesados.")
+                        : campaign.status === "failed"
+                          ? t("La ejecución no pudo completarse.")
+                          : stopped
                             ? t(
-                                "Revisá la programación y la política antes de ejecutar.",
+                                "Los mensajes no enviados permanecen detenidos.",
                               )
-                            : ready
+                            : !scheduleReady
                               ? t(
-                                  "Confirmá la ejecución para agregar los destinatarios a la cola.",
+                                  "Revisá la programación y la política antes de ejecutar.",
                                 )
-                              : t(
-                                  "Corregí la configuración antes de ejecutar.",
-                                )}
+                              : ready
+                                ? t(
+                                    "Confirmá la ejecución para agregar los destinatarios a la cola.",
+                                  )
+                                : t(
+                                    "Corregí la configuración antes de ejecutar.",
+                                  )}
               </p>
             </section>
           </div>
