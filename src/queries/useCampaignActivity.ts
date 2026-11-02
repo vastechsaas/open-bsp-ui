@@ -30,7 +30,15 @@ export function useCampaignActivity(
     refetchInterval: 10_000,
   });
   const activity = useQuery({
-    queryKey: [orgId, "campaigns", campaignId, "activity", userId, page, pageSize],
+    queryKey: [
+      orgId,
+      "campaigns",
+      campaignId,
+      "activity",
+      userId,
+      page,
+      pageSize,
+    ],
     enabled,
     queryFn: async ({ signal }) => {
       const { data } = await supabase
