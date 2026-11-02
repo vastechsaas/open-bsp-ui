@@ -4,6 +4,7 @@ import { message } from "antd";
 import { AlertCircle, CheckCircle2, LoaderCircle, Users } from "lucide-react";
 import CampaignWorkspaceHeader from "@/components/campaigns/CampaignWorkspaceHeader";
 import CampaignSendingSummary from "@/components/campaigns/CampaignSendingSummary";
+import CampaignActivity from "@/components/campaigns/CampaignActivity";
 import Spinner from "@/components/Spinner";
 import TemplatePreview from "@/components/TemplatePreview";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -293,7 +294,7 @@ function ReviewCampaign() {
                   value={campaign.accepted_count}
                 />
                 <ExecutionCount
-                  label={t("Fallidos")}
+                  label={t("Errores de envío")}
                   value={campaign.failed_count}
                 />
                 {campaign.needs_review_count > 0 && (
@@ -337,6 +338,13 @@ function ReviewCampaign() {
                 );
               })}
             </section>
+
+            {campaign.status !== "draft" && (
+              <CampaignActivity
+                key={`${campaign.organization_id}:${campaignId}`}
+                campaignId={campaignId}
+              />
+            )}
 
             <section className="campaign-review-card overflow-hidden">
               <h2 className="font-medium mb-[14px]">
