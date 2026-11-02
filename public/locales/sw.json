@@ -1,4 +1,10 @@
 {
+  "No se pudo guardar la imagen. Revisá la conexión y volvé a guardar.": "Picha haikuweza kuhifadhiwa. Angalia muunganisho wako kisha uhifadhi tena.",
+  "Se alcanzó el límite de almacenamiento. Pedí más espacio y volvé a guardar.": "Kikomo cha hifadhi kimefikiwa. Omba nafasi zaidi kisha uhifadhi tena.",
+  "No se pudo verificar la imagen existente. Volvé a elegir la imagen o contactá al administrador.": "Picha iliyopo haikuweza kuthibitishwa. Chagua picha tena au wasiliana na msimamizi wako.",
+  "La imagen se guardó, pero no se pudo preparar su vista previa. Volvé a guardar.": "Picha imehifadhiwa, lakini hakikisho lake halikuweza kuandaliwa. Hifadhi tena.",
+  "Usá una imagen JPEG o PNG válida de hasta 5 MB.": "Tumia picha halali ya JPEG au PNG isiyozidi MB 5.",
+  "El borrador y las imágenes anteriores se conservaron.": "Rasimu yako na picha za awali zimehifadhiwa.",
   "Referencia": "Rejeleo",
   "Requiere revisión": "Inahitaji ukaguzi",
   "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Baadhi ya ujumbe una matokeo yasiyo na uhakika. Hautatumwa tena kiotomatiki. Wasiliana na msimamizi ukitumia rejeleo.",

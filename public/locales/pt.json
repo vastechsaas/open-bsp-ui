@@ -1,4 +1,10 @@
 {
+  "No se pudo guardar la imagen. Revisá la conexión y volvé a guardar.": "Não foi possível salvar a imagem. Verifique a conexão e salve novamente.",
+  "Se alcanzó el límite de almacenamiento. Pedí más espacio y volvé a guardar.": "O limite de armazenamento foi atingido. Solicite mais espaço e salve novamente.",
+  "No se pudo verificar la imagen existente. Volvé a elegir la imagen o contactá al administrador.": "Não foi possível verificar a imagem existente. Selecione a imagem novamente ou contate o administrador.",
+  "La imagen se guardó, pero no se pudo preparar su vista previa. Volvé a guardar.": "A imagem foi salva, mas não foi possível preparar a prévia. Salve novamente.",
+  "Usá una imagen JPEG o PNG válida de hasta 5 MB.": "Use uma imagem JPEG ou PNG válida de até 5 MB.",
+  "El borrador y las imágenes anteriores se conservaron.": "Seu rascunho e as imagens anteriores foram mantidos.",
   "Referencia": "Referência",
   "Requiere revisión": "Requer revisão",
   "Algunos envíos tienen un resultado incierto. No se reenviarán automáticamente. Contactá al administrador con la referencia.": "Alguns envios têm resultado incerto. Não serão reenviados automaticamente. Contacte o administrador com a referência.",
