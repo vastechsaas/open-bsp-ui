@@ -48,6 +48,7 @@ import { formatPhoneNumber } from "@/utils/FormatUtils";
 import useBoundStore from "@/stores/useBoundStore";
 import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
 import { uploadCarouselImage } from "@/queries/carouselMedia";
+import { CarouselCardUploadError } from "@/utils/CarouselUploadErrors";
 import {
   carouselIssues,
   newCarouselCard,
@@ -235,13 +236,18 @@ export default function TemplateEditor({
           if (!card.file) continue;
           let uploaded = uploadedImages.current.get(card.id);
           if (uploaded?.file !== card.file) {
-            const result = await uploadCarouselImage(
-              activeOrgId!,
-              "template",
-              draftId!,
-              card.id,
-              card.file,
-            );
+            let result;
+            try {
+              result = await uploadCarouselImage(
+                activeOrgId!,
+                "template",
+                draftId!,
+                card.id,
+                card.file,
+              );
+            } catch (error) {
+              throw new CarouselCardUploadError(card.id, index + 1, error);
+            }
             uploaded = { file: card.file, asset: result.asset };
             uploadedImages.current.set(card.id, uploaded);
           }
@@ -286,21 +292,37 @@ export default function TemplateEditor({
       to: "/templates",
     });
 
+  const showCardUploadError = (error: unknown) => {
+    if (!(error instanceof CarouselCardUploadError)) return false;
+    setStep(2);
+    setSelectedCardId(error.cardId);
+    setMobileTab("edit");
+    void message.error(
+      `${t("Tarjeta")} ${error.cardNumber}: ${t(error.guidance)} ${t("El borrador y las imágenes anteriores se conservaron.")}`,
+      10,
+    );
+    return true;
+  };
+
   const saveDraft = async () => {
     if (detailsErrors.length) return;
     try {
       await persistDraft();
       void message.success(t("Borrador guardado"));
       returnToList();
-    } catch {
-      void message.error(t("No se pudo guardar el borrador"));
+    } catch (error) {
+      if (!showCardUploadError(error)) {
+        void message.error(t("No se pudo guardar el borrador"));
+      }
     }
   };
 
   const submit = async () => {
     if (readinessErrors.length) return;
+    let draftSaved = false;
     try {
       const draftId = await persistDraft();
+      draftSaved = true;
       await submitDraft.mutateAsync({
         draftId,
         organizationAddress: values.organizationAddress,
@@ -309,10 +331,16 @@ export default function TemplateEditor({
       });
       void message.success(t("Plantilla enviada a Meta"));
       returnToList();
-    } catch {
-      void message.error(
-        t("El borrador se guardó, pero no se pudo enviar a Meta"),
-      );
+    } catch (error) {
+      if (!showCardUploadError(error)) {
+        void message.error(
+          t(
+            draftSaved
+              ? "El borrador se guardó, pero no se pudo enviar a Meta"
+              : "No se pudo guardar el borrador",
+          ),
+        );
+      }
     }
   };
 

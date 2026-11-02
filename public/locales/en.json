@@ -1,4 +1,10 @@
 {
+  "No se pudo guardar la imagen. Revisá la conexión y volvé a guardar.": "The image could not be saved. Check your connection and save again.",
+  "Se alcanzó el límite de almacenamiento. Pedí más espacio y volvé a guardar.": "The storage limit has been reached. Ask for more space and save again.",
+  "No se pudo verificar la imagen existente. Volvé a elegir la imagen o contactá al administrador.": "The existing image could not be verified. Choose the image again or contact your administrator.",
+  "La imagen se guardó, pero no se pudo preparar su vista previa. Volvé a guardar.": "The image was saved, but its preview could not be prepared. Save again.",
+  "Usá una imagen JPEG o PNG válida de hasta 5 MB.": "Use a valid JPEG or PNG image up to 5 MB.",
+  "El borrador y las imágenes anteriores se conservaron.": "Your draft and earlier images were retained.",
   "Cancelado": "Cancelled",
   "Enviado": "Sent",
   "Errores de envío": "Dispatch failures",

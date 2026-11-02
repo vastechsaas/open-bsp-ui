@@ -1,4 +1,10 @@
 {
+  "No se pudo guardar la imagen. Revisá la conexión y volvé a guardar.": "L’image n’a pas pu être enregistrée. Vérifiez votre connexion et enregistrez à nouveau.",
+  "Se alcanzó el límite de almacenamiento. Pedí más espacio y volvé a guardar.": "La limite de stockage est atteinte. Demandez plus d’espace et enregistrez à nouveau.",
+  "No se pudo verificar la imagen existente. Volvé a elegir la imagen o contactá al administrador.": "L’image existante n’a pas pu être vérifiée. Sélectionnez-la à nouveau ou contactez votre administrateur.",
+  "La imagen se guardó, pero no se pudo preparar su vista previa. Volvé a guardar.": "L’image a été enregistrée, mais son aperçu n’a pas pu être préparé. Enregistrez à nouveau.",
+  "Usá una imagen JPEG o PNG válida de hasta 5 MB.": "Utilisez une image JPEG ou PNG valide de 5 Mo maximum.",
+  "El borrador y las imágenes anteriores se conservaron.": "Votre brouillon et les images précédentes ont été conservés.",
   "Cancelado": "Annulé",
   "Enviado": "Envoyé",
   "Errores de envío": "Échecs d’envoi",

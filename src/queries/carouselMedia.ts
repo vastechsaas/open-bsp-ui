@@ -1,5 +1,6 @@
 import { supabase } from "@/supabase/client";
 import type { CarouselMediaAsset } from "@/supabase/types/whatsapp_template_types";
+import { normalizeCarouselUploadError } from "@/utils/CarouselUploadErrors";
 
 export async function uploadCarouselImage(
   organizationId: string,
@@ -21,8 +22,7 @@ export async function uploadCarouselImage(
     data: { asset: CarouselMediaAsset; preview_url: string } | null;
     error: Error | null;
   };
-  if (error) throw error;
-  if (!data) throw new Error("Carousel upload returned no image reference");
+  if (error || !data) throw await normalizeCarouselUploadError(error);
   return data;
 }
 
