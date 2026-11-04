@@ -11,7 +11,7 @@ import VideoMessage from "./VideoMessage";
 import { mediaCategory } from "./media";
 import StatusIcon from "./StatusIcon";
 import dayjs from "dayjs";
-import { Remarkable } from "remarkable";
+import { renderChatMarkdown } from "@/utils/ChatMarkdown";
 import { type FormEventHandler, type PropsWithChildren, useState } from "react";
 import { prettyPrintJson } from "pretty-print-json";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -29,50 +29,6 @@ export type MessageActionButton = {
   text: string;
   type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
 };
-
-const md = new Remarkable({
-  breaks: true,
-  html: false, // Security: Disabled to prevent XSS from untrusted WhatsApp messages
-  linkify: true,
-  typographer: true,
-});
-
-md.renderer.rules.link_open = function (tokens, idx) {
-  const title = tokens[idx].title ? ` title="${tokens[idx].title}"` : "";
-  return `<a href="${
-    tokens[idx].href
-  }"${title} target="_blank" rel="noopener noreferrer">`;
-};
-
-// Convert WhatsApp formatting to standard markdown for Remarkable rendering
-// Mirrors whatsappToMarkdown from open-bsp-api/_shared/markdown.ts
-function whatsappToMarkdown(text: string): string {
-  const parts = text.split(/(`{3}[\s\S]*?`{3})/);
-
-  return parts
-    .map((part) => {
-      if (part.startsWith("```")) return part;
-
-      const subParts = part.split(/(`[^`]+`)/);
-
-      return subParts
-        .map((subPart) => {
-          if (subPart.startsWith("`")) return subPart;
-
-          let processed = subPart;
-          // Bold: *text* -> **text**
-          processed = processed.replace(/\*([^*]+?)\*/g, "**$1**");
-          // Italic: _text_ -> *text*
-          processed = processed.replace(/_([^_]+?)_/g, "*$1*");
-          // Strikethrough: ~text~ -> ~~text~~
-          processed = processed.replace(/~([^~]+?)~/g, "~~$1~~");
-
-          return processed;
-        })
-        .join("");
-    })
-    .join("");
-}
 
 export function Markdown({
   content,
@@ -94,7 +50,7 @@ export function Markdown({
     }
   }
 
-  const renderedHTML = md.render(whatsappToMarkdown(content));
+  const renderedHTML = renderChatMarkdown(content);
 
   return (
     <div

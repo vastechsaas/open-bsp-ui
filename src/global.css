@@ -154,6 +154,12 @@ p a,
   color: var(--primary) !important;
 }
 
+.markdown a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
 button {
   cursor: pointer;
 }

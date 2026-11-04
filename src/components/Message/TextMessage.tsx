@@ -4,7 +4,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import dayjs from "dayjs";
 import { ExternalLink, MessageCircleReply, Phone } from "lucide-react";
 import { prettyPrintJson } from "pretty-print-json";
-import { Remarkable } from "remarkable";
+import { renderChatMarkdown } from "@/utils/ChatMarkdown";
 import { type FormEventHandler, useState } from "react";
 import StatusIcon from "./StatusIcon";
 
@@ -12,42 +12,6 @@ export type MessageActionButton = {
   text: string;
   type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
 };
-
-const md = new Remarkable({
-  breaks: true,
-  html: false,
-  linkify: true,
-  typographer: true,
-});
-
-md.renderer.rules.link_open = function (tokens, idx) {
-  const title = tokens[idx].title ? ` title="${tokens[idx].title}"` : "";
-  return `<a href="${
-    tokens[idx].href
-  }"${title} target="_blank" rel="noopener noreferrer">`;
-};
-
-function whatsappToMarkdown(text: string): string {
-  const parts = text.split(/(`{3}[\s\S]*?`{3})/);
-
-  return parts
-    .map((part) => {
-      if (part.startsWith("```")) return part;
-
-      return part
-        .split(/(`[^`]+`)/)
-        .map((subPart) => {
-          if (subPart.startsWith("`")) return subPart;
-
-          return subPart
-            .replace(/\*([^*]+?)\*/g, "**$1**")
-            .replace(/_([^_]+?)_/g, "*$1*")
-            .replace(/~([^~]+?)~/g, "~~$1~~");
-        })
-        .join("");
-    })
-    .join("");
-}
 
 export function Markdown({
   content,
@@ -69,7 +33,7 @@ export function Markdown({
     <div
       className="markdown"
       dangerouslySetInnerHTML={{
-        __html: md.render(whatsappToMarkdown(content)),
+        __html: renderChatMarkdown(content),
       }}
       onInput={onInput}
     />
