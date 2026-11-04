@@ -6,6 +6,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 dayjs.extend(localizedFormat);
 import useBoundStore from "@/stores/useBoundStore";
 import Message from "./Message/Message";
+import CampaignReplyContext from "./Message/CampaignReplyContext";
 import { type MessageRow } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
@@ -14,6 +15,7 @@ import { AVATAR_COLORS } from "@/utils/colors";
 import { useMentionableHumans } from "@/queries/usePrivateNotes";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { useConversationHistory } from "@/queries/useConversationHistory";
+import { useCampaignReplyContext } from "@/queries/useCampaignReplyContext";
 import { isNearChatBottom } from "@/utils/ConversationHistoryUtils";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
@@ -70,6 +72,7 @@ export default function Chat() {
 
   const scroller = useRef<HTMLDivElement>(null);
   const history = useConversationHistory();
+  const campaignReplies = useCampaignReplyContext(messages);
   const nearBottom = useRef(true);
   const opened = useRef(false);
   const previousNewest = useRef<string | undefined>(undefined);
@@ -396,12 +399,17 @@ export default function Chat() {
             )}
         </div>
         <div className="flex flex-col">
-          {envelopesAndSeparators.map((envOrSep, index) =>
-            "message" in envOrSep ? (
+          {envelopesAndSeparators.map((envOrSep, index) => {
+            if (!("message" in envOrSep)) {
+              return <Separator key={index} text={envOrSep.text} />;
+            }
+            const campaign = campaignReplies.get(envOrSep.message.id);
+            return (
               <div
                 key={envOrSep.message.id}
                 data-message-id={envOrSep.message.id}
               >
+                {campaign && <CampaignReplyContext preview={campaign} />}
                 <Message
                   refined
                   key={envOrSep.message.id}
@@ -430,10 +438,8 @@ export default function Chat() {
                   }
                 />
               </div>
-            ) : (
-              <Separator key={index} text={envOrSep.text} />
-            ),
-          )}
+            );
+          })}
         </div>
         {/* (
           <button
