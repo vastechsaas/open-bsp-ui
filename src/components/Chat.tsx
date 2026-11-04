@@ -6,7 +6,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 dayjs.extend(localizedFormat);
 import useBoundStore from "@/stores/useBoundStore";
 import Message from "./Message/Message";
-import CampaignReplyContext from "./Message/CampaignReplyContext";
+import CampaignHistoryMessage from "./Message/CampaignHistoryMessage";
 import { type MessageRow } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
@@ -15,11 +15,22 @@ import { AVATAR_COLORS } from "@/utils/colors";
 import { useMentionableHumans } from "@/queries/usePrivateNotes";
 import { isPrivateNote } from "@/utils/PrivateNoteUtils";
 import { useConversationHistory } from "@/queries/useConversationHistory";
-import { useCampaignReplyContext } from "@/queries/useCampaignReplyContext";
-import { isNearChatBottom } from "@/utils/ConversationHistoryUtils";
+import type { CampaignHistoryItem } from "@/queries/useConversationHistory";
+import {
+  compareTimelineEntries,
+  isNearChatBottom,
+} from "@/utils/ConversationHistoryUtils";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
 type SeparatorType = { text: string; first: true; last: true };
+type TimelineItem =
+  | { source: "message"; id: string; timestamp: string; message: MessageRow }
+  | {
+      source: "campaign";
+      id: string;
+      timestamp: string;
+      campaign: CampaignHistoryItem;
+    };
 
 function Separator({ text }: { text: string }) {
   // TODO: just a placeholder
@@ -71,8 +82,7 @@ export default function Chat() {
   ]);
 
   const scroller = useRef<HTMLDivElement>(null);
-  const history = useConversationHistory();
-  const campaignReplies = useCampaignReplyContext(messages);
+  const { history, campaignSends } = useConversationHistory();
   const nearBottom = useRef(true);
   const opened = useRef(false);
   const previousNewest = useRef<string | undefined>(undefined);
@@ -138,60 +148,44 @@ export default function Chat() {
   }
 
   function insertDateSeparators(
-    chat: MessageRow[],
-  ): (EnvelopeType | SeparatorType)[] {
-    const _chat = [];
-
-    let prevMsg: EnvelopeType | null = null;
-
-    for (const [_index, env] of chat
-      .map(
-        (message) => ({ message, first: false, last: false }) as EnvelopeType,
-      )
-      .entries()) {
-      if (!prevMsg) {
-        env.first = true;
-        env.last = true;
-      } else if (
-        prevMsg.message.agent_id === env.message.agent_id &&
-        prevMsg.message.direction === env.message.direction &&
-        prevMsg.message.content.kind === env.message.content.kind
-      ) {
-        prevMsg.last = false;
-        env.last = true;
-      } else if (
-        prevMsg.message.agent_id !== env.message.agent_id ||
-        prevMsg.message.direction !== env.message.direction ||
-        prevMsg.message.content.kind !== env.message.content.kind
-      ) {
-        prevMsg.last = true;
-        env.first = true;
-        env.last = true;
-      }
-
+    chat: TimelineItem[],
+  ): (EnvelopeType | SeparatorType | { campaign: CampaignHistoryItem })[] {
+    const rows: (
+      | EnvelopeType
+      | SeparatorType
+      | { campaign: CampaignHistoryItem }
+    )[] = [];
+    let previous: EnvelopeType | undefined;
+    let previousTimestamp: string | undefined;
+    for (const item of chat) {
       if (
-        !prevMsg ||
-        dayjs(prevMsg.message.timestamp).isBefore(env.message.timestamp, "day")
+        !previousTimestamp ||
+        dayjs(previousTimestamp).isBefore(item.timestamp, "day")
       ) {
-        _chat.push({
-          text: formatDate(env.message.timestamp),
+        rows.push({
+          text: formatDate(item.timestamp),
           first: true,
           last: true,
-        } as SeparatorType);
-
-        if (prevMsg) {
-          prevMsg.last = true;
-        }
-
-        env.first = true;
+        });
+        previous = undefined;
       }
-
-      _chat.push(env);
-
-      prevMsg = env;
+      previousTimestamp = item.timestamp;
+      if (item.source === "campaign") {
+        rows.push({ campaign: item.campaign });
+        previous = undefined;
+        continue;
+      }
+      const { message } = item;
+      const followsGroup =
+        previous?.message.agent_id === message.agent_id &&
+        previous?.message.direction === message.direction &&
+        previous?.message.content.kind === message.content.kind;
+      if (previous && followsGroup) previous.last = false;
+      const row: EnvelopeType = { message, first: !followsGroup, last: true };
+      rows.push(row);
+      previous = row;
     }
-
-    return _chat;
+    return rows;
   }
 
   /* Actions that reset the unreads counter
@@ -259,14 +253,13 @@ export default function Chat() {
       element.clientHeight,
     );
     // Preserve an anchor until a prepended page has entered the message store.
+    const oldestPageMessage = history.data?.pages.at(-1)?.messages.at(-1);
     if (
       anchor.current &&
       !history.isFetching &&
       (history.isFetchNextPageError ||
-        history.data?.pages.at(-1)?.length === 0 ||
-        messages.some(
-          (row) => row.id === history.data?.pages.at(-1)?.at(-1)?.id,
-        ))
+        !oldestPageMessage ||
+        messages.some((row) => row.id === oldestPageMessage.id))
     ) {
       anchor.current = null;
     }
@@ -319,22 +312,41 @@ export default function Chat() {
   }, []);
 
   // If the role is not admin, then do not show internal messages (tool calls, etc).
-  const envelopesAndSeparators = insertDateSeparators(
+  const outgoingIds = new Set(
     messages
-      .filter((m, idx) => {
-        if (isPrivateNote(m)) return true;
+      .filter((message) => message.direction === "outgoing")
+      .map((message) => message.external_id),
+  );
+  const campaignRows: TimelineItem[] = campaignSends
+    .filter((campaign) => !outgoingIds.has(campaign.external_id))
+    .map((campaign) => ({
+      source: "campaign",
+      id: campaign.id,
+      timestamp: campaign.timestamp,
+      campaign,
+    }));
+  const chatRows: TimelineItem[] = messages
+    .filter((m, idx) => {
+      if (isPrivateNote(m)) return true;
 
-        if (isAdmin) return true;
+      if (isAdmin) return true;
 
-        // Hide internal messages for non-admin users
-        if (m.direction === "internal") return false;
+      // Hide internal messages for non-admin users
+      if (m.direction === "internal") return false;
 
-        // @ts-expect-error draft is deprecated
-        if (m.kind === "draft" && idx !== 0) return false;
+      // @ts-expect-error draft is deprecated
+      if (m.kind === "draft" && idx !== 0) return false;
 
-        return true;
-      })
-      .reverse(),
+      return true;
+    })
+    .map((message) => ({
+      source: "message",
+      id: message.id,
+      timestamp: message.timestamp,
+      message,
+    }));
+  const envelopesAndSeparators = insertDateSeparators(
+    [...chatRows, ...campaignRows].sort(compareTimelineEntries),
   );
 
   const scrollToBottom = (isSmooth: boolean = true) => {
@@ -400,16 +412,28 @@ export default function Chat() {
         </div>
         <div className="flex flex-col">
           {envelopesAndSeparators.map((envOrSep, index) => {
+            if ("campaign" in envOrSep) {
+              const { campaign } = envOrSep;
+              return (
+                <div
+                  key={`campaign:${campaign.id}`}
+                  data-message-id={`campaign:${campaign.id}`}
+                >
+                  <CampaignHistoryMessage
+                    preview={campaign}
+                    timestamp={campaign.timestamp}
+                  />
+                </div>
+              );
+            }
             if (!("message" in envOrSep)) {
               return <Separator key={index} text={envOrSep.text} />;
             }
-            const campaign = campaignReplies.get(envOrSep.message.id);
             return (
               <div
                 key={envOrSep.message.id}
                 data-message-id={envOrSep.message.id}
               >
-                {campaign && <CampaignReplyContext preview={campaign} />}
                 <Message
                   refined
                   key={envOrSep.message.id}

@@ -6,6 +6,7 @@ import {
   nextHistoryCursor,
   olderMessagesFilter,
   isNearChatBottom,
+  compareTimelineEntries,
 } from "../src/utils/ConversationHistoryUtils.ts";
 
 void test("history cursor includes the ID so same-time messages remain reachable", () => {
@@ -58,6 +59,30 @@ void test("incoming messages follow only when reading near the bottom", () => {
   assert.equal(isNearChatBottom(100, 2000, 600), false);
 });
 
+void test("campaign sends sort into chat history without relying on a quoted reply", () => {
+  const rows = [
+    {
+      source: "message" as const,
+      id: "a",
+      timestamp: "2026-11-04T18:12:00.000003Z",
+    },
+    {
+      source: "campaign" as const,
+      id: "z",
+      timestamp: "2026-11-04T23:12:00.000002+05:00",
+    },
+    {
+      source: "message" as const,
+      id: "b",
+      timestamp: "2026-11-04T18:12:00.000001Z",
+    },
+  ];
+  assert.deepEqual(
+    rows.sort(compareTimelineEntries).map(({ id }) => id),
+    ["b", "z", "a"],
+  );
+});
+
 void test("history controls are translated in every supported language", () => {
   for (const language of ["en", "fr", "pt", "sw"]) {
     const dictionary = JSON.parse(
@@ -71,6 +96,7 @@ void test("history controls are translated in every supported language", () => {
       "No se pudo cargar el historial.",
       "Inicio de la conversación",
       "Cargar mensajes anteriores",
+      "Mensaje de campaña",
     ]) {
       assert.ok(dictionary[key], `${language}: ${key}`);
     }

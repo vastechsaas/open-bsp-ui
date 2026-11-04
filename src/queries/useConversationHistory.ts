@@ -9,6 +9,26 @@ import {
   type HistoryCursor,
 } from "@/utils/ConversationHistoryUtils";
 
+type CampaignLink = { label: string; url: string };
+export type CampaignHistoryItem = {
+  id: string;
+  external_id: string;
+  timestamp: string;
+  name: string;
+  header?: string;
+  body?: string;
+  footer?: string;
+  links: CampaignLink[];
+  cards: { text?: string; links: CampaignLink[]; image_url?: string }[];
+};
+
+type TimelineCursor = HistoryCursor & { source: "message" | "campaign" };
+type TimelinePage = {
+  messages: MessageRow[];
+  campaigns: CampaignHistoryItem[];
+  next_cursor?: TimelineCursor;
+};
+
 export function useConversationHistory() {
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
   const conversationId = useBoundStore((state) => state.ui.activeConvId);
@@ -18,14 +38,51 @@ export function useConversationHistory() {
   );
   const accessible =
     !!conversation && conversation.organization_id === organizationId;
+  const includeCampaigns =
+    conversation?.service === "whatsapp" && !conversation.group_address;
   const history = useInfiniteQuery({
-    queryKey: [organizationId, "conversation-history", userId, conversationId],
+    queryKey: [
+      organizationId,
+      "conversation-history",
+      userId,
+      conversationId,
+      includeCampaigns,
+    ],
     enabled: !!userId && !!organizationId && !!conversationId && accessible,
-    initialPageParam: undefined as HistoryCursor | undefined,
+    initialPageParam: undefined as TimelineCursor | undefined,
     gcTime: 0,
     refetchOnMount: "always",
     retry: false,
-    queryFn: async ({ pageParam, signal }) => {
+    queryFn: async ({ pageParam, signal }): Promise<TimelinePage> => {
+      function denyAccess(): never {
+        const state = useBoundStore.getState();
+        if (
+          !signal.aborted &&
+          state.ui.user?.id === userId &&
+          state.ui.activeOrgId === organizationId &&
+          state.ui.activeConvId === conversationId
+        ) {
+          state.chat.removeConversations([conversationId!]);
+        }
+        throw new Error("Conversation is no longer accessible");
+      }
+      if (includeCampaigns) {
+        const result = await supabase.functions.invoke<
+          (TimelinePage & { accessible: true }) | { accessible: false }
+        >("whatsapp-management/campaign-conversation-history", {
+          body: {
+            organization_id: organizationId,
+            conversation_id: conversationId,
+            cursor: pageParam,
+          },
+          signal,
+        });
+        const error: unknown = result.error;
+        if (error) throw error;
+        if (!result.data) throw new Error("Conversation history unavailable");
+        if (!result.data.accessible) return denyAccess();
+        return result.data;
+      }
       const { data: allowed, error: accessError } = await supabase
         .from("conversations")
         .select("id")
@@ -34,17 +91,7 @@ export function useConversationHistory() {
         .abortSignal(signal)
         .maybeSingle();
       if (accessError) throw accessError;
-      if (!allowed) {
-        const state = useBoundStore.getState();
-        if (
-          !signal.aborted &&
-          state.ui.user?.id === userId &&
-          state.ui.activeOrgId === organizationId
-        ) {
-          state.chat.removeConversations([conversationId!]);
-        }
-        throw new Error("Conversation is no longer accessible");
-      }
+      if (!allowed) return denyAccess();
       let request = supabase
         .from("messages")
         .select()
@@ -58,9 +105,15 @@ export function useConversationHistory() {
       if (pageParam) request = request.or(olderMessagesFilter(pageParam));
       const { data, error } = await request;
       if (error) throw error;
-      return data as MessageRow[];
+      const messages = data as MessageRow[];
+      const next = nextHistoryCursor(messages);
+      return {
+        messages,
+        campaigns: [],
+        ...(next ? { next_cursor: { ...next, source: "message" } } : {}),
+      };
     },
-    getNextPageParam: nextHistoryCursor,
+    getNextPageParam: (page) => page.next_cursor,
   });
 
   useEffect(() => {
@@ -74,8 +127,15 @@ export function useConversationHistory() {
       !state.chat.conversations.has(conversationId!)
     )
       return;
-    state.chat.pushMessages(history.data.pages.flat());
+    state.chat.pushMessages(
+      history.data.pages.flatMap((page) => page.messages),
+    );
   }, [history.data, accessible, userId, organizationId, conversationId]);
 
-  return history;
+  return {
+    history,
+    campaignSends: accessible
+      ? (history.data?.pages.flatMap((page) => page.campaigns) ?? [])
+      : [],
+  };
 }

@@ -2,6 +2,22 @@ export const HISTORY_PAGE_SIZE = 30;
 
 export type HistoryCursor = { timestamp: string; id: string };
 
+export function compareTimelineEntries(
+  left: HistoryCursor & { source: "message" | "campaign" },
+  right: HistoryCursor & { source: "message" | "campaign" },
+): number {
+  const compare = (a: string, b: string) => (a === b ? 0 : a < b ? -1 : 1);
+  return (
+    Date.parse(left.timestamp) - Date.parse(right.timestamp) ||
+    compare(
+      (left.timestamp.match(/\.(\d+)/)?.[1] ?? "").padEnd(6, "0"),
+      (right.timestamp.match(/\.(\d+)/)?.[1] ?? "").padEnd(6, "0"),
+    ) ||
+    compare(left.id, right.id) ||
+    compare(left.source, right.source)
+  );
+}
+
 export function olderMessagesFilter(cursor: HistoryCursor): string {
   // Cursor values come from database rows, never from authored message text.
   if (

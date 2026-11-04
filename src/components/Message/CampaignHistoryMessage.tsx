@@ -1,8 +1,8 @@
 import { Megaphone } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { CampaignReplyPreview } from "@/queries/useCampaignReplyContext";
+import type { CampaignHistoryItem } from "@/queries/useConversationHistory";
 
-function CampaignLinks({ links }: { links: CampaignReplyPreview["links"] }) {
+function CampaignLinks({ links }: { links: CampaignHistoryItem["links"] }) {
   return links.map((link, index) => (
     <a
       key={index}
@@ -16,20 +16,23 @@ function CampaignLinks({ links }: { links: CampaignReplyPreview["links"] }) {
   ));
 }
 
-export default function CampaignReplyContext({
+export default function CampaignHistoryMessage({
   preview,
+  timestamp,
 }: {
-  preview: CampaignReplyPreview;
+  preview: CampaignHistoryItem;
+  timestamp: string;
 }) {
-  const { translate: t } = useTranslation();
+  const { translate: t, currentLanguage } = useTranslation();
+  const label = t("Mensaje de campaña");
   return (
     <aside
-      aria-label={t("Mensaje de campaña citado")}
-      className="mb-1 ml-3 mr-3 w-fit max-w-[min(32rem,calc(100%-1.5rem))] rounded-md border border-l-2 border-l-primary bg-card px-3 py-2 text-sm text-card-foreground"
+      aria-label={label}
+      className="mb-2 ml-auto mr-3 w-fit max-w-[min(32rem,calc(100%-1.5rem))] rounded-md border border-l-2 border-l-primary bg-card px-3 py-2 text-sm text-card-foreground"
     >
       <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
         <Megaphone className="size-3.5" aria-hidden />
-        {t("Mensaje de campaña citado")}
+        {label}
       </div>
       <div className="mb-1 break-words text-xs text-muted-foreground">
         {preview.name}
@@ -73,6 +76,15 @@ export default function CampaignReplyContext({
         </p>
       )}
       <CampaignLinks links={preview.links} />
+      <time
+        dateTime={timestamp}
+        className="mt-1 block text-right text-xs text-muted-foreground"
+      >
+        {new Date(timestamp).toLocaleTimeString(currentLanguage, {
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+      </time>
     </aside>
   );
 }
