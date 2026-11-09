@@ -343,6 +343,7 @@ function ReviewCampaign() {
               <CampaignActivity
                 key={`${campaign.organization_id}:${campaignId}`}
                 campaignId={campaignId}
+                status={campaign.status}
               />
             )}
 
