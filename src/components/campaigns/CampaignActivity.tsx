@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCampaignActivity } from "@/queries/useCampaignActivity";
 import DataTablePagination from "@/components/DataTablePagination";
+import CampaignLogExport from "./CampaignLogExport";
 import {
   activityLabels,
   activityReasons,
@@ -10,8 +11,10 @@ import {
 
 export default function CampaignActivity({
   campaignId,
+  status,
 }: {
   campaignId: string;
+  status: string;
 }) {
   const { translate: t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -61,7 +64,10 @@ export default function CampaignActivity({
           ))}
         </dl>
       )}
-      <h3 className="font-medium mt-4">{t("Actividad")}</h3>
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mt-4">
+        <h3 className="font-medium">{t("Actividad")}</h3>
+        <CampaignLogExport campaignId={campaignId} status={status} />
+      </div>
       {activity.isPending ? (
         <p role="status" className="py-3">
           {t("Cargando…")}

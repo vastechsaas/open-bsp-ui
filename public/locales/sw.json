@@ -1,4 +1,10 @@
 {
+  "Preparando…": "Inaandaa…",
+  "Descarga del registro": "Upakuaji wa kumbukumbu",
+  "No se pudo preparar o descargar el CSV.": "Imeshindikana kuandaa au kupakua CSV.",
+  "Generado al": "Hali kufikia",
+  "Un estado vacío significa que la entrega no está confirmada.": "Hali tupu inamaanisha uwasilishaji haujathibitishwa.",
+  "Generar CSV actualizado": "Tengeneza CSV iliyosasishwa",
   "Pausar campaña": "Sitisha kampeni",
   "Reanudar campaña": "Endeleza kampeni",
   "Confirmando…": "Inathibitisha…",

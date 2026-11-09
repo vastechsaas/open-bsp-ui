@@ -1,4 +1,10 @@
 {
+  "Preparando…": "Préparation…",
+  "Descarga del registro": "Téléchargement du journal",
+  "No se pudo preparar o descargar el CSV.": "Impossible de préparer ou de télécharger le CSV.",
+  "Generado al": "État au",
+  "Un estado vacío significa que la entrega no está confirmada.": "Un statut vide signifie que la livraison n’est pas confirmée.",
+  "Generar CSV actualizado": "Générer un CSV actualisé",
   "Pausar campaña": "Suspendre la campagne",
   "Reanudar campaña": "Reprendre la campagne",
   "Confirmando…": "Confirmation…",

@@ -1,4 +1,10 @@
 {
+  "Preparando…": "Preparando…",
+  "Descarga del registro": "Download do registro",
+  "No se pudo preparar o descargar el CSV.": "Não foi possível preparar ou baixar o CSV.",
+  "Generado al": "Dados em",
+  "Un estado vacío significa que la entrega no está confirmada.": "Status vazio significa que a entrega não foi confirmada.",
+  "Generar CSV actualizado": "Gerar CSV atualizado",
   "Pausar campaña": "Pausar campanha",
   "Reanudar campaña": "Retomar campanha",
   "Confirmando…": "Confirmando…",
