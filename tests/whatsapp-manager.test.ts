@@ -6,6 +6,16 @@ import {
   selectWhatsAppManagerAccount,
 } from "../src/utils/WhatsAppManagerUtils.ts";
 
+void test("coexistence disconnect instructions have an English translation", () => {
+  const english = JSON.parse(
+    readFileSync(new URL("../public/locales/en.json", import.meta.url), "utf8"),
+  );
+  assert.equal(
+    english['Tocá la plataforma conectada y seleccioná "Desconectar"'],
+    'Tap the connected platform and select "Disconnect"',
+  );
+});
+
 void test("WhatsApp Manager uses the full-width workspace", () => {
   assert.equal(isWhatsAppManagerWorkspacePath("/whatsapp-manager"), true);
   assert.equal(isWhatsAppManagerWorkspacePath("/whatsapp-manager/"), true);
