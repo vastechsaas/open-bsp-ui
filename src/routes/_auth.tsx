@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import Menu from "@/components/Menu";
+import MobileWorkspaceNavigation from "@/components/MobileWorkspaceNavigation";
 import Chat from "@/components/Chat";
 import ChatHeader from "@/components/ChatHeader";
 import ChatFooter from "@/components/ChatFooter";
@@ -288,12 +289,20 @@ function AppLayout() {
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
       >
+        {viewportWidth < 768 &&
+          (isWorkspaceRoute || isStatsRoute) &&
+          !isFullscreenWorkspaceRoute &&
+          !hasPendingInvitations && (
+            <MobileWorkspaceNavigation key={`${activeOrgId}:${pathname}`} />
+          )}
         {hasPendingInvitations ? (
           <PendingInvitationGate invitations={invitations.data ?? []} />
         ) : isWorkspaceRoute ? (
-          routeContent
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {routeContent}
+          </div>
         ) : isStatsRoute ? (
-          <div className="overflow-y-auto h-full">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <StatsCenter />
           </div>
         ) : activeConvId ? (
