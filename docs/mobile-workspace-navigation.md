@@ -26,4 +26,18 @@ and staging, plus the existing loopback-only Oracle frontend copy. Preserve its
 verified public Oracle configuration and prior image for rollback. The public
 Social Connect domain stays on Vercel and continues using the Oracle backend.
 
-Rollout evidence is recorded after deployment.
+Rollout verified 2026-11-10 (Asia/Karachi):
+
+- Main implementation: `a14014329c8beef9ef08d4c2e6708f933970f18f`.
+- Staging implementation: `a5e6c8dfb4bcdc9ca84aea09f7c9812eb4e84acc`.
+- Both Vercel deployments succeeded. Public Main and staging served the new
+  mobile-navigation component; Main retained the Oracle backend and staging
+  retained its staging backend.
+- Oracle frontend candidate is healthy on loopback-only `127.0.0.1:8088`, image
+  `local/socialconnect-frontend:a14014329c8b-mobile-navigation`. Previous image
+  `local/socialconnect-frontend:004acfedf37f-selfhost` is retained.
+- Oracle backup: `/home/ubuntu/wababase/backups/mobile-navigation-20261109T211943Z`.
+- Staging focused checks passed all 14 tests. No database, backend-service,
+  provider-routing or DNS changes. No customer messages sent.
+- Verification covered automated checks, deployed assets and container health;
+  an authenticated physical-device interaction test was not performed.
