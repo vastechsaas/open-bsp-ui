@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { supabase, type MessageRow } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import {
@@ -8,6 +12,10 @@ import {
   olderMessagesFilter,
   type HistoryCursor,
 } from "@/utils/ConversationHistoryUtils";
+import {
+  clearConversationHistory,
+  conversationHistoryQueries,
+} from "@/utils/ConversationHistoryQuery";
 
 type CampaignLink = { label: string; url: string };
 export type CampaignHistoryItem = {
@@ -30,6 +38,7 @@ type TimelinePage = {
 };
 
 export function useConversationHistory() {
+  const client = useQueryClient();
   const organizationId = useBoundStore((state) => state.ui.activeOrgId);
   const conversationId = useBoundStore((state) => state.ui.activeConvId);
   const userId = useBoundStore((state) => state.ui.user?.id);
@@ -40,20 +49,11 @@ export function useConversationHistory() {
     !!conversation && conversation.organization_id === organizationId;
   const includeCampaigns =
     conversation?.service === "whatsapp" && !conversation.group_address;
-  const history = useInfiniteQuery({
-    queryKey: [
-      organizationId,
-      "conversation-history",
-      userId,
-      conversationId,
-      includeCampaigns,
-    ],
-    enabled: !!userId && !!organizationId && !!conversationId && accessible,
-    initialPageParam: undefined as TimelineCursor | undefined,
-    gcTime: 0,
-    refetchOnMount: "always",
-    retry: false,
-    queryFn: async ({ pageParam, signal }): Promise<TimelinePage> => {
+  const enabled =
+    !!userId && !!organizationId && !!conversationId && accessible;
+  const queries = conversationHistoryQueries<TimelineCursor, TimelinePage>(
+    { organizationId, userId, conversationId, includeCampaigns },
+    async (pageParam, signal): Promise<TimelinePage> => {
       function denyAccess(): never {
         const state = useBoundStore.getState();
         if (
@@ -113,8 +113,25 @@ export function useConversationHistory() {
         ...(next ? { next_cursor: { ...next, source: "message" } } : {}),
       };
     },
-    getNextPageParam: (page) => page.next_cursor,
+  );
+  const latest = useQuery({ ...queries.latest, enabled });
+  const history = useInfiniteQuery({
+    ...queries.pages,
+    enabled: enabled && latest.isSuccess,
   });
+
+  // A cached page never restores access after the conversation is removed.
+  useEffect(() => {
+    if (!organizationId || !conversationId) return;
+    return useBoundStore.subscribe((state, previous) => {
+      if (
+        previous.chat.conversations.has(conversationId) &&
+        !state.chat.conversations.has(conversationId)
+      ) {
+        clearConversationHistory(client, organizationId, [conversationId]);
+      }
+    });
+  }, [client, organizationId, conversationId]);
 
   useEffect(() => {
     const state = useBoundStore.getState();
@@ -127,15 +144,38 @@ export function useConversationHistory() {
       !state.chat.conversations.has(conversationId!)
     )
       return;
-    state.chat.pushMessages(
-      history.data.pages.flatMap((page) => page.messages),
-    );
-  }, [history.data, accessible, userId, organizationId, conversationId]);
+    state.chat.pushMessages([
+      ...history.data.pages.flatMap((page) => page.messages),
+      ...(latest.data?.messages ?? []),
+    ]);
+  }, [
+    history.data,
+    latest.data,
+    accessible,
+    userId,
+    organizationId,
+    conversationId,
+  ]);
+
+  const campaigns = new Map(
+    [
+      ...(history.data?.pages.flatMap((page) => page.campaigns) ?? []),
+      ...(latest.data?.campaigns ?? []),
+    ].map((campaign) => [campaign.id, campaign]),
+  );
 
   return {
-    history,
-    campaignSends: accessible
-      ? (history.data?.pages.flatMap((page) => page.campaigns) ?? [])
-      : [],
+    history: {
+      data: history.data,
+      hasNextPage: history.hasNextPage,
+      fetchNextPage: history.fetchNextPage,
+      isFetchNextPageError: history.isFetchNextPageError,
+      isFetching: history.isFetching || latest.isFetching,
+      isError: history.isError || latest.isError,
+      isSuccess: history.isSuccess && latest.isSuccess,
+      // The Retry control refreshes the head, never replays all cached pages.
+      refetch: latest.refetch,
+    },
+    campaignSends: accessible ? [...campaigns.values()] : [],
   };
 }

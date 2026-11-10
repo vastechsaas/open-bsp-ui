@@ -14,6 +14,10 @@ import { queryKeys } from "@/queries/queryKeys";
 import { supportInboxKey } from "@/queries/useSupportInboxVisibility";
 import { recoverRead } from "@/utils/ReadRecoveryUtils";
 import {
+  clearConversationHistory,
+  latestHistoryRoot,
+} from "@/utils/ConversationHistoryQuery";
+import {
   isInboxChange,
   inboxMembershipChanged,
 } from "@/utils/SupportInboxUtils";
@@ -130,6 +134,7 @@ export const useRealtimeSubscription = () => {
 
         pushMessages(messages as MessageRow[]);
       } else {
+        clearConversationHistory(queryClient, activeOrgId, [conversationId]);
         removeConversations([conversationId]);
       }
     };
@@ -172,7 +177,10 @@ export const useRealtimeSubscription = () => {
           activeOrgId,
         );
 
-        if (inaccessibleIds.length) removeConversations(inaccessibleIds);
+        if (inaccessibleIds.length) {
+          clearConversationHistory(queryClient, activeOrgId, inaccessibleIds);
+          removeConversations(inaccessibleIds);
+        }
         pushConversations(conversations);
 
         const { data, error } = await recoverRead(
@@ -350,7 +358,7 @@ export const useRealtimeSubscription = () => {
         if (dataSubscribed) {
           dataRetryAttempt = 0;
           void queryClient.invalidateQueries({
-            queryKey: [activeOrgId, "conversation-history"],
+            queryKey: latestHistoryRoot(activeOrgId),
           });
           void refreshQuickReplies();
           refreshContacts();
