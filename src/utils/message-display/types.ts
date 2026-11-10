@@ -139,6 +139,7 @@ export type StructuredMessageDisplay =
       total?: { amount: number; currency: string };
     })
   | (DisplayBase & { kind: "media_placeholder" })
+  | (DisplayBase & { kind: "unsupported" })
   | (DisplayBase & { kind: "json"; data: Json });
 
 export type TranslatePreview = (key: string) => string;

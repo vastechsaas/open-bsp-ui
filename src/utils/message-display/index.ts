@@ -118,6 +118,21 @@ export function normalizeStructuredMessage(
     };
   }
 
+  if (content.kind === "unsupported") {
+    const album =
+      isRecord(content.data) &&
+      [readString(content.data.type), readString(content.data.raw_type)].some(
+        (type) => type?.trim().toLowerCase() === "album",
+      );
+    return {
+      kind: "unsupported",
+      preview: {
+        kind: "label",
+        text: album ? "Álbum multimedia recibido" : "Mensaje no compatible",
+      },
+    };
+  }
+
   if (content.kind === "interactive") {
     return normalizeInteractive(content.data) ?? jsonFallback(content.data);
   }
