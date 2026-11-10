@@ -158,11 +158,11 @@ export function StructuredMessageRenderer({
     );
   }
 
-  if (display.kind === "media_placeholder") {
+  if (display.kind === "media_placeholder" || display.kind === "unsupported") {
     return (
       <TextMessage
         header={props.agentHeader}
-        body={`_${t("Contenido multimedia no disponible")}_`}
+        body={`_${t(display.preview.text)}_`}
         type="markdown"
         direction={props.direction}
         timestamp={props.timestamp}
