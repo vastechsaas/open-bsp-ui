@@ -14,6 +14,10 @@ import { queryKeys } from "@/queries/queryKeys";
 import { supportInboxKey } from "@/queries/useSupportInboxVisibility";
 import { recoverRead } from "@/utils/ReadRecoveryUtils";
 import {
+  invalidateConversationContacts,
+  recoverConversationContacts,
+} from "@/utils/ConversationContactCache";
+import {
   clearConversationHistory,
   latestHistoryRoot,
 } from "@/utils/ConversationHistoryQuery";
@@ -228,9 +232,27 @@ export const useRealtimeSubscription = () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.contacts.all(activeOrgId),
       });
-      void queryClient.invalidateQueries({
-        queryKey: [activeOrgId, "contacts_addresses"],
-      });
+    };
+
+    const changedContactIds = new Set<string>();
+    let contactRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let newContactLinked = false;
+    const refreshChangedContact = (id: string, inserted: boolean) => {
+      if (!isCurrentScope()) return;
+      changedContactIds.add(id);
+      newContactLinked ||= inserted;
+      if (contactRefreshTimer) return;
+      contactRefreshTimer = setTimeout(() => {
+        contactRefreshTimer = undefined;
+        if (!isCurrentScope()) return;
+        void invalidateConversationContacts(queryClient, activeOrgId, {
+          contactIds: [...changedContactIds],
+          includeUnlinked: newContactLinked,
+        });
+        changedContactIds.clear();
+        newContactLinked = false;
+        refreshContacts();
+      }, 200);
     };
 
     const refreshNotifications = () =>
@@ -245,6 +267,7 @@ export const useRealtimeSubscription = () => {
     let dataRetryAttempt = 0;
     let queueRetryAttempt = 0;
     let dataSubscribed = false;
+    let previouslyDataSubscribed = false;
     let queueSubscribed = false;
 
     const startDataChannel = () => {
@@ -332,8 +355,12 @@ export const useRealtimeSubscription = () => {
             table: "contacts",
             filter,
           },
-          () => {
-            refreshContacts();
+          (payload) => {
+            const row =
+              payload.eventType === "DELETE" ? payload.old : payload.new;
+            const id: unknown = row.id;
+            if (typeof id === "string")
+              refreshChangedContact(id, payload.eventType === "INSERT");
           },
         )
         .on(
@@ -357,6 +384,12 @@ export const useRealtimeSubscription = () => {
         dataSubscribed = status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED;
         if (dataSubscribed) {
           dataRetryAttempt = 0;
+          if (previouslyDataSubscribed && isCurrentScope())
+            void recoverConversationContacts(queryClient, {
+              organizationId: activeOrgId,
+              userId,
+            });
+          previouslyDataSubscribed = true;
           void queryClient.invalidateQueries({
             queryKey: latestHistoryRoot(activeOrgId),
           });
@@ -479,6 +512,7 @@ export const useRealtimeSubscription = () => {
       if (dataRetryTimer) clearTimeout(dataRetryTimer);
       if (queueRetryTimer) clearTimeout(queueRetryTimer);
       if (countRefreshTimer) clearTimeout(countRefreshTimer);
+      if (contactRefreshTimer) clearTimeout(contactRefreshTimer);
       window.removeEventListener("online", recoverWhenActive);
       document.removeEventListener("visibilitychange", recoverWhenActive);
       if (dataChannel) void dataChannel.unsubscribe();

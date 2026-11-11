@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useContactByAddress } from "@/queries/useContacts";
-import { useContactAddress } from "@/queries/useContactsAddresses";
+import { useConversationContact } from "@/queries/useConversationContact";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import {
@@ -42,10 +41,10 @@ export default function Header({
     state.chat.conversations.get(state.ui.activeConvId || ""),
   );
 
-  const { data: contact } = useContactByAddress(conversation?.contact_address);
-  const { data: contactAddress } = useContactAddress(
+  const { data: contactAddress } = useConversationContact(
     conversation?.contact_address,
   );
+  const contact = contactAddress?.contact;
   const { data: agents } = useCurrentAgents();
   const { data: currentAgent } = useCurrentAgent();
 

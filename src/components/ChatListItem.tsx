@@ -21,8 +21,7 @@ import { AtSign, Pause } from "lucide-react";
 import { mediaCategory } from "./Message/media";
 
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
-import { useContactByAddress } from "@/queries/useContacts";
-import { useContactAddress } from "@/queries/useContactsAddresses";
+import { useConversationContact } from "@/queries/useConversationContact";
 import { formatPhoneNumber, nameInitials } from "@/utils/FormatUtils";
 import { useNavigate } from "@tanstack/react-router";
 import { getMessagePreviewText } from "@/utils/MessageDisplayUtils";
@@ -178,10 +177,10 @@ export default function ChatListItem({
     state.chat.conversations.get(itemId),
   );
 
-  const { data: contact } = useContactByAddress(conversation?.contact_address);
-  const { data: contactAddress } = useContactAddress(
+  const { data: contactAddress } = useConversationContact(
     conversation?.contact_address,
   );
+  const contact = contactAddress?.contact;
 
   const { data: agent } = useCurrentAgent();
   const { data: agents } = useCurrentAgents();

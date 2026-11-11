@@ -42,7 +42,7 @@ void test("the chat panel edits the canonical Contact Manager record", () => {
   const panel = readSource("src/components/CustomerDetailsPanel.tsx");
   const queries = readSource("src/queries/useContacts.ts");
 
-  assert.match(panel, /useContactByAddress/);
+  assert.match(panel, /useConversationContact/);
   assert.match(panel, /useUpdateCustomerDetails/);
   assert.match(panel, /register\("name"\)/);
   assert.match(panel, /register\("email"/);

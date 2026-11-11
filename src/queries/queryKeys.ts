@@ -19,12 +19,8 @@ export const queryKeys = {
       [orgId, "contacts", "page", params] as const,
     detail: (orgId: NullableId, id: NullableId) =>
       [orgId, "contacts", id] as const,
-    byAddress: (orgId: NullableId, address: NullableId) =>
-      [orgId, "contacts_addresses", address, "contact"] as const,
     addresses: (orgId: NullableId, contactId: NullableId) =>
       [orgId, "contacts", contactId, "addresses"] as const,
-    addressDetail: (orgId: NullableId, address: NullableId) =>
-      [orgId, "contacts_addresses", address] as const,
   },
   organizations: {
     all: () => ["organizations"] as const,
