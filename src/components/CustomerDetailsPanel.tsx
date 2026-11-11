@@ -26,11 +26,10 @@ import PreviousChats from "./PreviousChats";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type CustomerDetailsUpdate,
-  useContactByAddress,
   useLastCustomerInteraction,
   useUpdateCustomerDetails,
 } from "@/queries/useContacts";
-import { useContactAddress } from "@/queries/useContactsAddresses";
+import { useConversationContact } from "@/queries/useConversationContact";
 import useBoundStore from "@/stores/useBoundStore";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
 import {
@@ -100,12 +99,10 @@ export default function CustomerDetailsPanel({
   const messages = useBoundStore((state) =>
     state.chat.messages.get(state.ui.activeConvId || ""),
   );
-  const { data: contact, isLoading } = useContactByAddress(
+  const { data: contactAddress, isLoading } = useConversationContact(
     conversation?.contact_address,
   );
-  const { data: contactAddress } = useContactAddress(
-    conversation?.contact_address,
-  );
+  const contact = contactAddress?.contact;
   const updateDetails = useUpdateCustomerDetails();
   const { data: persistedLatestInteraction } = useLastCustomerInteraction(
     conversation?.id,

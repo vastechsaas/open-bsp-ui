@@ -14,6 +14,7 @@ import { normalizePhoneNumber } from "@/utils/FormatUtils";
 import { queryKeys } from "./queryKeys";
 import { normalizeCustomerDetail } from "@/utils/CustomerDetailsUtils";
 import type { DataTablePageParams } from "@/utils/DataTableUtils";
+import { invalidateConversationContacts } from "@/utils/ConversationContactCache";
 
 export type ContactListRow =
   Database["public"]["Functions"]["list_contacts_page"]["Returns"][number];
@@ -64,13 +65,12 @@ export type CustomerDetailsUpdate = Pick<
 function invalidateContactQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   orgId: string | null,
+  targets: Parameters<typeof invalidateConversationContacts>[2],
 ) {
   void queryClient.invalidateQueries({
     queryKey: queryKeys.contacts.all(orgId),
   });
-  void queryClient.invalidateQueries({
-    queryKey: [orgId, "contacts_addresses"],
-  });
+  void invalidateConversationContacts(queryClient, orgId, targets);
 }
 
 function normalizeStructuredContactDetails<T extends ContactUpdate>(data: T) {
@@ -97,26 +97,6 @@ function normalizeStructuredContactDetails<T extends ContactUpdate>(data: T) {
       ? { country: normalizeCustomerDetail(data.country) }
       : {}),
   };
-}
-
-export function useContactByAddress(address: string | null | undefined) {
-  const userId = useBoundStore((state) => state.ui.user?.id);
-  const orgId = useBoundStore((state) => state.ui.activeOrgId);
-
-  return useQuery({
-    queryKey: queryKeys.contacts.byAddress(orgId, address),
-    queryFn: async () =>
-      await supabase
-        .from("contacts_addresses")
-        .select("*, contact:contacts(*)")
-        .eq("organization_id", orgId!)
-        .eq("address", address!)
-        .single()
-        .throwOnError(),
-    enabled: !!userId && !!orgId && !!address,
-    select: (data) => data.data.contact,
-    experimental_prefetchInRender: true,
-  });
 }
 
 export function useContacts() {
@@ -261,8 +241,13 @@ export function useCreateContact() {
 
       return contact;
     },
-    onSuccess: () => {
-      invalidateContactQueries(queryClient, orgId);
+    onSuccess: (contact, { addresses }) => {
+      invalidateContactQueries(queryClient, orgId, {
+        contactIds: [contact.id],
+        addresses: addresses.flatMap(({ address }) =>
+          address ? [normalizePhoneNumber(address)] : [],
+        ),
+      });
     },
   });
 }
@@ -373,8 +358,13 @@ export function useUpdateContact() {
 
       return contact;
     },
-    onSuccess: () => {
-      invalidateContactQueries(queryClient, orgId);
+    onSuccess: (contact, { addresses }) => {
+      invalidateContactQueries(queryClient, orgId, {
+        contactIds: [contact.id],
+        addresses: addresses.flatMap(({ address }) =>
+          address ? [normalizePhoneNumber(address)] : [],
+        ),
+      });
     },
   });
 }
@@ -407,7 +397,10 @@ export function useUpdateCustomerDetails() {
 
       return data;
     },
-    onSuccess: () => invalidateContactQueries(queryClient, orgId),
+    onSuccess: (contact) =>
+      invalidateContactQueries(queryClient, orgId, {
+        contactIds: [contact.id],
+      }),
   });
 }
 
@@ -421,8 +414,8 @@ export function useDeleteContact() {
 
       await supabase.from("contacts").delete().eq("id", id).throwOnError();
     },
-    onSuccess: () => {
-      invalidateContactQueries(queryClient, orgId);
+    onSuccess: (_, id) => {
+      invalidateContactQueries(queryClient, orgId, { contactIds: [id] });
     },
   });
 }
