@@ -1,3 +1,5 @@
+import { isUnauthorizedResponse } from "./AuthSessionUtils";
+
 export type NodeConversationSnapshot = {
   enabled: boolean;
   awaiting_mapping?: boolean;
@@ -38,7 +40,9 @@ export type NodeConversationSnapshot = {
 
 export function lifecyclePollInterval(
   snapshot?: NodeConversationSnapshot,
+  error?: unknown,
 ): number | false {
+  if (isUnauthorizedResponse(error)) return false;
   if (snapshot?.awaiting_mapping) return 2000;
   if (!snapshot?.enabled) return false;
   return snapshot.pending_request_id ||

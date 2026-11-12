@@ -63,7 +63,7 @@ const useBoundStore = create<AppState>()(
 
 export default useBoundStore;
 
-// TODO: for real
+// Keep user preferences, not the previous user's conversation data.
 export function reset() {
   useBoundStore.setState((state) => {
     return {
@@ -72,12 +72,17 @@ export function reset() {
         activeOrgId: null,
         activeConvId: null,
         initialized: false,
+        routingQueueId: null,
+        templateDrafts: new Map(),
       },
       chat: {
         ...state.chat,
-        organizations: new Map(),
         conversations: new Map(),
         messages: new Map(),
+        textDrafts: new Map(),
+        privateNoteDrafts: new Map(),
+        fileDrafts: new Map(),
+        mediaLoads: new Map(),
       },
     };
   });

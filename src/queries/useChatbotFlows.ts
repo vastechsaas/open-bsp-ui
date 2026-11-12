@@ -5,6 +5,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { type Database, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { recoverRead, retryTransientRead } from "@/utils/ReadRecoveryUtils";
+import { createRejectedSessionCheck } from "@/utils/AuthSessionUtils";
 import {
   createChatbotManagementError,
   type ChatbotEditorGraph,
@@ -157,7 +158,8 @@ export function useNodeConversationLifecycle(conversationId?: string) {
   const status = useQuery<NodeConversationSnapshot>({
     queryKey: key,
     enabled: !!userId && !!orgId && !!conversationId,
-    refetchInterval: (query) => lifecyclePollInterval(query.state.data),
+    refetchInterval: (query) =>
+      lifecyclePollInterval(query.state.data, query.state.error),
     refetchOnWindowFocus: "always",
     refetchOnReconnect: "always",
     staleTime: 0,
@@ -547,6 +549,13 @@ async function normalizeChatbotManagementError(error: unknown) {
     : new Error("Chatbot management request failed");
 }
 
+const recheckRejectedSession = createRejectedSessionCheck({
+  currentUser: () => useBoundStore.getState().ui.user,
+  getUser: () => supabase.auth.getUser(),
+  getSession: () => supabase.auth.getSession(),
+  endLocalSession: () => supabase.auth.signOut({ scope: "local" }),
+});
+
 async function invokeChatbotManagement<T>(
   path: string,
   body?: Record<string, unknown>,
@@ -562,7 +571,11 @@ async function invokeChatbotManagement<T>(
     },
   );
 
-  if (error) throw await normalizeChatbotManagementError(error);
+  if (error) {
+    const normalized = await normalizeChatbotManagementError(error);
+    if (!signal?.aborted) await recheckRejectedSession(normalized);
+    throw normalized;
+  }
   if (!data) throw new Error("Chatbot management request failed");
 
   return data;

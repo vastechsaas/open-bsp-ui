@@ -1,9 +1,10 @@
 import { supabase } from "@/supabase/client";
-import useBoundStore from "@/stores/useBoundStore";
+import useBoundStore, { reset } from "@/stores/useBoundStore";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Route } from "@/routes/__root";
 import { useQueryClient } from "@tanstack/react-query";
+import { resetAuthorizedCache } from "@/utils/IdbUtils";
 
 /**
  * Hook to manage authentication state
@@ -12,7 +13,6 @@ import { useQueryClient } from "@tanstack/react-query";
  */
 export function useAuth() {
   const setUser = useBoundStore((state) => state.ui.setUser);
-  const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
   const queryClient = useQueryClient();
@@ -39,19 +39,23 @@ export function useAuth() {
       }
 
       // Signed out
-      if (
-        loggedUser &&
-        !user &&
-        !window.location.pathname.startsWith("/login")
-      ) {
-        // Clear all queries and org state
+      if (loggedUser && !user) {
+        // Drop tenant data before navigating; never display an expiry toast.
         queryClient.clear();
-        setActiveOrg(null);
-
-        navigate({
-          to: "/login",
-          search: { redirect: window.location.pathname + window.location.hash },
-        });
+        reset();
+        void resetAuthorizedCache().catch(() => undefined);
+        if (!window.location.pathname.startsWith("/login")) {
+          void navigate({
+            to: "/login",
+            replace: true,
+            search: {
+              redirect:
+                window.location.pathname +
+                window.location.search +
+                window.location.hash,
+            },
+          });
+        }
       }
     });
 

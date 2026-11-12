@@ -513,7 +513,7 @@ export function createChatbotManagementError(
         : [],
     );
   }
-  return new Error(message);
+  return Object.assign(new Error(message), { status });
 }
 
 function isFiniteNumber(value: unknown): value is number {

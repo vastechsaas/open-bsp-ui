@@ -19,10 +19,12 @@ function TenantRuntime() {
 function RootLayout() {
   useAuth();
   const location = useLocation();
+  const signedIn = useBoundStore((state) => !!state.ui.user);
 
   return (
     <>
-      {!isPlatformPath(location.pathname) &&
+      {signedIn &&
+        !isPlatformPath(location.pathname) &&
         !location.pathname.startsWith("/onboard/set-password") && (
           <TenantRuntime />
         )}
