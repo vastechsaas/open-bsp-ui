@@ -25,7 +25,10 @@ test("one account-scoped lifecycle query drives pending UI with two-second fallb
   );
   assert.doesNotMatch(hook, /node-conversation-mapping/);
   assert.match(hook, /pending_request_id: "submitting"/);
-  assert.match(hook, /lifecyclePollInterval\(query.state.data\)/);
+  assert.match(
+    hook,
+    /lifecyclePollInterval\(query.state.data, query.state.error\)/,
+  );
   assert.match(hook, /refetchOnWindowFocus: "always"/);
   assert.match(hook, /client.isMutating\(\{ mutationKey: key \}\)/);
   assert.match(hook, /request.current.body/);
