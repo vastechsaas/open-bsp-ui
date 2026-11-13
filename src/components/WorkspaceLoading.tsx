@@ -16,7 +16,13 @@ export function WorkspaceNavigationFeedback({
     select: (state) =>
       workspaceNavigationPending(
         state.isLoading ||
-          state.matches.some((match) => match.status === "pending"),
+          state.matches.some(
+            (match) =>
+              typeof match === "object" &&
+              match !== null &&
+              "status" in match &&
+              match.status === "pending",
+          ),
         state.location.pathname,
         state.resolvedLocation?.pathname,
       ),
