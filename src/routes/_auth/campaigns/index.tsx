@@ -3,7 +3,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Megaphone, Pencil, Plus, Search } from "lucide-react";
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import DataTablePagination from "@/components/DataTablePagination";
-import Spinner from "@/components/Spinner";
+import {
+  WorkspaceLoadError,
+  WorkspaceSkeleton,
+} from "@/components/WorkspaceLoading";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -42,6 +45,7 @@ function CampaignList() {
     data: campaignPage,
     isLoading,
     isError,
+    refetch,
   } = useCampaigns({
     page,
     pageSize,
@@ -131,13 +135,11 @@ function CampaignList() {
           </div>
 
           {isLoading ? (
-            <div className="h-[260px] flex items-center justify-center">
-              <Spinner />
-            </div>
-          ) : isError ? (
-            <EmptyState
+            <WorkspaceSkeleton label={t("Cargando…")} />
+          ) : isError && !campaignPage ? (
+            <WorkspaceLoadError
               title={t("No se pudieron cargar las campañas")}
-              description={t("Intentá nuevamente en unos minutos.")}
+              onRetry={() => void refetch()}
             />
           ) : items.length === 0 ? (
             <EmptyState

@@ -20,7 +20,7 @@ import {
   YAxis,
 } from "recharts";
 import Avatar from "@/components/Avatar";
-import Spinner from "@/components/Spinner";
+import { WorkspaceSkeleton } from "@/components/WorkspaceLoading";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useDashboardMetrics } from "@/queries/useDashboard";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
@@ -126,10 +126,8 @@ export default function DashboardWorkspace() {
         </header>
 
         {metrics.isPending ? (
-          <div className="flex min-h-[480px] items-center justify-center">
-            <Spinner size={30} className="text-primary" />
-          </div>
-        ) : metrics.isError ? (
+          <WorkspaceSkeleton variant="dashboard" label={t("Cargando…")} />
+        ) : metrics.isError && !metrics.data ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-destructive/40 bg-destructive/5 p-8 text-center">
             <p className="text-[15px] font-medium">
               {t("No se pudieron cargar las métricas del panel.")}
