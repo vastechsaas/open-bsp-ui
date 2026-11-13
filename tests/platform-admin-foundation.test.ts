@@ -27,12 +27,12 @@ void test("platform route and landing helpers keep tenant and platform modes sep
 void test("platform routes are guarded by backend authorization", () => {
   const route = read("../src/routes/platform.tsx");
   const root = read("../src/routes/__root.tsx");
-  const login = read("../src/routes/login_.email.tsx");
+  const login = read("../src/routes/login.tsx");
 
   assert.match(route, /fetchIsPlatformAdmin\(\)/);
   assert.match(route, /redirect\(\{ to: "\/dashboard" \}\)/);
   assert.match(root, /resolveAuthenticatedHome\(\)/);
-  assert.match(login, /resolveAuthenticatedHome\(\)/);
+  assert.match(login, /if \(userId\) void router\.invalidate\(\)/);
 });
 
 void test("platform mode does not mount ordinary tenant initialization or realtime", () => {

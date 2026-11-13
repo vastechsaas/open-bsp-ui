@@ -61,7 +61,7 @@ void test("sign-in resolves platform access while organization switches target d
     "utf8",
   );
   const loginRoute = readFileSync(
-    new URL("../src/routes/login_.email.tsx", import.meta.url),
+    new URL("../src/routes/login.tsx", import.meta.url),
     "utf8",
   );
   const menu = readFileSync(
@@ -71,16 +71,13 @@ void test("sign-in resolves platform access while organization switches target d
 
   assert.match(
     rootRoute,
-    /search\.redirect \|\|\s*\(await resolveAuthenticatedHome\(\)\)/,
+    /href: search\.redirect \?\? \(await resolveAuthenticatedHome\(\)\)/,
   );
   assert.match(
     rootRoute,
     /isLandingPage[\s\S]*?to: await resolveAuthenticatedHome\(\)/,
   );
-  assert.match(
-    loginRoute,
-    /redirect \|\|\s*\(await resolveAuthenticatedHome\(\)\)/,
-  );
+  assert.match(loginRoute, /if \(userId\) void router\.invalidate\(\)/);
   assert.match(
     menu,
     /setActiveOrg\(organization\.id\);\s*void navigate\(\{ to: "\/dashboard" \}\)/,
