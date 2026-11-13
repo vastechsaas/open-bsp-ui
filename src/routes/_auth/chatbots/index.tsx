@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import DataTablePagination from "@/components/DataTablePagination";
-import Spinner from "@/components/Spinner";
+import { WorkspaceSkeleton } from "@/components/WorkspaceLoading";
 import ChatbotServingStatus from "@/components/chatbots/ChatbotServingStatus";
 import { useChatbotServing } from "@/queries/useChatbotServing";
 import {
@@ -153,7 +153,9 @@ function ChatbotFlowList() {
   }
 
   if (permissions.isPending)
-    return <p className="p-6">{t("Cargando permisos…")}</p>;
+    return (
+      <WorkspaceSkeleton variant="workspace" label={t("Cargando permisos…")} />
+    );
   if (permissions.isError)
     return (
       <div className="p-6">
@@ -268,10 +270,8 @@ function ChatbotFlowList() {
           )}
 
           {isLoading ? (
-            <div className="flex h-[300px] items-center justify-center">
-              <Spinner />
-            </div>
-          ) : isError ? (
+            <WorkspaceSkeleton label={t("Cargando…")} />
+          ) : isError && !flowPage ? (
             <EmptyState
               title={t("No se pudieron cargar los chatbots")}
               description={t("Revisá la conexión e intentá nuevamente.")}

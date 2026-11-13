@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import CampaignFilterSelect from "@/components/campaigns/CampaignFilterSelect";
 import DataTablePagination from "@/components/DataTablePagination";
-import Spinner from "@/components/Spinner";
+import {
+  WorkspaceLoadError,
+  WorkspaceSkeleton,
+} from "@/components/WorkspaceLoading";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
@@ -73,7 +76,7 @@ export function TemplatesIndex({
       ),
     [whatsappAccounts],
   );
-  const { data, isLoading, isError } = useTemplateRecordsPage({
+  const { data, isLoading, isError, refetch } = useTemplateRecordsPage({
     page,
     pageSize,
     search: debouncedSearch || undefined,
@@ -260,13 +263,11 @@ export function TemplatesIndex({
           </div>
 
           {isLoading ? (
-            <div className="flex h-[280px] items-center justify-center">
-              <Spinner />
-            </div>
-          ) : isError ? (
-            <EmptyState
+            <WorkspaceSkeleton label={t("Cargando…")} />
+          ) : isError && !data ? (
+            <WorkspaceLoadError
               title={t("No se pudieron cargar las plantillas")}
-              description={t("Intentá nuevamente en unos minutos.")}
+              onRetry={() => void refetch()}
             />
           ) : rows.length === 0 ? (
             <EmptyState

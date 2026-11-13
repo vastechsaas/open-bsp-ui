@@ -45,7 +45,11 @@ import { useOrganizationAppearanceSettings } from "@/queries/useOrganizationAppe
 import { useOrganizations } from "@/queries/useOrganizations";
 import PendingInvitationGate from "@/components/PendingInvitationGate";
 import { useModulePermissionRefresh } from "@/queries/useModulePermissions";
-import Spinner from "@/components/Spinner";
+import {
+  WorkspaceLoadError,
+  WorkspaceSkeleton,
+} from "@/components/WorkspaceLoading";
+import { workspaceStartupState } from "@/utils/WorkspaceLoadingUtils";
 import IntegrationManagementGate from "@/components/IntegrationManagementGate";
 import {
   useIntegrationAvailability,
@@ -79,6 +83,7 @@ function AppLayout() {
   const integrationAvailability = useIntegrationAvailability();
   useModulePermissionRefresh();
   const { translate: t } = useTranslation();
+  const signedIn = useBoundStore((state) => !!state.ui.user);
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const organizations = useOrganizations();
@@ -94,7 +99,7 @@ function AppLayout() {
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
   const navigate = useNavigate();
-  const { data: currentAgent } = useCurrentAgent();
+  const membership = useCurrentAgent();
   const { data: organizationAddresses } = useOrganizationsAddresses();
   const { data: appearanceSettings } = useOrganizationAppearanceSettings();
   const hasConnectedWhatsApp = organizationAddresses?.some(
@@ -112,7 +117,7 @@ function AppLayout() {
   );
   const isMessagesRoute =
     pathname === "/conversations" || pathname === "/conversations/";
-  const currentRole = currentAgent?.extra?.role;
+  const currentRole = membership.data?.extra?.role;
   const canAccessCurrentPath =
     !activeOrgId ||
     // Builder routes own their loading, unavailable and permission-error states.
@@ -136,6 +141,36 @@ function AppLayout() {
     isContactManagerWorkspacePath(pathname) ||
     isSettingsWorkspacePath(pathname);
   const hasPendingInvitations = (invitations.data?.length ?? 0) > 0;
+  const activeOrganizationIsValid =
+    !!activeOrgId &&
+    !!organizations.data?.some(
+      (organization) => organization.id === activeOrgId,
+    );
+  const startup = workspaceStartupState({
+    signedIn,
+    organizations,
+    invitations,
+    organizationCount: organizations.data?.length ?? 0,
+    hasPendingInvitations,
+    hasActiveOrganization: !!activeOrgId,
+    activeOrganizationIsValid,
+    membership,
+    hasRole: !!currentRole,
+  });
+  const workspaceReady = startup === "ready";
+  const redirecting = workspaceReady && !canAccessCurrentPath;
+  const showStartup =
+    startup === "loading" || startup === "error" || redirecting;
+  const showMessagesLayout =
+    isMessagesRoute && !showStartup && !hasPendingInvitations;
+
+  function retryStartup() {
+    if (organizations.data === undefined && organizations.isError)
+      void organizations.refetch();
+    if (invitations.data === undefined && invitations.isError)
+      void invitations.refetch();
+    if (activeOrganizationIsValid && !currentRole) void membership.refetch();
+  }
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
   const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
@@ -201,39 +236,37 @@ function AppLayout() {
   }, [location.hash, setActiveConv]);
 
   useEffect(() => {
-    if (!canAccessCurrentPath) {
+    if (redirecting) {
       void navigate({
         to: getDefaultPathForRole(currentRole),
         replace: true,
       });
     }
-  }, [canAccessCurrentPath, currentRole, navigate]);
-
-  console.log("--------");
-  console.log("active org ", activeOrgId);
-  console.log("active conv", activeConvId);
+  }, [redirecting, currentRole, navigate]);
 
   const showCenterPanel =
-    activeConvId || isStatsRoute || isWorkspaceRoute || hasPendingInvitations;
+    activeConvId ||
+    isStatsRoute ||
+    isWorkspaceRoute ||
+    hasPendingInvitations ||
+    showStartup;
   const gridTemplateColumns = isFullscreenWorkspaceRoute
     ? "1fr"
-    : isWorkspaceRoute
+    : isWorkspaceRoute || showStartup || hasPendingInvitations
       ? `${menuWidth}px 1fr`
       : effectivePanelWidth !== null
         ? `${menuWidth}px ${effectivePanelWidth}px 1fr`
         : `${menuWidth}px minmax(${MIN_PANEL_WIDTH}px, 1fr) 2fr`;
 
-  if (!canAccessCurrentPath) return null;
-
   return (
     <div
-      className={`app-grid transition-[grid-template-columns] duration-200 ${isMessagesRoute ? "messages-workspace" : ""}`}
+      className={`app-grid transition-[grid-template-columns] duration-200 ${showMessagesLayout ? "messages-workspace" : ""}`}
       style={viewportWidth >= 768 ? { gridTemplateColumns } : undefined}
     >
       {/* Menu - Fixed width */}
       <div
         className={
-          (isMessagesRoute ? "row-span-2 " : "") +
+          (showMessagesLayout ? "row-span-2 " : "") +
           (isFullscreenWorkspaceRoute
             ? "hidden"
             : showCenterPanel
@@ -247,7 +280,7 @@ function AppLayout() {
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
-      {isMessagesRoute && (
+      {showMessagesLayout && (
         <div
           className={`min-w-0 ${activeConvId ? "col-span-full md:col-start-2" : "col-start-2"} col-end-[-1] row-start-1`}
         >
@@ -259,15 +292,15 @@ function AppLayout() {
         ref={panelRef}
         className={
           "flex-col overflow-hidden md:border-r border-border bg-background text-foreground md:col-span-1 relative " +
-          (isMessagesRoute ? "col-span-1 " : "col-span-2 ") +
-          (isWorkspaceRoute
+          (showMessagesLayout ? "col-span-1 " : "col-span-2 ") +
+          (isWorkspaceRoute || showStartup || hasPendingInvitations
             ? "hidden"
             : showCenterPanel
               ? "hidden md:flex"
               : "flex")
         }
       >
-        {!isWorkspaceRoute && routeContent}
+        {!isWorkspaceRoute && workspaceReady && !redirecting && routeContent}
         {/* Resize Handle */}
         <div className="resize-handle z-[60]" onMouseDown={handleMouseDown} />
       </div>
@@ -276,15 +309,17 @@ function AppLayout() {
       <div
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
-          (hasPendingInvitations
-            ? " flex bg-muted"
-            : isWorkspaceRoute
-              ? " flex bg-background text-foreground"
-              : isStatsRoute
-                ? " flex bg-muted"
-                : activeConvId
-                  ? " flex bg-chat"
-                  : " hidden md:flex bg-muted")
+          (showStartup
+            ? " flex bg-background text-foreground overflow-y-auto"
+            : hasPendingInvitations
+              ? " flex bg-muted"
+              : isWorkspaceRoute
+                ? " flex bg-background text-foreground"
+                : isStatsRoute
+                  ? " flex bg-muted"
+                  : activeConvId
+                    ? " flex bg-chat"
+                    : " hidden md:flex bg-muted")
         }
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
@@ -297,6 +332,18 @@ function AppLayout() {
           )}
         {hasPendingInvitations ? (
           <PendingInvitationGate invitations={invitations.data ?? []} />
+        ) : showStartup ? (
+          startup === "error" ? (
+            <WorkspaceLoadError
+              title={t("No se pudo cargar el espacio de trabajo.")}
+              onRetry={retryStartup}
+            />
+          ) : (
+            <WorkspaceSkeleton
+              variant="workspace"
+              label={t("Cargando el espacio de trabajo…")}
+            />
+          )
         ) : isWorkspaceRoute ? (
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {routeContent}
@@ -334,16 +381,13 @@ function AppLayout() {
           </div>
         ) : (
           <div className="flex gap-[32px] items-center justify-center h-full">
-            {!activeOrgId &&
-              (invitations.isLoading ? (
-                <Spinner size={24} />
-              ) : (
-                <ActionCard
-                  icon={<Building2 className="w-[24px] h-[24px]" />}
-                  title={t("Crear organización")}
-                  to="/settings/organization/new"
-                />
-              ))}
+            {!activeOrgId && (
+              <ActionCard
+                icon={<Building2 className="w-[24px] h-[24px]" />}
+                title={t("Crear organización")}
+                to="/settings/organization/new"
+              />
+            )}
             {activeOrgId && (
               <>
                 {/* AI-agent onboarding is intentionally hidden for the Meta review.

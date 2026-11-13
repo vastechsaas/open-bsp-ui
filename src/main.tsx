@@ -7,12 +7,16 @@ import { TickProvider } from "./contexts/useTick";
 import { WhatsAppIntegrationProvider } from "./contexts/WhatsAppIntegrationContext";
 import { loadTranslations } from "./i18n/translations";
 import { detectDefaultLanguage, type Language } from "./stores/uiSlice";
+import { WorkspaceNavigationFeedback } from "./components/WorkspaceLoading";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
-const router = createRouter({ routeTree });
+const router = createRouter({
+  routeTree,
+  InnerWrap: WorkspaceNavigationFeedback,
+});
 
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
