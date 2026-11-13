@@ -8,6 +8,7 @@ import { supabase } from "@/supabase/client";
 import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
 import { resolveAuthenticatedHome } from "@/queries/usePlatformAdmin";
 import { isPlatformPath } from "@/utils/PlatformAdminUtils";
+import { isSignInPath, safeSignInRedirect } from "@/utils/SignInUtils";
 
 function TenantRuntime() {
   useSetActiveOrg();
@@ -24,6 +25,7 @@ function RootLayout() {
   return (
     <>
       {signedIn &&
+        !isSignInPath(location.pathname) &&
         !isPlatformPath(location.pathname) &&
         !location.pathname.startsWith("/onboard/set-password") && (
           <TenantRuntime />
@@ -42,13 +44,14 @@ const ALWAYS_PUBLIC_PATH_PREFIXES = [
 
 export const Route = createRootRoute({
   validateSearch: (search): { redirect?: string } => ({
-    redirect: (search.redirect as string) || undefined,
+    redirect: safeSignInRedirect(search.redirect),
   }),
   beforeLoad: async ({ search, location }) => {
     const isAlwaysPublicPath = ALWAYS_PUBLIC_PATH_PREFIXES.some((path) =>
       location.pathname.startsWith(path),
     );
     const isLandingPage = location.pathname === "/";
+    const isSignIn = isSignInPath(location.pathname);
 
     if (isAlwaysPublicPath) return;
 
@@ -59,9 +62,10 @@ export const Route = createRootRoute({
       user = data?.session?.user ?? null;
     }
 
-    if (user && location.pathname.startsWith("/login")) {
+    if (user && isSignIn) {
       throw redirect({
-        to: search.redirect || (await resolveAuthenticatedHome()),
+        href: search.redirect ?? (await resolveAuthenticatedHome()),
+        replace: true,
       });
     }
 
@@ -73,7 +77,7 @@ export const Route = createRootRoute({
 
     if (!user && isLandingPage) return;
 
-    if (!user && !location.pathname.startsWith("/login")) {
+    if (!user && !isSignIn) {
       throw redirect({
         to: "/login",
         search: {

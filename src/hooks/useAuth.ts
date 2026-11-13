@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Route } from "@/routes/__root";
 import { useQueryClient } from "@tanstack/react-query";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
+import { isSignInPath } from "@/utils/SignInUtils";
 
 /**
  * Hook to manage authentication state
@@ -32,9 +33,15 @@ export function useAuth() {
       setUser(user);
 
       // Signed in
-      if (!loggedUser && user && event === "SIGNED_IN") {
-        navigate({
-          to: redirect || "/",
+      // The sign-in route revalidates its loader once the user is available.
+      if (
+        !loggedUser &&
+        user &&
+        event === "SIGNED_IN" &&
+        !isSignInPath(window.location.pathname)
+      ) {
+        void navigate({
+          href: redirect ?? "/",
         });
       }
 
@@ -44,7 +51,7 @@ export function useAuth() {
         queryClient.clear();
         reset();
         void resetAuthorizedCache().catch(() => undefined);
-        if (!window.location.pathname.startsWith("/login")) {
+        if (!isSignInPath(window.location.pathname)) {
           void navigate({
             to: "/login",
             replace: true,
@@ -60,5 +67,5 @@ export function useAuth() {
     });
 
     return () => subscription.unsubscribe();
-  }, [redirect]);
+  }, [navigate, queryClient, redirect, setUser]);
 }

@@ -1,0 +1,285 @@
+.page {
+  --sign-in-ink: #272620;
+  --sign-in-muted: #625c54;
+  --sign-in-line: #a59c90;
+  --sign-in-button: #a4432d;
+  --sign-in-button-text: #fff;
+  --sign-in-focus: #2b61ae;
+  --sign-in-error: #922d21;
+  --sign-in-error-surface: #f8e9e3;
+
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--sign-in-ink);
+  background: var(--background);
+}
+
+:global(.dark) .page {
+  --sign-in-ink: var(--card-foreground);
+  --sign-in-muted: var(--muted-foreground);
+  --sign-in-line: color-mix(in oklab, var(--foreground) 55%, var(--background));
+  --sign-in-button: var(--primary);
+  --sign-in-button-text: #1d1714;
+  --sign-in-focus: #8eb8ff;
+  --sign-in-error: #ffb6a7;
+  --sign-in-error-surface: #382824;
+}
+
+.hero {
+  display: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: clamp(2rem, 7vh, 4.5rem) 1.5rem
+    max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.mobileBrand,
+.formArea {
+  width: 100%;
+  max-width: 25rem;
+}
+
+.mobileBrand {
+  margin-bottom: 2.5rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: fit-content;
+  border-radius: 0.5rem;
+  font-size: clamp(1.125rem, 4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.mark {
+  position: relative;
+  display: block;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+/* Show the actual interlocking mark from the existing Social Connect lockup. */
+.mark img {
+  position: absolute;
+  top: -68%;
+  left: -115%;
+  width: 330%;
+  height: auto;
+  max-width: none;
+}
+
+.title {
+  font-size: clamp(2rem, 5vw, 2.625rem);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin-top: 0.7rem;
+  color: var(--sign-in-muted);
+  line-height: 1.5;
+}
+
+.form {
+  flex: 0 0 auto;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  padding-left: 0;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.input,
+.submit {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3.25rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+}
+
+.input {
+  border: 1px solid var(--sign-in-line);
+  padding: 0.75rem 0.875rem;
+  color: var(--sign-in-ink);
+  background: var(--background);
+  font-weight: 400;
+}
+
+.input::placeholder {
+  color: var(--sign-in-muted);
+}
+
+.passwordField {
+  position: relative;
+}
+
+.passwordField .input {
+  padding-inline-end: 3.5rem;
+}
+
+.reveal {
+  position: absolute;
+  inset-block: 0.25rem;
+  inset-inline-end: 0.25rem;
+  display: grid;
+  width: 2.75rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  color: var(--sign-in-muted);
+}
+
+.reveal svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.reveal:hover {
+  background: var(--accent);
+}
+
+.submit {
+  padding: 0.75rem 1rem;
+  color: var(--sign-in-button-text);
+  background: var(--sign-in-button);
+  font-weight: 700;
+}
+
+.submit:not(:disabled):hover {
+  background: color-mix(
+    in oklab,
+    var(--sign-in-button) 89%,
+    var(--sign-in-button-text)
+  );
+}
+
+.submit:disabled {
+  opacity: 0.72;
+}
+
+.error {
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--sign-in-error);
+  background: var(--sign-in-error-surface);
+  font-size: 0.875rem;
+}
+
+.legal {
+  margin-top: auto;
+  padding-top: 2.75rem;
+  color: var(--sign-in-muted);
+}
+
+.legal a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.page :is(a, button, input):focus-visible {
+  outline: 2px solid var(--sign-in-focus);
+  outline-offset: 3px;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+  }
+
+  .hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: clamp(2rem, 4.3vw, 4.5rem);
+    color: #f7f3eb;
+    background: #292723;
+  }
+
+  .hero::before,
+  .hero::after {
+    position: absolute;
+    z-index: -1;
+    width: 32rem;
+    height: 32rem;
+    border: 1px solid #69594c;
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .hero::before {
+    top: -16rem;
+    right: -14rem;
+  }
+
+  .hero::after {
+    bottom: -24rem;
+    left: -15rem;
+  }
+
+  .hero .brand {
+    font-size: 1.5rem;
+  }
+
+  .heroContent {
+    margin-block: auto;
+    padding-block: clamp(2rem, 8vh, 5rem);
+  }
+
+  .heroTitle {
+    font-size: clamp(1.875rem, 3.35vw, 3.6rem);
+    font-weight: 750;
+    line-height: 1.12;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  .illustration {
+    display: block;
+    width: min(100%, 28rem);
+    max-height: 33vh;
+    margin-top: clamp(1.5rem, 5vh, 3rem);
+    filter: drop-shadow(0 10px 12px #1917145c);
+  }
+
+  .mobileBrand {
+    display: none;
+  }
+
+  .panel {
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
+    justify-items: center;
+    padding: 2rem clamp(2rem, 5vw, 4.5rem);
+  }
+
+  .formArea {
+    grid-row: 2;
+  }
+
+  .legal {
+    grid-row: 3;
+    align-self: end;
+  }
+}
