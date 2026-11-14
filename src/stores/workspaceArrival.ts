@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export const WORKSPACE_ARRIVAL_MIN_MS = 600;
+export const WORKSPACE_ARRIVAL_MIN_MS = 4_000;
 
 export function workspaceArrivalReady({
   routeSettled,
