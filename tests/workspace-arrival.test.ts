@@ -60,7 +60,7 @@ void test("arrival waits for the settled destination and its matching tenant sta
     }),
     true,
   );
-  assert.equal(WORKSPACE_ARRIVAL_MIN_MS, 2_000);
+  assert.equal(WORKSPACE_ARRIVAL_MIN_MS, 4_000);
 });
 
 void test("arrival only starts on sign-in and its caption is translated", () => {
