@@ -50,6 +50,7 @@ import {
   WorkspaceSkeleton,
 } from "@/components/WorkspaceLoading";
 import { workspaceStartupState } from "@/utils/WorkspaceLoadingUtils";
+import { useWorkspaceArrival } from "@/stores/workspaceArrival";
 import IntegrationManagementGate from "@/components/IntegrationManagementGate";
 import {
   useIntegrationAvailability,
@@ -243,6 +244,12 @@ function AppLayout() {
       });
     }
   }, [redirecting, currentRole, navigate]);
+
+  const arrivalStartedAt = useWorkspaceArrival((state) => state.startedAt);
+  useEffect(() => {
+    if (arrivalStartedAt !== null && startup !== "loading" && !redirecting)
+      useWorkspaceArrival.getState().ready(pathname);
+  }, [arrivalStartedAt, pathname, redirecting, startup]);
 
   const showCenterPanel =
     activeConvId ||
