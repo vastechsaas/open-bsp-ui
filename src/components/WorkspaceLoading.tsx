@@ -3,6 +3,13 @@ import { useRouterState, type AnyRouter } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
+  useWorkspaceArrival,
+  workspaceArrivalReady,
+  WORKSPACE_ARRIVAL_MIN_MS,
+} from "@/stores/workspaceArrival";
+import { isSignInPath } from "@/utils/SignInUtils";
+import WorkspaceArrivalScreen from "./WorkspaceArrivalScreen";
+import {
   workspaceNavigationPending,
   WORKSPACE_PROGRESS_DELAY_MS,
 } from "@/utils/WorkspaceLoadingUtils";
@@ -27,11 +34,52 @@ export function WorkspaceNavigationFeedback({
         state.resolvedLocation?.pathname,
       ),
   });
+  const startedAt = useWorkspaceArrival((state) => state.startedAt);
+  const readyPath = useWorkspaceArrival((state) => state.readyPath);
+  const finishArrival = useWorkspaceArrival((state) => state.finish);
+  const arrivalReady = useRouterState<AnyRouter, boolean>({
+    select: (state) =>
+      workspaceArrivalReady({
+        routeSettled:
+          state.status === "idle" &&
+          state.location.href === state.resolvedLocation?.href &&
+          !isSignInPath(state.location.pathname),
+        pathname: state.location.pathname,
+        tenantRoute: state.matches.some(
+          (match) =>
+            typeof match === "object" &&
+            match !== null &&
+            "routeId" in match &&
+            match.routeId === "/_auth",
+        ),
+        routeFailed: state.matches.some(
+          (match) =>
+            typeof match === "object" &&
+            match !== null &&
+            "status" in match &&
+            (match.status === "error" || match.status === "notFound"),
+        ),
+        readyPath,
+      }),
+  });
+  const arriving = startedAt !== null;
   const [show, setShow] = useState(false);
   const { translate: t } = useTranslation();
 
   useEffect(() => {
-    if (!pending) return;
+    if (startedAt === null || !arrivalReady) return;
+    const remaining =
+      WORKSPACE_ARRIVAL_MIN_MS - (performance.now() - startedAt);
+    if (remaining <= 0) {
+      finishArrival();
+      return;
+    }
+    const timer = window.setTimeout(finishArrival, remaining);
+    return () => window.clearTimeout(timer);
+  }, [arrivalReady, finishArrival, startedAt]);
+
+  useEffect(() => {
+    if (!pending || arriving) return;
     const timer = window.setTimeout(
       () => setShow(true),
       WORKSPACE_PROGRESS_DELAY_MS,
@@ -40,11 +88,11 @@ export function WorkspaceNavigationFeedback({
       window.clearTimeout(timer);
       setShow(false);
     };
-  }, [pending]);
+  }, [arriving, pending]);
 
   return (
     <>
-      {pending && show && (
+      {!arriving && pending && show && (
         <div
           role="status"
           data-testid="workspace-navigation-progress"
@@ -57,7 +105,10 @@ export function WorkspaceNavigationFeedback({
           />
         </div>
       )}
-      {children}
+      <div className="contents" inert={arriving}>
+        {children}
+      </div>
+      {arriving && <WorkspaceArrivalScreen />}
     </>
   );
 }

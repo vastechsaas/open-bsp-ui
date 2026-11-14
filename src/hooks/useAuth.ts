@@ -6,6 +6,7 @@ import { Route } from "@/routes/__root";
 import { useQueryClient } from "@tanstack/react-query";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import { isSignInPath } from "@/utils/SignInUtils";
+import { useWorkspaceArrival } from "@/stores/workspaceArrival";
 
 /**
  * Hook to manage authentication state
@@ -30,6 +31,14 @@ export function useAuth() {
       const loggedUser = useBoundStore.getState().ui.user;
 
       const user = session?.user ?? null;
+      if (
+        !loggedUser &&
+        user &&
+        event === "SIGNED_IN" &&
+        isSignInPath(window.location.pathname)
+      ) {
+        useWorkspaceArrival.getState().begin();
+      }
       setUser(user);
 
       // Signed in
@@ -47,6 +56,7 @@ export function useAuth() {
 
       // Signed out
       if (loggedUser && !user) {
+        useWorkspaceArrival.getState().finish();
         // Drop tenant data before navigating; never display an expiry toast.
         queryClient.clear();
         reset();

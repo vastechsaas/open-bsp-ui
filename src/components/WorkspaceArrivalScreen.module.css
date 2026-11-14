@@ -1,0 +1,132 @@
+.screen {
+  --arrival-background: #faf8f2;
+  --arrival-ink: #272620;
+  --arrival-muted: #625c54;
+  --arrival-accent: #a9442d;
+  --arrival-track: #e9e3d8;
+  --arrival-contour: #ede6da;
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 2rem 1.5rem min(12vh, 6rem);
+  text-align: center;
+  color: var(--arrival-ink);
+  background: var(--arrival-background);
+  outline: none;
+}
+
+:global(.dark) .screen {
+  --arrival-background: var(--background);
+  --arrival-ink: var(--card-foreground);
+  --arrival-muted: var(--muted-foreground);
+  --arrival-accent: var(--primary);
+  --arrival-track: var(--border);
+  --arrival-contour: var(--border);
+}
+
+.screen::before {
+  position: fixed;
+  z-index: -1;
+  inset-block-end: -33rem;
+  inset-inline-end: -47rem;
+  width: 60rem;
+  height: 74rem;
+  transform: rotate(23deg);
+  border: 1px solid var(--arrival-contour);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.stack {
+  display: grid;
+  justify-items: center;
+  max-width: 36rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.75rem;
+  font-size: clamp(1.125rem, 4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.mark {
+  position: relative;
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.mark img {
+  position: absolute;
+  top: -68%;
+  left: -115%;
+  width: 330%;
+  height: auto;
+  max-width: none;
+}
+
+.stack h1 {
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.stack p {
+  margin-top: 0.9rem;
+  color: var(--arrival-muted);
+  font-size: 1rem;
+}
+
+.track {
+  width: min(15rem, 72vw);
+  height: 0.3125rem;
+  margin-top: 2rem;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--arrival-track);
+}
+
+.track span {
+  display: block;
+  width: 32%;
+  height: 100%;
+  transform: translateX(105%);
+  border-radius: inherit;
+  background: var(--arrival-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .track span {
+    animation: workspace-arrival 1.45s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes workspace-arrival {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(212%);
+  }
+}
+
+@media (max-width: 600px) {
+  .screen::before {
+    display: none;
+  }
+}
