@@ -62,7 +62,7 @@ void test("only confirmed loss recommends asking for a resend; all states transl
           new URL(`../public/locales/${locale}.json`, import.meta.url),
           "utf8",
         ),
-      );
+      ) as Record<string, string>;
       assert.ok(strings[display.label], locale);
     }
   }
