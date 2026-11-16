@@ -3,6 +3,7 @@ import { pushMessageToDb } from "@/utils/MessageUtils";
 import { mediaMessageInsert } from "@/utils/MediaMessageInsertUtils";
 import useBoundStore from "@/stores/useBoundStore";
 import { type MessageRow, supabase } from "@/supabase/client";
+import { attachmentRecovery } from "@/utils/AttachmentRecovery";
 
 export function useMedia(message: MessageRow) {
   if (!(message.direction === "incoming" || message.direction === "outgoing")) {
@@ -70,7 +71,11 @@ export function useMedia(message: MessageRow) {
   };
 
   const downloadTask = async () => {
-    if (load.status === "done" || load.status === "loading") {
+    if (
+      attachmentRecovery(message) ||
+      load.status === "done" ||
+      load.status === "loading"
+    ) {
       return;
     }
 

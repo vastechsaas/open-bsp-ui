@@ -8,6 +8,8 @@ import AudioMessage from "./AudioMessage";
 import DocumentMessage from "./DocumentMessage";
 import ImageMessage from "./ImageMessage";
 import VideoMessage from "./VideoMessage";
+import AttachmentRecoveryNotice from "./AttachmentRecoveryNotice";
+import { attachmentRecovery } from "@/utils/AttachmentRecovery";
 import { mediaCategory } from "./media";
 import StatusIcon from "./StatusIcon";
 import dayjs from "dayjs";
@@ -516,7 +518,24 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       props.message.content.file.mime_type || "",
     );
 
-    if (category === "audio") {
+    const recovery = attachmentRecovery(props.message);
+    if (recovery) {
+      content = (
+        <div className="min-w-0 space-y-2">
+          <AttachmentRecoveryNotice
+            key={props.message.id}
+            message={props.message}
+            recovery={recovery}
+          />
+          {props.message.content.text && (
+            <Markdown
+              content={props.message.content.text}
+              direction={props.message.direction}
+            />
+          )}
+        </div>
+      );
+    } else if (category === "audio") {
       content = (
         <AudioMessage
           {...{
